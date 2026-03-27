@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePicker, todayStr } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -65,7 +66,7 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
   const [error, setError] = useState("");
 
   const [seriesType, setSeriesType] = useState<SeriesType>("scrim");
-  const [seriesDate, setSeriesDate] = useState(new Date().toISOString().split("T")[0]);
+  const [seriesDate, setSeriesDate] = useState(todayStr());
 
   const [opponentId, setOpponentId] = useState("");
   const [memo, setMemo] = useState("");
@@ -277,7 +278,7 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
             </div>
             <div className="space-y-2">
               <Label>日付</Label>
-              <Input type="date" value={seriesDate} onChange={(e) => setSeriesDate(e.target.value)} required />
+              <DatePicker value={seriesDate} onChange={setSeriesDate} />
             </div>
             <div className="space-y-2 col-span-2">
               <Label>対戦相手</Label>
