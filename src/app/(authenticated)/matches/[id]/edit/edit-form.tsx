@@ -90,6 +90,7 @@ export function EditSeriesForm({ series, opponents, players, maps, teamId }: Edi
 
   const [seriesType, setSeriesType] = useState<SeriesType>(series.type);
   const [seriesDate, setSeriesDate] = useState(series.series_date);
+
   const [opponentId, setOpponentId] = useState(series.opponent_id);
   const [memo, setMemo] = useState(series.memo ?? "");
 

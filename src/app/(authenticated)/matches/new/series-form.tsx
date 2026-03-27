@@ -66,6 +66,7 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
 
   const [seriesType, setSeriesType] = useState<SeriesType>("scrim");
   const [seriesDate, setSeriesDate] = useState(new Date().toISOString().split("T")[0]);
+
   const [opponentId, setOpponentId] = useState("");
   const [memo, setMemo] = useState("");
   const [games, setGames] = useState<GameInput[]>([]);

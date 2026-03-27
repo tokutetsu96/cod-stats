@@ -1,10 +1,7 @@
-"use client";
-
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Trash2, Eye, Pencil } from "lucide-react";
+import { Eye, Pencil } from "lucide-react";
+import { DeleteSeriesButton } from "./delete-series-button";
 import type { Series } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
@@ -12,15 +9,6 @@ const typeLabel: Record<string, string> = { scrim: "Scrim", tournament: "大会"
 const modeLabel: Record<string, string> = { hardpoint: "HP", snd: "S&D", overload: "OL" };
 
 export function SeriesList({ seriesList }: { seriesList: Series[] }) {
-  const router = useRouter();
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("このシリーズを削除しますか？（関連するゲーム・スタッツも削除されます）")) return;
-    const supabase = createClient();
-    await supabase.from("series").delete().eq("id", id);
-    router.refresh();
-  };
-
   return (
     <div className="space-y-4">
       {seriesList.length === 0 ? (
@@ -77,9 +65,7 @@ export function SeriesList({ seriesList }: { seriesList: Series[] }) {
                             <Pencil className="h-4 w-4" />
                           </Button>
                         </Link>
-                        <Button size="icon" variant="ghost" onClick={() => handleDelete(s.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <DeleteSeriesButton id={s.id} />
                       </div>
                     </td>
                   </tr>
