@@ -76,6 +76,7 @@ export interface Game {
   created_at: string;
   maps?: MapEntry;
   game_stats?: GameStat[];
+  opponent_game_stats?: OpponentGameStat[];
 }
 
 export interface OpponentGameStat {
