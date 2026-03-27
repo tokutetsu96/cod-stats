@@ -1,7 +1,7 @@
 import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { notFound } from "next/navigation";
-import type { GameStat, Game } from "@/lib/types";
+import type { GameStat, GameMode, MatchResult } from "@/lib/types";
 
 function calcKD(kills: number, deaths: number) {
   if (deaths === 0) return kills.toFixed(2);
@@ -19,25 +19,20 @@ export default async function PlayerStatsPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const { supabase } = await getProfile();
 
-  const [{ data: player }, { data: stats }, { data: games }] = await Promise.all([
+  const [{ data: player }, { data: stats }] = await Promise.all([
     supabase.from("players").select("*").eq("id", id).single(),
-    supabase.from("game_stats").select("*").eq("player_id", id),
-    supabase.from("games").select("*"),
+    supabase.from("game_stats").select("*, games(mode, result)").eq("player_id", id),
   ]);
 
   if (!player) notFound();
 
-  const allStats = (stats ?? []) as GameStat[];
-  const allGames = (games ?? []) as Game[];
+  type StatWithGame = GameStat & { games: { mode: GameMode; result: MatchResult } | null };
+  const allStats = (stats ?? []) as StatWithGame[];
 
-  // Map game_id to game for mode lookup
-  const gameMap = new Map(allGames.map((g) => [g.id, g]));
-
-  // Attach mode info to each stat
   const statsWithMode = allStats.map((s) => ({
     ...s,
-    mode: gameMap.get(s.game_id)?.mode ?? "hardpoint",
-    result: gameMap.get(s.game_id)?.result ?? "lose",
+    mode: s.games?.mode ?? ("hardpoint" as GameMode),
+    result: s.games?.result ?? ("lose" as MatchResult),
   }));
 
   const overallKills = statsWithMode.reduce((s, st) => s + st.kills, 0);

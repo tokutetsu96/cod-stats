@@ -14,16 +14,13 @@ function calcKD(kills: number, deaths: number) {
 
 export default async function SeriesDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { supabase, profile } = await getProfile();
+  const { supabase, teamName } = await getProfile();
 
-  const [{ data: series }, { data: team }] = await Promise.all([
-    supabase
-      .from("series")
-      .select("*, opponents(*), games(*, maps(*), game_stats(*, players(*)), opponent_game_stats(*, opponent_players(*)))")
-      .eq("id", id)
-      .single(),
-    supabase.from("teams").select("name").eq("id", profile.team_id).single(),
-  ]);
+  const { data: series } = await supabase
+    .from("series")
+    .select("*, opponents(*), games(*, maps(*), game_stats(*, players(*)), opponent_game_stats(*, opponent_players(*)))")
+    .eq("id", id)
+    .single();
 
   if (!series) notFound();
 
@@ -123,7 +120,7 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-2">{team?.name}</p>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">{teamName}</p>
                     {stats.length === 0
                       ? <p className="text-sm text-muted-foreground">スタッツなし</p>
                       : statsTable(stats.map((s) => ({ ...s, name: s.players?.name ?? "-" })))

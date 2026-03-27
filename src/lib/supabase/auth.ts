@@ -2,20 +2,23 @@ import { createClient } from "./server";
 import { redirect } from "next/navigation";
 import type { Profile } from "@/lib/types";
 
-export async function getProfile(): Promise<{ supabase: Awaited<ReturnType<typeof createClient>>; profile: Profile }> {
+export async function getProfile() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
+  const { data: profileData } = await supabase
     .from("profiles")
-    .select("*")
+    .select("*, teams(name)")
     .eq("id", user.id)
     .single();
 
-  if (!profile) redirect("/login");
+  if (!profileData) redirect("/login");
 
-  return { supabase, profile };
+  const teamName =
+    (profileData as unknown as { teams: { name: string } | null }).teams?.name ?? null;
+
+  return { supabase, profile: profileData as unknown as Profile, teamName };
 }

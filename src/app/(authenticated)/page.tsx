@@ -15,10 +15,10 @@ export default async function DashboardPage() {
   const { supabase, profile } = await getProfile();
 
   const [{ data: seriesData }, { data: games }, { data: gameStats }, { data: players }] = await Promise.all([
-    supabase.from("series").select("*, opponents(*)").order("series_date", { ascending: false }),
-    supabase.from("games").select("*, maps(*)"),
-    supabase.from("game_stats").select("*, players(*)"),
-    supabase.from("players").select("*"),
+    supabase.from("series").select("*, opponents(*)").order("series_date", { ascending: false }).limit(10),
+    supabase.from("games").select("id, mode, result, series_id"),
+    supabase.from("game_stats").select("player_id, kills, deaths, game_id"),
+    supabase.from("players").select("id, name"),
   ]);
 
   const allGames = (games ?? []) as Game[];
