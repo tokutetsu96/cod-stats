@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { NumericInput } from "@/components/ui/numeric-input";
 import type { GameMode, SeriesType, MatchResult, Opponent, Player, MapEntry } from "@/lib/types";
 
 function calcResult(scoreTeam: string, scoreOpponent: string): MatchResult {
@@ -48,7 +49,7 @@ interface GameInput {
 }
 
 function emptyStats(): StatInput {
-  return { player_id: "", kills: "0", deaths: "0", damage: "0", hill_time: "0", plants: "0", defuses: "0", first_bloods: "0", first_deaths: "0", goals: "0" };
+  return { player_id: "", kills: "", deaths: "", damage: "", hill_time: "", plants: "", defuses: "", first_bloods: "", first_deaths: "", goals: "" };
 }
 
 interface SeriesFormProps {
@@ -80,7 +81,7 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
     const defaultOpponentStats = pad((selectedOpponent?.opponent_players ?? [])
       .filter((p) => p.is_default)
       .map((p) => ({ ...emptyStats(), player_id: p.id })));
-    setGames([...games, { mode: "hardpoint", map_id: "", score_team: "0", score_opponent: "0", stats: defaultStats, opponent_stats: defaultOpponentStats, expanded: true }]);
+    setGames([...games, { mode: "hardpoint", map_id: "", score_team: "", score_opponent: "", stats: defaultStats, opponent_stats: defaultOpponentStats, expanded: true }]);
   };
 
   const removeGame = (idx: number) => setGames(games.filter((_, i) => i !== idx));
@@ -236,17 +237,17 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
                         ))}
                       </Select>
                     </td>
-                    <td className="py-1 px-1"><Input type="number" min="0" value={stat.kills} onChange={(e) => onUpdate(sIdx, { kills: e.target.value })} className="h-8 px-1 text-center" /></td>
-                    <td className="py-1 px-1"><Input type="number" min="0" value={stat.deaths} onChange={(e) => onUpdate(sIdx, { deaths: e.target.value })} className="h-8 px-1 text-center" /></td>
-                    <td className="py-1 px-1"><Input type="number" min="0" value={stat.damage} onChange={(e) => onUpdate(sIdx, { damage: e.target.value })} className="h-8 px-1 text-center" /></td>
-                    {game.mode === "hardpoint" && <td className="py-1 px-1"><Input type="number" min="0" value={stat.hill_time} onChange={(e) => onUpdate(sIdx, { hill_time: e.target.value })} className="h-8 px-1 text-center" /></td>}
+                    <td className="py-1 px-1"><NumericInput value={stat.kills} onChange={(v) => onUpdate(sIdx, { kills: v })} /></td>
+                    <td className="py-1 px-1"><NumericInput value={stat.deaths} onChange={(v) => onUpdate(sIdx, { deaths: v })} /></td>
+                    <td className="py-1 px-1"><NumericInput value={stat.damage} onChange={(v) => onUpdate(sIdx, { damage: v })} /></td>
+                    {game.mode === "hardpoint" && <td className="py-1 px-1"><NumericInput value={stat.hill_time} onChange={(v) => onUpdate(sIdx, { hill_time: v })} /></td>}
                     {game.mode === "snd" && <>
-                      <td className="py-1 px-1"><Input type="number" min="0" value={stat.plants} onChange={(e) => onUpdate(sIdx, { plants: e.target.value })} className="h-8 px-1 text-center" /></td>
-                      <td className="py-1 px-1"><Input type="number" min="0" value={stat.defuses} onChange={(e) => onUpdate(sIdx, { defuses: e.target.value })} className="h-8 px-1 text-center" /></td>
-                      <td className="py-1 px-1"><Input type="number" min="0" value={stat.first_bloods} onChange={(e) => onUpdate(sIdx, { first_bloods: e.target.value })} className="h-8 px-1 text-center" /></td>
-                      <td className="py-1 px-1"><Input type="number" min="0" value={stat.first_deaths} onChange={(e) => onUpdate(sIdx, { first_deaths: e.target.value })} className="h-8 px-1 text-center" /></td>
+                      <td className="py-1 px-1"><NumericInput value={stat.plants} onChange={(v) => onUpdate(sIdx, { plants: v })} /></td>
+                      <td className="py-1 px-1"><NumericInput value={stat.defuses} onChange={(v) => onUpdate(sIdx, { defuses: v })} /></td>
+                      <td className="py-1 px-1"><NumericInput value={stat.first_bloods} onChange={(v) => onUpdate(sIdx, { first_bloods: v })} /></td>
+                      <td className="py-1 px-1"><NumericInput value={stat.first_deaths} onChange={(v) => onUpdate(sIdx, { first_deaths: v })} /></td>
                     </>}
-                    {game.mode === "overload" && <td className="py-1 px-1"><Input type="number" min="0" value={stat.goals} onChange={(e) => onUpdate(sIdx, { goals: e.target.value })} className="h-8 px-1 text-center" /></td>}
+                    {game.mode === "overload" && <td className="py-1 px-1"><NumericInput value={stat.goals} onChange={(v) => onUpdate(sIdx, { goals: v })} /></td>}
                   </tr>
                 );
               })}
@@ -340,11 +341,11 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
                   </div>
                   <div className="space-y-2">
                     <Label>自チーム</Label>
-                    <Input type="number" min="0" value={game.score_team} onChange={(e) => updateGame(gIdx, { score_team: e.target.value })} />
+                    <NumericInput value={game.score_team} onChange={(v) => updateGame(gIdx, { score_team: v })} className="w-full" />
                   </div>
                   <div className="space-y-2">
                     <Label>相手チーム</Label>
-                    <Input type="number" min="0" value={game.score_opponent} onChange={(e) => updateGame(gIdx, { score_opponent: e.target.value })} />
+                    <NumericInput value={game.score_opponent} onChange={(v) => updateGame(gIdx, { score_opponent: v })} className="w-full" />
                   </div>
                 </div>
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -110,7 +111,7 @@ export function OpponentList({ opponents, teamId }: { opponents: OpponentWithSta
                   </>
                 ) : (
                   <>
-                    <span className="font-medium text-sm flex-1">{opp.name}</span>
+                    <Link href={`/opponents/${opp.id}`} className="font-medium text-sm flex-1 hover:underline">{opp.name}</Link>
                     <span className="text-sm text-muted-foreground flex-1">{opp.memo ?? ""}</span>
                     <span className="text-sm text-muted-foreground w-28 text-right">
                       {opp.wins}勝 / {opp.total}試合
