@@ -49,20 +49,15 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
   const allPlayers = (players ?? []) as Player[];
   const seriesIds = (allSeriesIdsData ?? []).map((s: { id: string }) => s.id);
 
-  // Step 2: Fetch games scoped to the series IDs, then stats scoped to game IDs
+  // Step 2: Fetch games with stats in a single joined query
   let allGames: Game[] = [];
   let filteredStats: GameStat[] = [];
   if (seriesIds.length > 0) {
     const { data: gamesData } = await supabase
-      .from("games").select("id, mode, result, series_id").in("series_id", seriesIds);
-    allGames = (gamesData ?? []) as Game[];
-
-    const gameIds = allGames.map((g) => g.id);
-    if (gameIds.length > 0) {
-      const { data: gameStats } = await supabase
-        .from("game_stats").select("player_id, kills, deaths, game_id").in("game_id", gameIds);
-      filteredStats = (gameStats ?? []) as GameStat[];
-    }
+      .from("games").select("id, mode, result, series_id, game_stats(player_id, kills, deaths, game_id)").in("series_id", seriesIds);
+    const games = (gamesData ?? []) as (Game & { game_stats: GameStat[] })[];
+    allGames = games.map(({ game_stats, ...g }) => g) as Game[];
+    filteredStats = games.flatMap((g) => g.game_stats ?? []);
   }
 
   const totalGames = allGames.length;
