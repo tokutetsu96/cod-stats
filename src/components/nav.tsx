@@ -50,7 +50,7 @@ export function Nav({ teamName, username, avatar, role }: NavProps) {
   const fallback = username?.[0]?.toUpperCase() ?? "?";
 
   return (
-    <nav className="border-b bg-card">
+    <nav className="border-b bg-card sticky top-0 z-50">
       <div className="mx-auto flex h-14 max-w-6xl items-stretch px-4">
         {/* Logo */}
         <Link
