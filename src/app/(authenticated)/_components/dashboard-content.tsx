@@ -142,7 +142,34 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
           {playerStats.length === 0 ? (
             <p className="text-muted-foreground text-sm">プレイヤーが登録されていません</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            {/* Mobile card layout */}
+            <div className="space-y-2 sm:hidden">
+              {playerStats.map((p) => {
+                const kd = parseFloat(p.overallKD);
+                const kdColor = !isNaN(kd) && kd >= 1.0 ? "var(--win)" : !isNaN(kd) ? "var(--loss)" : undefined;
+                return (
+                  <div key={p.id} className="flex items-center justify-between py-2 border-b border-border/50">
+                    <Link href={`/players/${p.id}`} className="text-primary hover:underline font-medium text-sm">
+                      {p.name}
+                    </Link>
+                    <div className="flex items-center gap-3">
+                      <span className="stat-number text-base font-semibold" style={{ color: kdColor }}>
+                        {p.overallKD}
+                      </span>
+                      <div className="flex gap-2 text-xs text-muted-foreground">
+                        {p.modeKD.map(({ mode, kd: mkd }) => (
+                          <span key={mode} className="stat-number">{mkd}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop table layout */}
+            <div className="overflow-x-auto hidden sm:block">
               <table className="w-full text-sm data-table">
                 <thead>
                   <tr className="border-b text-left">
@@ -180,6 +207,7 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -193,7 +221,48 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
           {recentSeries.length === 0 ? (
             <p className="text-muted-foreground text-sm">対戦データがありません</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            {/* Mobile card layout */}
+            <div className="space-y-2 sm:hidden">
+              {recentSeries.map((s) => {
+                const sGames = allGames.filter((g) => g.series_id === s.id);
+                const w = sGames.filter((g) => g.result === "win").length;
+                const d = sGames.filter((g) => g.result === "draw").length;
+                const l = sGames.length - w - d;
+                const isWin = w > l;
+                const isLoss = l > w;
+                return (
+                  <Link key={s.id} href={`/matches/${s.id}`} className="block border-b border-border/50 py-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">{s.opponents?.name ?? "-"}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="inline-flex items-center justify-center w-5 h-5 rounded text-xs font-bold stat-number"
+                          style={{
+                            backgroundColor: isWin ? "color-mix(in oklch, var(--win) 20%, transparent)" : isLoss ? "color-mix(in oklch, var(--loss) 20%, transparent)" : "var(--muted)",
+                            color: isWin ? "var(--win)" : isLoss ? "var(--loss)" : "var(--muted-foreground)",
+                          }}
+                        >
+                          {isWin ? "W" : isLoss ? "L" : "D"}
+                        </span>
+                        <span className="text-xs text-muted-foreground stat-number">
+                          {w}W {l}L{d > 0 ? ` ${d}D` : ""}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-muted-foreground">{formatDate(s.series_date)}</span>
+                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${s.type === "tournament" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        {s.type === "tournament" ? "大会" : "Scrim"}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Desktop table layout */}
+            <div className="overflow-x-auto hidden sm:block">
               <table className="w-full text-sm data-table">
                 <thead>
                   <tr className="border-b text-left">
@@ -256,6 +325,7 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </CardContent>
       </Card>

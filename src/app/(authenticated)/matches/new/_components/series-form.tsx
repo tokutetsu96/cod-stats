@@ -238,7 +238,7 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
           <CardTitle className="text-lg">対戦情報</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
             <div className="space-y-2">
               <Label>タイプ</Label>
               <Select value={seriesType} onChange={(e) => setSeriesType(e.target.value as SeriesType)}>
@@ -250,7 +250,7 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
               <Label>日付</Label>
               <DatePicker value={seriesDate} onChange={setSeriesDate} />
             </div>
-            <div className="space-y-2 col-span-2">
+            <div className="space-y-2 col-span-1 sm:col-span-2">
               <Label>対戦相手</Label>
               <Select value={opponentId} onChange={(e) => setOpponentId(e.target.value)} required>
                 <option value="">選択してください</option>
@@ -259,11 +259,11 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
                 ))}
               </Select>
             </div>
-            <div className="space-y-2 col-span-2 md:col-span-4">
+            <div className="space-y-2 col-span-1 sm:col-span-2 md:col-span-4">
               <Label>YouTube URL</Label>
               <Input type="url" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." />
             </div>
-            <div className="space-y-2 col-span-2 md:col-span-4">
+            <div className="space-y-2 col-span-1 sm:col-span-2 md:col-span-4">
               <Label>メモ</Label>
               <Textarea value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="メモ（任意）" className="h-16" />
             </div>
@@ -278,15 +278,15 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
           <Card key={gIdx}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="text-base sm:text-lg flex flex-wrap items-center gap-1.5 sm:gap-2">
                   <button type="button" onClick={() => toggleExpand(gIdx)} className="cursor-pointer">
                     {game.expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </button>
                   Game {gIdx + 1}
-                  <span className="text-sm font-normal text-muted-foreground">
+                  <span className="text-xs sm:text-sm font-normal text-muted-foreground">
                     {modeLabel[game.mode]} - {game.score_team} : {game.score_opponent}
                   </span>
-                  <span className={`text-sm font-medium ${resultColor[calcResult(game.score_team, game.score_opponent)]}`}>
+                  <span className={`text-xs sm:text-sm font-medium ${resultColor[calcResult(game.score_team, game.score_opponent)]}`}>
                     {resultLabel[calcResult(game.score_team, game.score_opponent)]}
                   </span>
                 </CardTitle>
@@ -297,7 +297,7 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
             </CardHeader>
             {game.expanded && (
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
                   <div className="space-y-2">
                     <Label>モード</Label>
                     <Select value={game.mode} onChange={(e) => updateGame(gIdx, { mode: e.target.value as GameMode, map_id: "" })}>

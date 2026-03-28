@@ -46,7 +46,7 @@ export function DashboardFilter({ opponents }: { opponents: Opponent[] }) {
       <Select
         value={current}
         onChange={(e) => handleChange(e.target.value)}
-        className="w-48"
+        className="w-full sm:w-48"
         disabled={isPending}
       >
         <option value="">すべて</option>

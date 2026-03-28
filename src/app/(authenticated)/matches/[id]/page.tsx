@@ -182,13 +182,13 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
           return (
             <Card key={game.id}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-3">
+                <CardTitle className="text-base sm:text-lg flex flex-wrap items-center gap-2 sm:gap-3">
                   <span>Game {game.game_number}</span>
-                  <span className="text-sm font-normal text-muted-foreground">
+                  <span className="text-xs sm:text-sm font-normal text-muted-foreground">
                     {modeLabel[game.mode]}
                     {game.maps && ` - ${game.maps.name}`}
                   </span>
-                  <span className="text-sm font-medium">
+                  <span className="text-xs sm:text-sm font-medium">
                     {game.score_team} - {game.score_opponent}
                   </span>
                   <span className={`font-bold text-xs px-1.5 py-0.5 rounded stat-number ${game.result === "win" ? "text-win bg-win/10" : game.result === "lose" ? "text-loss bg-loss/10" : "text-primary bg-primary/10"}`}>

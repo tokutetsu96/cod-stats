@@ -64,7 +64,7 @@ export function Nav({ teamName, username, avatar, role }: NavProps) {
 
         {/* Team badge */}
         {teamName && (
-          <div className="flex items-center mr-4">
+          <div className="hidden md:flex items-center mr-4">
             <span className="text-sm font-semibold tracking-wide text-primary shrink-0">
               {teamName}
             </span>
@@ -80,7 +80,7 @@ export function Nav({ teamName, username, avatar, role }: NavProps) {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "text-sm whitespace-nowrap flex items-center px-3 relative transition-colors",
+                  "text-xs sm:text-sm whitespace-nowrap flex items-center px-2 sm:px-3 relative transition-colors",
                   "border-b-2",
                   isActive
                     ? "text-foreground font-medium border-primary"

@@ -119,17 +119,50 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
           {opponents.map((opp) => (
             <div key={opp.id} className="border rounded-md">
               {/* メイン行 */}
-              <div className="flex items-center gap-2 px-3 py-2">
+              <div className="px-3 py-2">
                 {editId === opp.id ? (
-                  <>
+                  <div className="flex items-center gap-2">
                     <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-8 flex-1" />
                     <Button size="sm" variant="outline" onClick={() => handleEdit(opp.id)} disabled={loading}>保存</Button>
                     <Button size="sm" variant="ghost" onClick={() => setEditId(null)}>取消</Button>
-                  </>
+                  </div>
                 ) : (
                   <>
-                    <Link href={`/opponents/${opp.id}`} className="font-medium text-sm min-w-0 flex-1 hover:underline truncate">{opp.name}</Link>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
+                    {/* 1行目: 名前 + 操作ボタン */}
+                    <div className="flex items-center gap-2">
+                      <Link href={`/opponents/${opp.id}`} className="font-medium text-sm min-w-0 flex-1 hover:underline truncate">{opp.name}</Link>
+                      <div className="hidden sm:flex items-center gap-3 text-xs text-muted-foreground shrink-0">
+                        <span className="font-medium text-foreground">
+                          {opp.wins}/{opp.total}
+                          {opp.total > 0 && <span className="ml-1">({opp.winRate}%)</span>}
+                        </span>
+                        {opp.modeStats.map((ms) => (
+                          <span key={ms.mode}>
+                            {modeLabel[ms.mode]} {ms.total > 0 ? `${ms.wins}/${ms.total}` : "-/-"}
+                          </span>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setExpandedId(expandedId === opp.id ? null : opp.id)}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground ml-2"
+                      >
+                        <Users className="h-3.5 w-3.5" />
+                        <span>{opp.opponent_players.length}</span>
+                        {expandedId === opp.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      </button>
+                      {isAdmin && (
+                        <>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditId(opp.id); setEditName(opp.name); }}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(opp.id)} disabled={deletingId === opp.id}>
+                            {deletingId === opp.id ? <Spinner className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                    {/* 2行目 (モバイルのみ): 戦績 + モード別 */}
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 sm:hidden">
                       <span className="font-medium text-foreground">
                         {opp.wins}/{opp.total}
                         {opp.total > 0 && <span className="ml-1">({opp.winRate}%)</span>}
@@ -140,24 +173,6 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
                         </span>
                       ))}
                     </div>
-                    <button
-                      onClick={() => setExpandedId(expandedId === opp.id ? null : opp.id)}
-                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground ml-2"
-                    >
-                      <Users className="h-3.5 w-3.5" />
-                      <span>{opp.opponent_players.length}</span>
-                      {expandedId === opp.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                    </button>
-                    {isAdmin && (
-                      <>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditId(opp.id); setEditName(opp.name); }}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(opp.id)} disabled={deletingId === opp.id}>
-                          {deletingId === opp.id ? <Spinner className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
-                        </Button>
-                      </>
-                    )}
                   </>
                 )}
               </div>

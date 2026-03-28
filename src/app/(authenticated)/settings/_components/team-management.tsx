@@ -82,20 +82,22 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
       <div className="space-y-1.5">
         <Label className="text-sm text-muted-foreground">チーム名</Label>
         {isAdmin && editingTeamName ? (
-          <div className="flex gap-2">
+          <div className="space-y-2 sm:space-y-0 sm:flex sm:gap-2">
             <Input
               value={teamName}
               onChange={(e) => setTeamName(e.target.value)}
-              className="h-8 max-w-xs"
+              className="h-8 w-full sm:max-w-xs"
               autoFocus
               onKeyDown={(e) => e.key === "Enter" && handleSaveTeamName()}
             />
-            <Button size="sm" onClick={handleSaveTeamName} disabled={savingTeam || !teamName.trim()}>
-              {savingTeam ? "保存中..." : "保存"}
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => { setTeamName(team.name); setEditingTeamName(false); }}>
-              キャンセル
-            </Button>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleSaveTeamName} disabled={savingTeam || !teamName.trim()}>
+                {savingTeam ? "保存中..." : "保存"}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => { setTeamName(team.name); setEditingTeamName(false); }}>
+                キャンセル
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="flex items-center gap-2">

@@ -53,7 +53,7 @@ function SortableRow({
   return (
     <tr ref={setNodeRef} style={style} className="border-b">
       <td className="py-1 pr-1 w-8">
-        <button type="button" className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground hover:text-foreground" {...attributes} {...listeners}>
+        <button type="button" className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground hover:text-foreground p-2 -m-1 sm:p-0 sm:m-0" {...attributes} {...listeners}>
           <GripVertical className="h-4 w-4" />
         </button>
       </td>
@@ -116,18 +116,18 @@ export function StatsTable({
             <thead>
               <tr className="border-b text-left">
                 <th className="pb-1 pr-1 w-8"></th>
-                <th className="pb-1 pr-1 font-medium text-xs w-32">Player</th>
-                <th className="pb-1 px-1 font-medium text-xs w-16">K</th>
-                <th className="pb-1 px-1 font-medium text-xs w-16">D</th>
-                <th className="pb-1 px-1 font-medium text-xs w-16">Dmg</th>
-                {mode === "hardpoint" && <th className="pb-1 px-1 font-medium text-xs w-16">Hill</th>}
+                <th className="pb-1 pr-1 font-medium text-xs w-24 sm:w-32">Player</th>
+                <th className="pb-1 px-1 font-medium text-xs">K</th>
+                <th className="pb-1 px-1 font-medium text-xs">D</th>
+                <th className="pb-1 px-1 font-medium text-xs">Dmg</th>
+                {mode === "hardpoint" && <th className="pb-1 px-1 font-medium text-xs">Hill</th>}
                 {mode === "snd" && <>
-                  <th className="pb-1 px-1 font-medium text-xs w-14">P</th>
-                  <th className="pb-1 px-1 font-medium text-xs w-14">Def</th>
-                  <th className="pb-1 px-1 font-medium text-xs w-14">FB</th>
-                  <th className="pb-1 px-1 font-medium text-xs w-14">FD</th>
+                  <th className="pb-1 px-1 font-medium text-xs">P</th>
+                  <th className="pb-1 px-1 font-medium text-xs">Def</th>
+                  <th className="pb-1 px-1 font-medium text-xs">FB</th>
+                  <th className="pb-1 px-1 font-medium text-xs">FD</th>
                 </>}
-                {mode === "overload" && <th className="pb-1 px-1 font-medium text-xs w-16">Goal</th>}
+                {mode === "overload" && <th className="pb-1 px-1 font-medium text-xs">Goal</th>}
               </tr>
             </thead>
             <SortableContext items={items} strategy={verticalListSortingStrategy}>
