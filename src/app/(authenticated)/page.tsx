@@ -175,6 +175,7 @@ export default async function DashboardPage() {
                     <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">日付</th>
                     <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">タイプ</th>
                     <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">対戦相手</th>
+                    <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">YouTube</th>
                     <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">戦績</th>
                   </tr>
                 </thead>
@@ -198,6 +199,15 @@ export default async function DashboardPage() {
                           <Link href={`/matches/${s.id}`} className="hover:underline font-medium">
                             {s.opponents?.name ?? "-"}
                           </Link>
+                        </td>
+                        <td className="py-2.5 text-xs">
+                          {s.youtube_url ? (
+                            <a href={s.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                              YouTube
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </td>
                         <td className="py-2.5">
                           <div className="flex items-center gap-1.5">
