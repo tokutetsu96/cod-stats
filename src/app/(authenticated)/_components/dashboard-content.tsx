@@ -61,30 +61,49 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
   }
 
   const totalGames = allGames.length;
-  const totalWins = allGames.filter((g) => g.result === "win").length;
-  const totalLosses = allGames.filter((g) => g.result === "lose").length;
+  let totalWins = 0;
+  let totalLosses = 0;
+  const modeCounts = { hardpoint: { total: 0, wins: 0, losses: 0 }, snd: { total: 0, wins: 0, losses: 0 }, overload: { total: 0, wins: 0, losses: 0 } };
+  const gameIdToMode = new Map<string, string>();
+
+  for (const g of allGames) {
+    if (g.result === "win") totalWins++;
+    else if (g.result === "lose") totalLosses++;
+    gameIdToMode.set(g.id, g.mode);
+    const mc = modeCounts[g.mode as keyof typeof modeCounts];
+    if (mc) {
+      mc.total++;
+      if (g.result === "win") mc.wins++;
+      else if (g.result === "lose") mc.losses++;
+    }
+  }
+
   const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : "0";
 
   const modeStats = (["hardpoint", "snd", "overload"] as const).map((mode) => {
-    const modeGames = allGames.filter((g) => g.mode === mode);
-    const wins = modeGames.filter((g) => g.result === "win").length;
-    const losses = modeGames.filter((g) => g.result === "lose").length;
-    const rate = modeGames.length > 0 ? ((wins / modeGames.length) * 100).toFixed(1) : "0";
-    return { mode, total: modeGames.length, wins, losses, rate };
+    const mc = modeCounts[mode];
+    const rate = mc.total > 0 ? ((mc.wins / mc.total) * 100).toFixed(1) : "0";
+    return { mode, total: mc.total, wins: mc.wins, losses: mc.losses, rate };
   });
-
-  const gameIdToMode = new Map(allGames.map((g) => [g.id, g.mode]));
 
   const playerStats = allPlayers.map((player) => {
     const pStats = filteredStats.filter((s) => s.player_id === player.id);
+    let totalKills = 0, totalDeaths = 0;
+    const modeAcc = { hardpoint: { kills: 0, deaths: 0, count: 0 }, snd: { kills: 0, deaths: 0, count: 0 }, overload: { kills: 0, deaths: 0, count: 0 } };
+    for (const s of pStats) {
+      totalKills += s.kills;
+      totalDeaths += s.deaths;
+      const mode = gameIdToMode.get(s.game_id) as keyof typeof modeAcc | undefined;
+      if (mode && modeAcc[mode]) {
+        modeAcc[mode].kills += s.kills;
+        modeAcc[mode].deaths += s.deaths;
+        modeAcc[mode].count++;
+      }
+    }
     const modeKD = (["hardpoint", "snd", "overload"] as const).map((mode) => {
-      const ms = pStats.filter((s) => gameIdToMode.get(s.game_id) === mode);
-      const kills = ms.reduce((a, s) => a + s.kills, 0);
-      const deaths = ms.reduce((a, s) => a + s.deaths, 0);
-      return { mode, count: ms.length, kd: ms.length > 0 ? calcKD(kills, deaths) : "-" };
+      const m = modeAcc[mode];
+      return { mode, count: m.count, kd: m.count > 0 ? calcKD(m.kills, m.deaths) : "-" };
     });
-    const totalKills = pStats.reduce((a, s) => a + s.kills, 0);
-    const totalDeaths = pStats.reduce((a, s) => a + s.deaths, 0);
     const overallKD = pStats.length > 0 ? calcKD(totalKills, totalDeaths) : "-";
     return { ...player, modeKD, overallKD };
   }).sort((a, b) => parseFloat(b.overallKD === "-" ? "0" : b.overallKD) - parseFloat(a.overallKD === "-" ? "0" : a.overallKD));

@@ -35,16 +35,24 @@ export default async function PlayerStatsPage({ params }: { params: Promise<{ id
     result: s.games?.result ?? ("lose" as MatchResult),
   }));
 
-  const overallKills = statsWithMode.reduce((s, st) => s + st.kills, 0);
-  const overallDeaths = statsWithMode.reduce((s, st) => s + st.deaths, 0);
-  const overallWins = statsWithMode.filter((s) => s.result === "win").length;
+  let overallKills = 0, overallDeaths = 0, overallWins = 0;
+  const modeAcc = { hardpoint: { kills: 0, deaths: 0, wins: 0, count: 0, stats: [] as typeof statsWithMode }, snd: { kills: 0, deaths: 0, wins: 0, count: 0, stats: [] as typeof statsWithMode }, overload: { kills: 0, deaths: 0, wins: 0, count: 0, stats: [] as typeof statsWithMode } };
+  for (const s of statsWithMode) {
+    overallKills += s.kills;
+    overallDeaths += s.deaths;
+    if (s.result === "win") overallWins++;
+    const ma = modeAcc[s.mode as keyof typeof modeAcc];
+    if (ma) {
+      ma.kills += s.kills;
+      ma.deaths += s.deaths;
+      if (s.result === "win") ma.wins++;
+      ma.count++;
+      ma.stats.push(s);
+    }
+  }
 
   const modeData = (["hardpoint", "snd", "overload"] as const).map((mode) => {
-    const modeStats = statsWithMode.filter((s) => s.mode === mode);
-    const kills = modeStats.reduce((s, st) => s + st.kills, 0);
-    const deaths = modeStats.reduce((s, st) => s + st.deaths, 0);
-    const wins = modeStats.filter((s) => s.result === "win").length;
-    const count = modeStats.length;
+    const { kills, deaths, wins, count, stats: modeStats } = modeAcc[mode];
 
     const extra: { label: string; value: string }[] = [];
     if (mode === "hardpoint") {

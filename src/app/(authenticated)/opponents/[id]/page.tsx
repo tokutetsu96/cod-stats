@@ -33,29 +33,43 @@ export default async function OpponentStatsPage({ params }: { params: Promise<{ 
   const series = (seriesData ?? []) as unknown as SeriesRow[];
   const allGames = series.flatMap((s) => s.games ?? []);
 
-  const wins = allGames.filter((g) => g.result === "win").length;
-  const losses = allGames.filter((g) => g.result === "lose").length;
-  const draws = allGames.filter((g) => g.result === "draw").length;
+  let wins = 0, losses = 0, draws = 0;
+  const modeCounts = { hardpoint: { total: 0, wins: 0, losses: 0 }, snd: { total: 0, wins: 0, losses: 0 }, overload: { total: 0, wins: 0, losses: 0 } };
+  for (const g of allGames) {
+    if (g.result === "win") wins++;
+    else if (g.result === "lose") losses++;
+    else if (g.result === "draw") draws++;
+    const mc = modeCounts[g.mode as keyof typeof modeCounts];
+    if (mc) {
+      mc.total++;
+      if (g.result === "win") mc.wins++;
+      else if (g.result === "lose") mc.losses++;
+    }
+  }
   const total = allGames.length;
 
   // シリーズ勝敗（ゲーム数が多い方が勝ち）
+  let seriesWins = 0, seriesLosses = 0;
   const seriesResults = series.map((s) => {
-    const sw = s.games.filter((g) => g.result === "win").length;
-    const sl = s.games.filter((g) => g.result === "lose").length;
-    return sw > sl ? "win" : sl > sw ? "lose" : "draw";
+    let sw = 0, sl = 0;
+    for (const g of s.games) {
+      if (g.result === "win") sw++;
+      else if (g.result === "lose") sl++;
+    }
+    const r = sw > sl ? "win" : sl > sw ? "lose" : "draw";
+    if (r === "win") seriesWins++;
+    else if (r === "lose") seriesLosses++;
+    return r;
   });
-  const seriesWins = seriesResults.filter((r) => r === "win").length;
-  const seriesLosses = seriesResults.filter((r) => r === "lose").length;
 
   const modeData = (["hardpoint", "snd", "overload"] as const).map((mode) => {
-    const mg = allGames.filter((g) => g.mode === mode);
-    const mw = mg.filter((g) => g.result === "win").length;
+    const mc = modeCounts[mode];
     return {
       mode,
-      total: mg.length,
-      wins: mw,
-      losses: mg.filter((g) => g.result === "lose").length,
-      winRate: mg.length > 0 ? ((mw / mg.length) * 100).toFixed(1) : null,
+      total: mc.total,
+      wins: mc.wins,
+      losses: mc.losses,
+      winRate: mc.total > 0 ? ((mc.wins / mc.total) * 100).toFixed(1) : null,
     };
   });
 
@@ -138,8 +152,8 @@ export default async function OpponentStatsPage({ params }: { params: Promise<{ 
           ) : (
             <div className="space-y-2">
               {series.map((s, si) => {
-                const sw = s.games.filter((g) => g.result === "win").length;
-                const sl = s.games.filter((g) => g.result === "lose").length;
+                let sw = 0, sl = 0;
+                for (const g of s.games) { if (g.result === "win") sw++; else if (g.result === "lose") sl++; }
                 const sr = seriesResults[si];
                 return (
                   <Link key={s.id} href={`/matches/${s.id}`} className="block border rounded-md px-3 py-2 hover:bg-muted/50 transition-colors">
