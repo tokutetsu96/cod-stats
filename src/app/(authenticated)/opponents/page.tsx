@@ -7,7 +7,7 @@ export default async function OpponentsPage() {
 
   const [{ data: opponents }, { data: series }] = await Promise.all([
     supabase.from("opponents").select("*, opponent_players(*)").order("name"),
-    supabase.from("series").select("opponent_id, games(result)"),
+    supabase.from("series").select("opponent_id, games(mode, result)"),
   ]);
 
   const opponentStats = (opponents ?? []).map((opp) => {
@@ -15,11 +15,17 @@ export default async function OpponentsPage() {
     const allGames = oppSeries.flatMap((s) => s.games ?? []);
     const wins = allGames.filter((g) => g.result === "win").length;
     const total = allGames.length;
+    const modeStats = (["hardpoint", "snd", "overload"] as const).map((mode) => {
+      const mg = allGames.filter((g) => g.mode === mode);
+      const mw = mg.filter((g) => g.result === "win").length;
+      return { mode, wins: mw, total: mg.length };
+    });
     return {
       ...opp,
       wins,
       total,
       winRate: total > 0 ? ((wins / total) * 100).toFixed(1) : "-",
+      modeStats,
       opponent_players: opp.opponent_players ?? [],
     };
   });

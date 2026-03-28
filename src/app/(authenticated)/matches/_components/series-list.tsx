@@ -1,16 +1,38 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import { Eye, Pencil } from "lucide-react";
 import { DeleteSeriesButton } from "./delete-series-button";
-import type { Series } from "@/lib/types";
+import type { Opponent, Series } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 
 const typeLabel: Record<string, string> = { scrim: "Scrim", tournament: "大会" };
 
-export function SeriesList({ seriesList, isAdmin }: { seriesList: Series[]; isAdmin: boolean }) {
+export function SeriesList({ seriesList, opponents, isAdmin }: { seriesList: Series[]; opponents: Opponent[]; isAdmin: boolean }) {
+  const [opponentId, setOpponentId] = useState("");
+
+  const filtered = opponentId
+    ? seriesList.filter((s) => s.opponent_id === opponentId)
+    : seriesList;
+
   return (
     <div className="space-y-4">
-      {seriesList.length === 0 ? (
+      <div className="flex items-center gap-3">
+        <label className="text-xs text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+          対戦チーム
+        </label>
+        <Select value={opponentId} onChange={(e) => setOpponentId(e.target.value)} className="w-48">
+          <option value="">すべて</option>
+          {opponents.map((o) => (
+            <option key={o.id} value={o.id}>{o.name}</option>
+          ))}
+        </Select>
+      </div>
+
+      {filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground">対戦データがありません</p>
       ) : (
         <div className="overflow-x-auto">
@@ -26,7 +48,7 @@ export function SeriesList({ seriesList, isAdmin }: { seriesList: Series[]; isAd
               </tr>
             </thead>
             <tbody>
-              {seriesList.map((s) => {
+              {filtered.map((s) => {
                 const games = s.games ?? [];
                 const wins = games.filter((g) => g.result === "win").length;
                 const draws = games.filter((g) => g.result === "draw").length;
@@ -43,7 +65,7 @@ export function SeriesList({ seriesList, isAdmin }: { seriesList: Series[]; isAd
                     <td className="py-2.5 text-xs">
                       {s.youtube_url ? (
                         <a href={s.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                          試合動画
+                          YouTube URL
                         </a>
                       ) : (
                         <span className="text-muted-foreground">-</span>
@@ -62,17 +84,13 @@ export function SeriesList({ seriesList, isAdmin }: { seriesList: Series[]; isAd
                     </td>
                     <td className="py-2.5">
                       <div className="flex items-center gap-1">
-                        <Link href={`/matches/${s.id}`}>
-                          <Button size="icon" variant="ghost">
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                        <Link href={`/matches/${s.id}`} className={buttonVariants({ size: "icon", variant: "ghost" })}>
+                          <Eye className="h-4 w-4" />
                         </Link>
                         {isAdmin && (
                           <>
-                            <Link href={`/matches/${s.id}/edit`}>
-                              <Button size="icon" variant="ghost">
-                                <Pencil className="h-4 w-4" />
-                              </Button>
+                            <Link href={`/matches/${s.id}/edit`} className={buttonVariants({ size: "icon", variant: "ghost" })}>
+                              <Pencil className="h-4 w-4" />
                             </Link>
                             <DeleteSeriesButton id={s.id} />
                           </>

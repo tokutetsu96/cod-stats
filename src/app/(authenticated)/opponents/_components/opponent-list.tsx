@@ -10,22 +10,28 @@ import { Pencil, Trash2, Plus, Users, ChevronDown, ChevronUp, Star } from "lucid
 import { Spinner } from "@/components/ui/spinner";
 import type { OpponentPlayer } from "@/lib/types";
 
+interface ModeStat {
+  mode: string;
+  wins: number;
+  total: number;
+}
+
 interface OpponentWithStats {
   id: string;
   name: string;
-  memo: string | null;
   wins: number;
   total: number;
   winRate: string;
+  modeStats: ModeStat[];
   opponent_players: OpponentPlayer[];
 }
 
+const modeLabel: Record<string, string> = { hardpoint: "HP", snd: "S&D", overload: "OL" };
+
 export function OpponentList({ opponents, teamId, isAdmin }: { opponents: OpponentWithStats[]; teamId: string; isAdmin: boolean }) {
   const [name, setName] = useState("");
-  const [memo, setMemo] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
-  const [editMemo, setEditMemo] = useState("");
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -41,9 +47,8 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
     if (!name.trim()) return;
     setLoading(true);
     const supabase = createClient();
-    await supabase.from("opponents").insert({ name: name.trim(), memo: memo.trim() || null, team_id: teamId });
+    await supabase.from("opponents").insert({ name: name.trim(), team_id: teamId });
     setName("");
-    setMemo("");
     setLoading(false);
     router.refresh();
   };
@@ -60,7 +65,7 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
   const handleEdit = async (id: string) => {
     setLoading(true);
     const supabase = createClient();
-    await supabase.from("opponents").update({ name: editName.trim(), memo: editMemo.trim() || null }).eq("id", id);
+    await supabase.from("opponents").update({ name: editName.trim() }).eq("id", id);
     setEditId(null);
     setLoading(false);
     router.refresh();
@@ -101,9 +106,6 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
           <div className="flex-1 space-y-1">
             <Input placeholder="チーム名" value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
-          <div className="flex-1 space-y-1">
-            <Input placeholder="メモ（任意）" value={memo} onChange={(e) => setMemo(e.target.value)} />
-          </div>
           <Button type="submit" size="sm" disabled={loading}>
             {loading ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
           </Button>
@@ -121,18 +123,23 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
                 {editId === opp.id ? (
                   <>
                     <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-8 flex-1" />
-                    <Input value={editMemo} onChange={(e) => setEditMemo(e.target.value)} className="h-8 flex-1" placeholder="メモ" />
                     <Button size="sm" variant="outline" onClick={() => handleEdit(opp.id)} disabled={loading}>保存</Button>
                     <Button size="sm" variant="ghost" onClick={() => setEditId(null)}>取消</Button>
                   </>
                 ) : (
                   <>
-                    <Link href={`/opponents/${opp.id}`} className="font-medium text-sm flex-1 hover:underline">{opp.name}</Link>
-                    <span className="text-sm text-muted-foreground flex-1">{opp.memo ?? ""}</span>
-                    <span className="text-sm text-muted-foreground w-28 text-right">
-                      {opp.wins}勝 / {opp.total}試合
-                      {opp.total > 0 && <span className="ml-1">({opp.winRate}%)</span>}
-                    </span>
+                    <Link href={`/opponents/${opp.id}`} className="font-medium text-sm min-w-0 flex-1 hover:underline truncate">{opp.name}</Link>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
+                      <span className="font-medium text-foreground">
+                        {opp.wins}/{opp.total}
+                        {opp.total > 0 && <span className="ml-1">({opp.winRate}%)</span>}
+                      </span>
+                      {opp.modeStats.map((ms) => (
+                        <span key={ms.mode}>
+                          {modeLabel[ms.mode]} {ms.total > 0 ? `${ms.wins}/${ms.total}` : "-/-"}
+                        </span>
+                      ))}
+                    </div>
                     <button
                       onClick={() => setExpandedId(expandedId === opp.id ? null : opp.id)}
                       className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground ml-2"
@@ -143,7 +150,7 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
                     </button>
                     {isAdmin && (
                       <>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditId(opp.id); setEditName(opp.name); setEditMemo(opp.memo ?? ""); }}>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditId(opp.id); setEditName(opp.name); }}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(opp.id)} disabled={deletingId === opp.id}>

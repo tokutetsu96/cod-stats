@@ -66,8 +66,6 @@ export default async function OpponentStatsPage({ params }: { params: Promise<{ 
         <span className="text-muted-foreground">/</span>
         <h1 className="text-2xl font-bold">{opponent.name}</h1>
       </div>
-      {opponent.memo && <p className="text-sm text-muted-foreground">{opponent.memo}</p>}
-
       {/* サマリーカード */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Card className="border-l-2 border-l-primary">

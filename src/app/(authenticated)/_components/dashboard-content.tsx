@@ -30,36 +30,40 @@ function WinRateBar({ rate }: { rate: string }) {
 export async function DashboardContent({ opponentId }: { opponentId?: string }) {
   const { supabase } = await getProfile();
 
-  const [{ data: seriesData }, { data: allGamesData }, { data: gameStats }, { data: players }] = await Promise.all([
-    supabase.from("series").select("*, opponents(*)").order("series_date", { ascending: false }).limit(10),
-    supabase.from("games").select("id, mode, result, series_id"),
-    supabase.from("game_stats").select("player_id, kills, deaths, game_id"),
+  // Step 1: Get series IDs (filtered by opponent if needed) + players
+  let seriesQuery = supabase.from("series").select("*, opponents(*)").order("series_date", { ascending: false }).limit(10);
+
+  let allSeriesIdsQuery = supabase.from("series").select("id");
+  if (opponentId) {
+    allSeriesIdsQuery = allSeriesIdsQuery.eq("opponent_id", opponentId);
+    seriesQuery = seriesQuery.eq("opponent_id", opponentId);
+  }
+
+  const [{ data: seriesData }, { data: allSeriesIdsData }, { data: players }] = await Promise.all([
+    seriesQuery,
+    allSeriesIdsQuery,
     supabase.from("players").select("id, name"),
   ]);
 
   const allSeries = (seriesData ?? []) as Series[];
-  const allGamesRaw = (allGamesData ?? []) as Game[];
-  const allStats = (gameStats ?? []) as GameStat[];
   const allPlayers = (players ?? []) as Player[];
+  const seriesIds = (allSeriesIdsData ?? []).map((s: { id: string }) => s.id);
 
-  // Filter by opponent if selected
-  let allOpponentSeriesIds: Set<string> | null = null;
-  if (opponentId) {
-    const { data: opponentSeries } = await supabase
-      .from("series")
-      .select("id")
-      .eq("opponent_id", opponentId);
-    allOpponentSeriesIds = new Set((opponentSeries ?? []).map((s: { id: string }) => s.id));
+  // Step 2: Fetch games scoped to the series IDs, then stats scoped to game IDs
+  let allGames: Game[] = [];
+  let filteredStats: GameStat[] = [];
+  if (seriesIds.length > 0) {
+    const { data: gamesData } = await supabase
+      .from("games").select("id, mode, result, series_id").in("series_id", seriesIds);
+    allGames = (gamesData ?? []) as Game[];
+
+    const gameIds = allGames.map((g) => g.id);
+    if (gameIds.length > 0) {
+      const { data: gameStats } = await supabase
+        .from("game_stats").select("player_id, kills, deaths, game_id").in("game_id", gameIds);
+      filteredStats = (gameStats ?? []) as GameStat[];
+    }
   }
-
-  const allGames = allOpponentSeriesIds
-    ? allGamesRaw.filter((g) => allOpponentSeriesIds!.has(g.series_id))
-    : allGamesRaw;
-
-  const gameIds = new Set(allGames.map((g) => g.id));
-  const filteredStats = allOpponentSeriesIds
-    ? allStats.filter((s) => gameIds.has(s.game_id))
-    : allStats;
 
   const totalGames = allGames.length;
   const totalWins = allGames.filter((g) => g.result === "win").length;
@@ -224,7 +228,7 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
                         <td className="py-2.5 text-xs">
                           {s.youtube_url ? (
                             <a href={s.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                              試合動画
+                              YouTube URL
                             </a>
                           ) : (
                             <span className="text-muted-foreground">-</span>

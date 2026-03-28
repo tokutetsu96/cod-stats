@@ -13,6 +13,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { NumericInput } from "@/components/ui/numeric-input";
+import { StatsTable } from "@/components/stats-table";
+import { arrayMove } from "@dnd-kit/sortable";
 import type { GameMode, SeriesType, MatchResult, Opponent, Player, MapEntry } from "@/lib/types";
 
 function calcResult(scoreTeam: string, scoreOpponent: string): MatchResult {
@@ -80,11 +82,27 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
       while (result.length < 4) result.push(emptyStats());
       return result.slice(0, 4);
     };
-    const defaultStats = pad(players.filter((p) => p.is_default).map((p) => ({ ...emptyStats(), player_id: p.id })));
-    const selectedOpponent = opponents.find((o) => o.id === opponentId);
-    const defaultOpponentStats = pad((selectedOpponent?.opponent_players ?? [])
-      .filter((p) => p.is_default)
-      .map((p) => ({ ...emptyStats(), player_id: p.id })));
+
+    // 直前のゲームがあればその選手順序を引き継ぐ
+    const lastGame = games.length > 0 ? games[games.length - 1] : null;
+
+    let defaultStats: StatInput[];
+    if (lastGame) {
+      defaultStats = pad(lastGame.stats.map((s) => ({ ...emptyStats(), player_id: s.player_id })));
+    } else {
+      defaultStats = pad(players.filter((p) => p.is_default).map((p) => ({ ...emptyStats(), player_id: p.id })));
+    }
+
+    let defaultOpponentStats: StatInput[];
+    if (lastGame) {
+      defaultOpponentStats = pad(lastGame.opponent_stats.map((s) => ({ ...emptyStats(), player_id: s.player_id })));
+    } else {
+      const selectedOpponent = opponents.find((o) => o.id === opponentId);
+      defaultOpponentStats = pad((selectedOpponent?.opponent_players ?? [])
+        .filter((p) => p.is_default)
+        .map((p) => ({ ...emptyStats(), player_id: p.id })));
+    }
+
     setGames([...games, { mode: "hardpoint", map_id: "", score_team: "", score_opponent: "", stats: defaultStats, opponent_stats: defaultOpponentStats, expanded: true }]);
   };
 
@@ -100,6 +118,24 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
 
   const updateOpponentStat = (gameIdx: number, statIdx: number, updates: Partial<StatInput>) =>
     updateGame(gameIdx, { opponent_stats: games[gameIdx].opponent_stats.map((s, i) => (i === statIdx ? { ...s, ...updates } : s)) });
+
+  const reorderStats = (gameIdx: number, side: "team" | "opponent", oldIndex: number, newIndex: number) => {
+    setGames((prev) => prev.map((g, i) => {
+      if (i < gameIdx) return g;
+      const key = side === "team" ? "stats" : "opponent_stats";
+      if (i === gameIdx) return { ...g, [key]: arrayMove(g[key], oldIndex, newIndex) };
+      // For subsequent games, apply same player_id order
+      const reorderedIds = arrayMove(prev[gameIdx][key], oldIndex, newIndex).map((s) => s.player_id);
+      const newStats = [...g[key]];
+      const sorted: typeof newStats = [];
+      for (const pid of reorderedIds) {
+        const idx = newStats.findIndex((s) => s.player_id === pid);
+        if (idx !== -1) sorted.push(newStats.splice(idx, 1)[0]);
+      }
+      sorted.push(...newStats);
+      return { ...g, [key]: sorted };
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,74 +229,6 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
   };
 
   const selectedOpponent = opponents.find((o) => o.id === opponentId);
-
-  const renderStatsTable = (
-    game: GameInput,
-    gIdx: number,
-    side: "team" | "opponent"
-  ) => {
-    const stats = side === "team" ? game.stats : game.opponent_stats;
-    const playerOptions = side === "team" ? players : (selectedOpponent?.opponent_players ?? []);
-    const onUpdate = side === "team"
-      ? (sIdx: number, u: Partial<StatInput>) => updateStat(gIdx, sIdx, u)
-      : (sIdx: number, u: Partial<StatInput>) => updateOpponentStat(gIdx, sIdx, u);
-
-    return (
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">
-          {side === "team" ? "自チームスタッツ" : `相手チームスタッツ（${selectedOpponent?.name ?? ""}）`}
-        </Label>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="pb-1 pr-1 font-medium text-xs w-32">Player</th>
-                <th className="pb-1 px-1 font-medium text-xs w-16">K</th>
-                <th className="pb-1 px-1 font-medium text-xs w-16">D</th>
-                <th className="pb-1 px-1 font-medium text-xs w-16">Dmg</th>
-                {game.mode === "hardpoint" && <th className="pb-1 px-1 font-medium text-xs w-16">Hill</th>}
-                {game.mode === "snd" && <>
-                  <th className="pb-1 px-1 font-medium text-xs w-14">P</th>
-                  <th className="pb-1 px-1 font-medium text-xs w-14">Def</th>
-                  <th className="pb-1 px-1 font-medium text-xs w-14">FB</th>
-                  <th className="pb-1 px-1 font-medium text-xs w-14">FD</th>
-                </>}
-                {game.mode === "overload" && <th className="pb-1 px-1 font-medium text-xs w-16">Goal</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {stats.map((stat, sIdx) => {
-                const selectedInOtherRows = new Set(stats.filter((_, i) => i !== sIdx).map((s) => s.player_id));
-                return (
-                  <tr key={sIdx} className="border-b">
-                    <td className="py-1 pr-1">
-                      <Select className="h-8 text-xs" value={stat.player_id} onChange={(e) => onUpdate(sIdx, { player_id: e.target.value })}>
-                        <option value="">--</option>
-                        {playerOptions.filter((p) => !selectedInOtherRows.has(p.id)).map((p) => (
-                          <option key={p.id} value={p.id}>{p.name}</option>
-                        ))}
-                      </Select>
-                    </td>
-                    <td className="py-1 px-1"><NumericInput value={stat.kills} onChange={(v) => onUpdate(sIdx, { kills: v })} /></td>
-                    <td className="py-1 px-1"><NumericInput value={stat.deaths} onChange={(v) => onUpdate(sIdx, { deaths: v })} /></td>
-                    <td className="py-1 px-1"><NumericInput value={stat.damage} onChange={(v) => onUpdate(sIdx, { damage: v })} /></td>
-                    {game.mode === "hardpoint" && <td className="py-1 px-1"><NumericInput value={stat.hill_time} onChange={(v) => onUpdate(sIdx, { hill_time: v })} /></td>}
-                    {game.mode === "snd" && <>
-                      <td className="py-1 px-1"><NumericInput value={stat.plants} onChange={(v) => onUpdate(sIdx, { plants: v })} /></td>
-                      <td className="py-1 px-1"><NumericInput value={stat.defuses} onChange={(v) => onUpdate(sIdx, { defuses: v })} /></td>
-                      <td className="py-1 px-1"><NumericInput value={stat.first_bloods} onChange={(v) => onUpdate(sIdx, { first_bloods: v })} /></td>
-                      <td className="py-1 px-1"><NumericInput value={stat.first_deaths} onChange={(v) => onUpdate(sIdx, { first_deaths: v })} /></td>
-                    </>}
-                    {game.mode === "overload" && <td className="py-1 px-1"><NumericInput value={stat.goals} onChange={(v) => onUpdate(sIdx, { goals: v })} /></td>}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
@@ -357,10 +325,24 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
                   </div>
                 </div>
 
-                {renderStatsTable(game, gIdx, "team")}
+                <StatsTable
+                  label="自チームスタッツ"
+                  mode={game.mode}
+                  stats={game.stats}
+                  playerOptions={players}
+                  onUpdate={(sIdx, u) => updateStat(gIdx, sIdx, u)}
+                  onReorder={(oldIdx, newIdx) => reorderStats(gIdx, "team", oldIdx, newIdx)}
+                />
 
                 <div className="border-t pt-4">
-                  {renderStatsTable(game, gIdx, "opponent")}
+                  <StatsTable
+                    label={`相手チームスタッツ（${selectedOpponent?.name ?? ""}）`}
+                    mode={game.mode}
+                    stats={game.opponent_stats}
+                    playerOptions={selectedOpponent?.opponent_players ?? []}
+                    onUpdate={(sIdx, u) => updateOpponentStat(gIdx, sIdx, u)}
+                    onReorder={(oldIdx, newIdx) => reorderStats(gIdx, "opponent", oldIdx, newIdx)}
+                  />
                 </div>
               </CardContent>
             )}

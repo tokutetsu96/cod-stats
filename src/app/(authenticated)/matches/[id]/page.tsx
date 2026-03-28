@@ -29,6 +29,34 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
   const draws = games.filter((g) => g.result === "draw").length;
   const losses = games.length - wins - draws;
 
+  // Aggregate per-player K/D across all games in this series
+  const allStats = games.flatMap((g) => (g.game_stats ?? []) as GameStat[]);
+  const gameIdToMode = new Map(games.map((g) => [g.id, g.mode]));
+  const playerMap = new Map<string, { name: string; kills: number; deaths: number; modeKills: Record<string, number>; modeDeaths: Record<string, number>; modeCounts: Record<string, number> }>();
+  for (const stat of allStats) {
+    const pid = stat.player_id;
+    const mode = gameIdToMode.get(stat.game_id) ?? "";
+    if (!playerMap.has(pid)) {
+      playerMap.set(pid, { name: stat.players?.name ?? "-", kills: 0, deaths: 0, modeKills: {}, modeDeaths: {}, modeCounts: {} });
+    }
+    const p = playerMap.get(pid)!;
+    p.kills += stat.kills;
+    p.deaths += stat.deaths;
+    p.modeKills[mode] = (p.modeKills[mode] ?? 0) + stat.kills;
+    p.modeDeaths[mode] = (p.modeDeaths[mode] ?? 0) + stat.deaths;
+    p.modeCounts[mode] = (p.modeCounts[mode] ?? 0) + 1;
+  }
+  const playerStats = [...playerMap.values()]
+    .map((p) => ({
+      ...p,
+      overallKD: calcKD(p.kills, p.deaths),
+      modeKD: (["hardpoint", "snd", "overload"] as const).map((mode) => ({
+        mode,
+        kd: (p.modeCounts[mode] ?? 0) > 0 ? calcKD(p.modeKills[mode] ?? 0, p.modeDeaths[mode] ?? 0) : "-",
+      })),
+    }))
+    .sort((a, b) => parseFloat(b.overallKD) - parseFloat(a.overallKD));
+
   return (
     <>
       <main className="mx-auto max-w-6xl p-4 space-y-6">
@@ -46,12 +74,56 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
           {series.youtube_url && (
             <p className="text-sm mt-1">
               <a href={series.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                試合動画
+                YouTube URL
               </a>
             </p>
           )}
           {series.memo && <p className="text-sm mt-1">{series.memo}</p>}
         </div>
+
+        {playerStats.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">メンバー別 K/D</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm data-table">
+                  <thead>
+                    <tr className="border-b text-left">
+                      <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">プレイヤー</th>
+                      <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">総合</th>
+                      <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">HP</th>
+                      <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">S&D</th>
+                      <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">OL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {playerStats.map((p) => {
+                      const kd = parseFloat(p.overallKD);
+                      const kdColor = !isNaN(kd) && kd >= 1.0 ? "var(--win)" : !isNaN(kd) ? "var(--loss)" : undefined;
+                      return (
+                        <tr key={p.name} className="border-b border-border/50">
+                          <td className="py-2.5 font-medium">{p.name}</td>
+                          <td className="py-2.5 text-center">
+                            <span className="stat-number text-base font-semibold" style={{ color: kdColor }}>
+                              {p.overallKD}
+                            </span>
+                          </td>
+                          {p.modeKD.map(({ mode, kd: mkd }) => (
+                            <td key={mode} className="py-2.5 text-center">
+                              <span className="stat-number text-base text-muted-foreground">{mkd}</span>
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {games.map((game) => {
           const stats = ((game.game_stats ?? []) as GameStat[]).sort((a, b) =>
