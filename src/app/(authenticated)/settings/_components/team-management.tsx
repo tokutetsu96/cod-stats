@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Pencil, Check, X, LogOut } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import type { Player, Team } from "@/lib/types";
 
 interface TeamManagementProps {
@@ -22,6 +23,8 @@ export function TeamManagement({ team, players, currentProfileId }: TeamManageme
   const [savingTeam, setSavingTeam] = useState(false);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [editingPlayerName, setEditingPlayerName] = useState("");
+  const [savingPlayer, setSavingPlayer] = useState(false);
+  const [leavingTeam, setLeavingTeam] = useState(false);
   const [error, setError] = useState("");
 
   const handleSaveTeamName = async () => {
@@ -45,16 +48,19 @@ export function TeamManagement({ team, players, currentProfileId }: TeamManageme
   const handleSavePlayerName = async (playerId: string) => {
     const name = editingPlayerName.trim();
     if (!name) return;
+    setSavingPlayer(true);
     setError("");
     const supabase = createClient();
     const { error } = await supabase.from("players").update({ name }).eq("id", playerId);
     if (error) setError("名前の変更に失敗しました");
     else setEditingPlayerId(null);
+    setSavingPlayer(false);
     router.refresh();
   };
 
   const handleLeaveTeam = async () => {
     if (!confirm("チームから脱退しますか？この操作は取り消せません。")) return;
+    setLeavingTeam(true);
     const supabase = createClient();
     await supabase.from("profiles").delete().eq("id", currentProfileId);
     await supabase.auth.signOut();
@@ -115,8 +121,8 @@ export function TeamManagement({ team, players, currentProfileId }: TeamManageme
                         if (e.key === "Escape") setEditingPlayerId(null);
                       }}
                     />
-                    <button onClick={() => handleSavePlayerName(player.id)} className="text-muted-foreground hover:text-foreground transition-colors" aria-label="保存">
-                      <Check className="h-3.5 w-3.5" />
+                    <button onClick={() => handleSavePlayerName(player.id)} className="text-muted-foreground hover:text-foreground transition-colors" aria-label="保存" disabled={savingPlayer}>
+                      {savingPlayer ? <Spinner className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
                     </button>
                     <button onClick={() => setEditingPlayerId(null)} className="text-muted-foreground hover:text-foreground transition-colors" aria-label="キャンセル">
                       <X className="h-3.5 w-3.5" />
@@ -143,9 +149,10 @@ export function TeamManagement({ team, players, currentProfileId }: TeamManageme
           size="sm"
           className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
           onClick={handleLeaveTeam}
+          disabled={leavingTeam}
         >
-          <LogOut className="h-4 w-4 mr-2" />
-          チームから脱退
+          {leavingTeam ? <Spinner className="h-4 w-4 mr-2" /> : <LogOut className="h-4 w-4 mr-2" />}
+          {leavingTeam ? "脱退中..." : "チームから脱退"}
         </Button>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pencil, Trash2, Plus, Star } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import type { Player } from "@/lib/types";
 
 export function PlayerList({ players, teamId }: { players: Player[]; teamId: string }) {
@@ -14,6 +15,8 @@ export function PlayerList({ players, teamId }: { players: Player[]; teamId: str
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const router = useRouter();
 
   const defaultPlayers = players.filter((p) => p.is_default);
@@ -32,16 +35,20 @@ export function PlayerList({ players, teamId }: { players: Player[]; teamId: str
 
   const handleToggleDefault = async (id: string, current: boolean) => {
     if (!current && defaultPlayers.length >= 4) return;
+    setTogglingId(id);
     const supabase = createClient();
     await supabase.from("players").update({ is_default: !current }).eq("id", id);
     router.refresh();
+    setTogglingId(null);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("このプレイヤーを削除しますか？関連する戦績データも確認してください。")) return;
+    setDeletingId(id);
     const supabase = createClient();
     await supabase.from("players").delete().eq("id", id);
     router.refresh();
+    setDeletingId(null);
   };
 
   const handleEdit = async (id: string) => {
@@ -85,8 +92,8 @@ export function PlayerList({ players, teamId }: { players: Player[]; teamId: str
             <Button size="icon" variant="ghost" onClick={() => { setEditId(p.id); setEditName(p.name); }}>
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button size="icon" variant="ghost" onClick={() => handleDelete(p.id)}>
-              <Trash2 className="h-4 w-4" />
+            <Button size="icon" variant="ghost" onClick={() => handleDelete(p.id)} disabled={deletingId === p.id}>
+              {deletingId === p.id ? <Spinner /> : <Trash2 className="h-4 w-4" />}
             </Button>
           </td>
         </>
@@ -101,7 +108,7 @@ export function PlayerList({ players, teamId }: { players: Player[]; teamId: str
           <Input placeholder="プレイヤー名" value={name} onChange={(e) => setName(e.target.value)} required />
         </div>
         <Button type="submit" size="sm" disabled={loading}>
-          <Plus className="h-4 w-4" /> 追加
+          {loading ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
         </Button>
       </form>
 

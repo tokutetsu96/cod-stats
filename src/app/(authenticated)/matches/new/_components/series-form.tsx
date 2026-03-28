@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { NumericInput } from "@/components/ui/numeric-input";
 import type { GameMode, SeriesType, MatchResult, Opponent, Player, MapEntry } from "@/lib/types";
 
@@ -375,7 +376,7 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
 
       <div className="flex gap-2">
         <Button type="submit" disabled={loading}>
-          {loading ? "保存中..." : "登録"}
+          {loading ? <><Spinner className="h-4 w-4 mr-2" />保存中...</> : "登録"}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>
           キャンセル

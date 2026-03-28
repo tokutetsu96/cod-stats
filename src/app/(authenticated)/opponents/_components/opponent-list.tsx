@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pencil, Trash2, Plus, Users, ChevronDown, ChevronUp, Star } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import type { OpponentPlayer } from "@/lib/types";
 
 interface OpponentWithStats {
@@ -26,6 +27,11 @@ export function OpponentList({ opponents, teamId }: { opponents: OpponentWithSta
   const [editName, setEditName] = useState("");
   const [editMemo, setEditMemo] = useState("");
   const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [addingPlayerId, setAddingPlayerId] = useState<string | null>(null);
+  const [deletingPlayerId, setDeletingPlayerId] = useState<string | null>(null);
+  const [togglingPlayerId, setTogglingPlayerId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [newPlayerName, setNewPlayerName] = useState("");
   const router = useRouter();
@@ -44,9 +50,11 @@ export function OpponentList({ opponents, teamId }: { opponents: OpponentWithSta
 
   const handleDelete = async (id: string) => {
     if (!confirm("削除しますか？")) return;
+    setDeletingId(id);
     const supabase = createClient();
     await supabase.from("opponents").delete().eq("id", id);
     router.refresh();
+    setDeletingId(null);
   };
 
   const handleEdit = async (id: string) => {
@@ -61,23 +69,29 @@ export function OpponentList({ opponents, teamId }: { opponents: OpponentWithSta
   const handleAddPlayer = async (e: React.FormEvent, opponentId: string) => {
     e.preventDefault();
     if (!newPlayerName.trim()) return;
+    setAddingPlayerId(opponentId);
     const supabase = createClient();
     await supabase.from("opponent_players").insert({ name: newPlayerName.trim(), opponent_id: opponentId, team_id: teamId });
     setNewPlayerName("");
+    setAddingPlayerId(null);
     router.refresh();
   };
 
   const handleDeletePlayer = async (playerId: string) => {
+    setDeletingPlayerId(playerId);
     const supabase = createClient();
     await supabase.from("opponent_players").delete().eq("id", playerId);
     router.refresh();
+    setDeletingPlayerId(null);
   };
 
   const handleTogglePlayerDefault = async (playerId: string, current: boolean, players: OpponentPlayer[]) => {
     if (!current && players.filter((p) => p.is_default).length >= 4) return;
+    setTogglingPlayerId(playerId);
     const supabase = createClient();
     await supabase.from("opponent_players").update({ is_default: !current }).eq("id", playerId);
     router.refresh();
+    setTogglingPlayerId(null);
   };
 
   return (
@@ -90,7 +104,7 @@ export function OpponentList({ opponents, teamId }: { opponents: OpponentWithSta
           <Input placeholder="メモ（任意）" value={memo} onChange={(e) => setMemo(e.target.value)} />
         </div>
         <Button type="submit" size="sm" disabled={loading}>
-          <Plus className="h-4 w-4" /> 追加
+          {loading ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
         </Button>
       </form>
 
@@ -128,8 +142,8 @@ export function OpponentList({ opponents, teamId }: { opponents: OpponentWithSta
                     <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditId(opp.id); setEditName(opp.name); setEditMemo(opp.memo ?? ""); }}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(opp.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(opp.id)} disabled={deletingId === opp.id}>
+                      {deletingId === opp.id ? <Spinner className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
                     </Button>
                   </>
                 )}
@@ -154,8 +168,8 @@ export function OpponentList({ opponents, teamId }: { opponents: OpponentWithSta
                       </button>
                     </td>
                     <td className="py-1.5">
-                      <button onClick={() => handleDeletePlayer(p.id)} className="text-muted-foreground hover:text-destructive">
-                        <Trash2 className="h-3.5 w-3.5" />
+                      <button onClick={() => handleDeletePlayer(p.id)} className="text-muted-foreground hover:text-destructive" disabled={deletingPlayerId === p.id}>
+                        {deletingPlayerId === p.id ? <Spinner className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
                       </button>
                     </td>
                   </tr>
@@ -164,7 +178,9 @@ export function OpponentList({ opponents, teamId }: { opponents: OpponentWithSta
                   <div className="border-t px-4 py-3 bg-muted/30 space-y-4">
                     <form onSubmit={(e) => handleAddPlayer(e, opp.id)} className="flex gap-2">
                       <Input placeholder="選手名" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} className="h-8 max-w-48" />
-                      <Button type="submit" size="sm" variant="outline"><Plus className="h-3.5 w-3.5 mr-1" />追加</Button>
+                      <Button type="submit" size="sm" variant="outline" disabled={addingPlayerId === opp.id}>
+                        {addingPlayerId === opp.id ? <Spinner className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}追加
+                      </Button>
                     </form>
 
                     {opp.opponent_players.length === 0 ? (

@@ -2,7 +2,7 @@
 
 import { Select } from "@/components/ui/select";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useTransition } from "react";
 import type { Opponent } from "@/lib/types";
 
 const STORAGE_KEY = "dashboard-opponent-filter";
@@ -10,6 +10,7 @@ const STORAGE_KEY = "dashboard-opponent-filter";
 export function DashboardFilter({ opponents }: { opponents: Opponent[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
   const current = searchParams.get("opponent") ?? "";
   const initialized = useRef(false);
 
@@ -29,11 +30,12 @@ export function DashboardFilter({ opponents }: { opponents: Opponent[] }) {
   function handleChange(value: string) {
     if (value) {
       localStorage.setItem(STORAGE_KEY, value);
-      router.push(`/?opponent=${value}`);
     } else {
       localStorage.removeItem(STORAGE_KEY);
-      router.push("/");
     }
+    startTransition(() => {
+      router.push(value ? `/?opponent=${value}` : "/");
+    });
   }
 
   return (
@@ -45,6 +47,7 @@ export function DashboardFilter({ opponents }: { opponents: Opponent[] }) {
         value={current}
         onChange={(e) => handleChange(e.target.value)}
         className="w-48"
+        disabled={isPending}
       >
         <option value="">すべて</option>
         {opponents.map((o) => (

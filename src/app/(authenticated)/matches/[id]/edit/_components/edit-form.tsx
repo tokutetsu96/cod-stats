@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Trash2, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { NumericInput } from "@/components/ui/numeric-input";
 import type { GameMode, SeriesType, MatchResult, Opponent, Player, MapEntry } from "@/lib/types";
 
@@ -393,7 +394,7 @@ export function EditSeriesForm({ series, opponents, players, maps, teamId }: Edi
 
       <div className="flex gap-2">
         <Button type="submit" disabled={loading}>
-          {loading ? "保存中..." : "更新"}
+          {loading ? <><Spinner className="h-4 w-4 mr-2" />保存中...</> : "更新"}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.push(`/matches/${series.id}`)}>
           キャンセル

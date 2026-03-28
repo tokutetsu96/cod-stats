@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Trash2, Plus } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import type { GameMode, MapEntry } from "@/lib/types";
 
 const modeLabel: Record<GameMode, string> = {
@@ -20,6 +21,7 @@ export function MapManager({ maps, teamId }: { maps: MapEntry[]; teamId: string 
   const [activeMode, setActiveMode] = useState<GameMode>("hardpoint");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const router = useRouter();
 
   const filtered = maps.filter((m) => m.mode === activeMode);
@@ -37,9 +39,11 @@ export function MapManager({ maps, teamId }: { maps: MapEntry[]; teamId: string 
 
   const handleDelete = async (id: string) => {
     if (!confirm("このマップを削除しますか？")) return;
+    setDeletingId(id);
     const supabase = createClient();
     await supabase.from("maps").delete().eq("id", id);
     router.refresh();
+    setDeletingId(null);
   };
 
   return (
@@ -67,7 +71,7 @@ export function MapManager({ maps, teamId }: { maps: MapEntry[]; teamId: string 
           />
         </div>
         <Button type="submit" size="sm" disabled={loading}>
-          <Plus className="h-4 w-4" /> 追加
+          {loading ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
         </Button>
       </form>
 
@@ -78,8 +82,8 @@ export function MapManager({ maps, teamId }: { maps: MapEntry[]; teamId: string 
           {filtered.map((m) => (
             <div key={m.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted/50">
               <span className="text-sm">{m.name}</span>
-              <Button size="icon" variant="ghost" onClick={() => handleDelete(m.id)}>
-                <Trash2 className="h-4 w-4" />
+              <Button size="icon" variant="ghost" onClick={() => handleDelete(m.id)} disabled={deletingId === m.id}>
+                {deletingId === m.id ? <Spinner /> : <Trash2 className="h-4 w-4" />}
               </Button>
             </div>
           ))}
