@@ -49,3 +49,7 @@ Key tables: `teams`, `profiles`, `players`, `opponents`, `maps`, `series`, `game
 ### Path Aliases
 
 `@/*` maps to `./src/*`.
+
+## Coding Guidelines
+
+- ソースコード修正時は `/vercel-react-best-practices` スキルを参照し、パフォーマンスやベストプラクティスに沿ったコードを書くこと。
