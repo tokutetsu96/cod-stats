@@ -46,7 +46,7 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
           {series.youtube_url && (
             <p className="text-sm mt-1">
               <a href={series.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                YouTube
+                試合動画
               </a>
             </p>
           )}

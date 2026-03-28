@@ -43,7 +43,7 @@ export function SeriesList({ seriesList }: { seriesList: Series[] }) {
                     <td className="py-2.5 text-xs">
                       {s.youtube_url ? (
                         <a href={s.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                          YouTube
+                          試合動画
                         </a>
                       ) : (
                         <span className="text-muted-foreground">-</span>

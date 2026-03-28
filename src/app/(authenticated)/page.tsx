@@ -1,8 +1,9 @@
 import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import type { Game, GameStat, Player, Series } from "@/lib/types";
+import type { Game, GameStat, Player, Series, Opponent } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
+import { DashboardFilter } from "./_components/dashboard-filter";
 
 function calcKD(kills: number, deaths: number) {
   if (deaths === 0) return kills.toFixed(2);
@@ -27,20 +28,52 @@ function WinRateBar({ rate }: { rate: string }) {
   );
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ opponent?: string }>;
+}) {
+  const { opponent: opponentId } = await searchParams;
   const { supabase } = await getProfile();
 
-  const [{ data: seriesData }, { data: games }, { data: gameStats }, { data: players }] = await Promise.all([
+  const [{ data: seriesData }, { data: allGamesData }, { data: gameStats }, { data: players }, { data: opponents }] = await Promise.all([
     supabase.from("series").select("*, opponents(*)").order("series_date", { ascending: false }).limit(10),
     supabase.from("games").select("id, mode, result, series_id"),
     supabase.from("game_stats").select("player_id, kills, deaths, game_id"),
     supabase.from("players").select("id, name"),
+    supabase.from("opponents").select("id, name").order("name"),
   ]);
 
-  const allGames = (games ?? []) as Game[];
+  const allSeries = (seriesData ?? []) as Series[];
+  const allGamesRaw = (allGamesData ?? []) as Game[];
   const allStats = (gameStats ?? []) as GameStat[];
   const allPlayers = (players ?? []) as Player[];
-  const allSeries = (seriesData ?? []) as Series[];
+  const allOpponents = (opponents ?? []) as Opponent[];
+
+  // Filter by opponent if selected
+  const filteredSeriesIds = opponentId
+    ? new Set(allSeries.filter((s) => s.opponent_id === opponentId).map((s) => s.id))
+    : null;
+
+  // For games, we need series_id -> opponent mapping for games not in the recent 10 series
+  // Fetch all series IDs for the opponent if filtering
+  let allOpponentSeriesIds: Set<string> | null = null;
+  if (opponentId) {
+    const { data: opponentSeries } = await supabase
+      .from("series")
+      .select("id")
+      .eq("opponent_id", opponentId);
+    allOpponentSeriesIds = new Set((opponentSeries ?? []).map((s: { id: string }) => s.id));
+  }
+
+  const allGames = allOpponentSeriesIds
+    ? allGamesRaw.filter((g) => allOpponentSeriesIds!.has(g.series_id))
+    : allGamesRaw;
+
+  const gameIds = new Set(allGames.map((g) => g.id));
+  const filteredStats = allOpponentSeriesIds
+    ? allStats.filter((s) => gameIds.has(s.game_id))
+    : allStats;
 
   const totalGames = allGames.length;
   const totalWins = allGames.filter((g) => g.result === "win").length;
@@ -58,7 +91,7 @@ export default async function DashboardPage() {
   const gameIdToMode = new Map(allGames.map((g) => [g.id, g.mode]));
 
   const playerStats = allPlayers.map((player) => {
-    const pStats = allStats.filter((s) => s.player_id === player.id);
+    const pStats = filteredStats.filter((s) => s.player_id === player.id);
     const modeKD = (["hardpoint", "snd", "overload"] as const).map((mode) => {
       const ms = pStats.filter((s) => gameIdToMode.get(s.game_id) === mode);
       const kills = ms.reduce((a, s) => a + s.kills, 0);
@@ -71,10 +104,17 @@ export default async function DashboardPage() {
     return { ...player, modeKD, overallKD };
   }).sort((a, b) => parseFloat(b.overallKD === "-" ? "0" : b.overallKD) - parseFloat(a.overallKD === "-" ? "0" : a.overallKD));
 
-  const recentSeries = allSeries.slice(0, 5);
+  const recentSeries = opponentId
+    ? allSeries.filter((s) => s.opponent_id === opponentId).slice(0, 5)
+    : allSeries.slice(0, 5);
 
   return (
     <main className="mx-auto max-w-6xl p-4 space-y-6 pt-6">
+      {/* Filter */}
+      <div className="flex justify-end">
+        <DashboardFilter opponents={allOpponents} />
+      </div>
+
       {/* Overview stats */}
       <div className="grid grid-cols-2 gap-3">
         <Card className="border-l-2 border-l-primary">
@@ -203,7 +243,7 @@ export default async function DashboardPage() {
                         <td className="py-2.5 text-xs">
                           {s.youtube_url ? (
                             <a href={s.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                              YouTube
+                              試合動画
                             </a>
                           ) : (
                             <span className="text-muted-foreground">-</span>
