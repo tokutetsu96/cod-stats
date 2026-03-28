@@ -70,6 +70,7 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
 
   const [opponentId, setOpponentId] = useState("");
   const [memo, setMemo] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
   const [games, setGames] = useState<GameInput[]>([]);
 
   const addGame = () => {
@@ -111,7 +112,7 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
     // 1. Create series
     const { data: seriesData, error: seriesErr } = await supabase
       .from("series")
-      .insert({ series_date: seriesDate, type: seriesType, opponent_id: opponentId, team_id: teamId, memo: memo.trim() || null })
+      .insert({ series_date: seriesDate, type: seriesType, opponent_id: opponentId, team_id: teamId, memo: memo.trim() || null, youtube_url: youtubeUrl.trim() || null })
       .select("id")
       .single();
     if (seriesErr || !seriesData) { setError(seriesErr?.message ?? "シリーズ作成失敗"); setLoading(false); return; }
@@ -288,6 +289,10 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
                   <option key={opp.id} value={opp.id}>{opp.name}</option>
                 ))}
               </Select>
+            </div>
+            <div className="space-y-2 col-span-2 md:col-span-4">
+              <Label>YouTube URL</Label>
+              <Input type="url" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." />
             </div>
             <div className="space-y-2 col-span-2 md:col-span-4">
               <Label>メモ</Label>

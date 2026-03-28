@@ -43,6 +43,13 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
             <span className="text-loss font-medium stat-number">{losses}L</span>
             {draws > 0 && <><span> - </span><span className="text-primary font-medium stat-number">{draws}D</span></>}
           </p>
+          {series.youtube_url && (
+            <p className="text-sm mt-1">
+              <a href={series.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                YouTube
+              </a>
+            </p>
+          )}
           {series.memo && <p className="text-sm mt-1">{series.memo}</p>}
         </div>
 

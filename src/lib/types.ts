@@ -58,6 +58,7 @@ export interface Series {
   opponent_id: string;
   team_id: string;
   memo: string | null;
+  youtube_url: string | null;
   created_at: string;
   opponents?: Opponent;
   games?: Game[];

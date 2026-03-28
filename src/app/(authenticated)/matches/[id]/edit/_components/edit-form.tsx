@@ -94,6 +94,7 @@ export function EditSeriesForm({ series, opponents, players, maps, teamId }: Edi
 
   const [opponentId, setOpponentId] = useState(series.opponent_id);
   const [memo, setMemo] = useState(series.memo ?? "");
+  const [youtubeUrl, setYoutubeUrl] = useState(series.youtube_url ?? "");
 
   const initGames = (): GameInput[] =>
     ((series.games ?? []) as any[])
@@ -143,7 +144,7 @@ export function EditSeriesForm({ series, opponents, players, maps, teamId }: Edi
     // 1. Update series
     const { error: seriesErr } = await supabase
       .from("series")
-      .update({ series_date: seriesDate, type: seriesType, opponent_id: opponentId, memo: memo.trim() || null })
+      .update({ series_date: seriesDate, type: seriesType, opponent_id: opponentId, memo: memo.trim() || null, youtube_url: youtubeUrl.trim() || null })
       .eq("id", series.id);
     if (seriesErr) { setError(seriesErr.message); setLoading(false); return; }
 
@@ -308,6 +309,10 @@ export function EditSeriesForm({ series, opponents, players, maps, teamId }: Edi
                   <option key={opp.id} value={opp.id}>{opp.name}</option>
                 ))}
               </Select>
+            </div>
+            <div className="space-y-2 col-span-2 md:col-span-4">
+              <Label>YouTube URL</Label>
+              <Input type="url" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." />
             </div>
             <div className="space-y-2 col-span-2 md:col-span-4">
               <Label>メモ</Label>
