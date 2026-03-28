@@ -14,7 +14,7 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [teamName, setTeamName] = useState("");
   const [teamId, setTeamId] = useState("");
-  const [joinExisting, setJoinExisting] = useState(false);
+  const [joinExisting, setJoinExisting] = useState<boolean | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -109,7 +109,7 @@ export default function LoginPage() {
           <div className="flex rounded-lg bg-muted p-1 mb-5">
             <button
               type="button"
-              onClick={() => { setIsSignUp(false); setError(""); }}
+              onClick={() => { setIsSignUp(false); setJoinExisting(null); setError(""); }}
               className={`flex-1 text-sm py-1.5 rounded-md transition-all font-medium ${
                 !isSignUp ? "bg-card shadow text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
@@ -153,7 +153,7 @@ export default function LoginPage() {
                       type="button"
                       onClick={() => setJoinExisting(false)}
                       className={`flex-1 text-xs py-1.5 rounded-md transition-all ${
-                        !joinExisting ? "bg-card shadow text-foreground font-medium" : "text-muted-foreground"
+                        joinExisting === false ? "bg-card shadow text-foreground font-medium" : "text-muted-foreground"
                       }`}
                     >
                       新規作成
@@ -162,13 +162,13 @@ export default function LoginPage() {
                       type="button"
                       onClick={() => setJoinExisting(true)}
                       className={`flex-1 text-xs py-1.5 rounded-md transition-all ${
-                        joinExisting ? "bg-card shadow text-foreground font-medium" : "text-muted-foreground"
+                        joinExisting === true ? "bg-card shadow text-foreground font-medium" : "text-muted-foreground"
                       }`}
                     >
                       既存に参加
                     </button>
                   </div>
-                  {joinExisting ? (
+                  {joinExisting === true && (
                     <Input
                       id="teamId"
                       value={teamId}
@@ -176,7 +176,8 @@ export default function LoginPage() {
                       placeholder="チームID"
                       required
                     />
-                  ) : (
+                  )}
+                  {joinExisting === false && (
                     <Input
                       id="teamName"
                       value={teamName}

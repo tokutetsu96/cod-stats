@@ -55,10 +55,10 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
 
         {games.map((game) => {
           const stats = ((game.game_stats ?? []) as GameStat[]).sort((a, b) =>
-            (b.kills - b.deaths) - (a.kills - a.deaths)
+            (a.players?.created_at ?? "").localeCompare(b.players?.created_at ?? "")
           );
           const opponentStats = ((game.opponent_game_stats ?? []) as OpponentGameStat[]).sort((a, b) =>
-            (b.kills - b.deaths) - (a.kills - a.deaths)
+            (a.opponent_players?.created_at ?? "").localeCompare(b.opponent_players?.created_at ?? "")
           );
 
           type StatRow = { id: string; name: string; kills: number; deaths: number; damage: number; hill_time: number | null; plants: number | null; defuses: number | null; first_bloods: number | null; first_deaths: number | null; goals: number | null };
