@@ -6,7 +6,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
 
   return (
     <>
-      <Nav teamName={teamName ?? undefined} username={profile.username} avatar={profile.avatar} />
+      <Nav teamName={teamName ?? undefined} username={profile.username} avatar={profile.avatar} role={profile.role} />
       {children}
     </>
   );

@@ -66,6 +66,7 @@ export default function LoginPage() {
         id: user!.id,
         username: username.trim(),
         team_id: resolvedTeamId,
+        role: joinExisting ? "member" : "admin",
       });
       if (profileError) {
         setError("プロフィール作成に失敗しました: " + profileError.message);

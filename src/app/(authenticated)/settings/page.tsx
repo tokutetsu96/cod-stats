@@ -8,10 +8,10 @@ import { AvatarSetting } from "./_components/avatar-setting";
 export default async function SettingsPage() {
   const { supabase, profile } = await getProfile();
 
-  const [{ data: maps }, { data: team }, { data: players }] = await Promise.all([
+  const [{ data: maps }, { data: team }, { data: users }] = await Promise.all([
     supabase.from("maps").select("*").order("mode").order("name"),
     supabase.from("teams").select("*").eq("id", profile.team_id).single(),
-    supabase.from("players").select("*").order("created_at"),
+    supabase.from("profiles").select("*").eq("team_id", profile.team_id).order("created_at"),
   ]);
 
   return (
@@ -34,8 +34,8 @@ export default async function SettingsPage() {
         <CardContent className="space-y-5">
           <TeamManagement
             team={team!}
-            players={players ?? []}
-            currentProfileId={profile.id}
+            users={users ?? []}
+            currentProfile={profile}
           />
           <div className="pt-4 border-t border-border">
             <CopyTeamId teamId={profile.team_id} />
@@ -48,7 +48,7 @@ export default async function SettingsPage() {
           <CardTitle>マップ管理</CardTitle>
         </CardHeader>
         <CardContent>
-          <MapManager maps={maps ?? []} teamId={profile.team_id} />
+          <MapManager maps={maps ?? []} teamId={profile.team_id} isAdmin={profile.role === "admin"} />
         </CardContent>
       </Card>
     </main>

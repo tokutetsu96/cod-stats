@@ -17,7 +17,7 @@ const modeLabel: Record<GameMode, string> = {
 
 const modes: GameMode[] = ["hardpoint", "snd", "overload"];
 
-export function MapManager({ maps, teamId }: { maps: MapEntry[]; teamId: string }) {
+export function MapManager({ maps, teamId, isAdmin }: { maps: MapEntry[]; teamId: string; isAdmin: boolean }) {
   const [activeMode, setActiveMode] = useState<GameMode>("hardpoint");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -61,19 +61,21 @@ export function MapManager({ maps, teamId }: { maps: MapEntry[]; teamId: string 
         ))}
       </div>
 
-      <form onSubmit={handleAdd} className="flex gap-2 items-end">
-        <div className="flex-1">
-          <Input
-            placeholder={`${modeLabel[activeMode]} のマップ名`}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-        </div>
-        <Button type="submit" size="sm" disabled={loading}>
-          {loading ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
-        </Button>
-      </form>
+      {isAdmin && (
+        <form onSubmit={handleAdd} className="flex gap-2 items-end">
+          <div className="flex-1">
+            <Input
+              placeholder={`${modeLabel[activeMode]} のマップ名`}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+          <Button type="submit" size="sm" disabled={loading}>
+            {loading ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
+          </Button>
+        </form>
+      )}
 
       {filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground">マップが登録されていません</p>
@@ -82,9 +84,11 @@ export function MapManager({ maps, teamId }: { maps: MapEntry[]; teamId: string 
           {filtered.map((m) => (
             <div key={m.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted/50">
               <span className="text-sm">{m.name}</span>
-              <Button size="icon" variant="ghost" onClick={() => handleDelete(m.id)} disabled={deletingId === m.id}>
-                {deletingId === m.id ? <Spinner /> : <Trash2 className="h-4 w-4" />}
-              </Button>
+              {isAdmin && (
+                <Button size="icon" variant="ghost" onClick={() => handleDelete(m.id)} disabled={deletingId === m.id}>
+                  {deletingId === m.id ? <Spinner /> : <Trash2 className="h-4 w-4" />}
+                </Button>
+              )}
             </div>
           ))}
         </div>

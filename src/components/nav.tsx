@@ -8,20 +8,23 @@ import { cn } from "@/lib/utils";
 import { Settings, LogOut, ChevronDown } from "lucide-react";
 
 const links = [
-  { href: "/", label: "ダッシュボード" },
-  { href: "/matches", label: "対戦一覧" },
-  { href: "/matches/new", label: "対戦登録" },
-  { href: "/opponents", label: "対戦相手" },
-  { href: "/players", label: "プレイヤー" },
+  { href: "/", label: "ダッシュボード", adminOnly: false },
+  { href: "/matches", label: "対戦一覧", adminOnly: false },
+  { href: "/matches/new", label: "対戦登録", adminOnly: true },
+  { href: "/opponents", label: "対戦相手", adminOnly: false },
+  { href: "/players", label: "プレイヤー", adminOnly: false },
 ];
+
+import type { UserRole } from "@/lib/types";
 
 interface NavProps {
   teamName?: string;
   username?: string;
   avatar?: string | null;
+  role?: UserRole;
 }
 
-export function Nav({ teamName, username, avatar }: NavProps) {
+export function Nav({ teamName, username, avatar, role }: NavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -70,7 +73,7 @@ export function Nav({ teamName, username, avatar }: NavProps) {
 
         {/* Nav links */}
         <div className="flex gap-1 overflow-x-auto flex-1">
-          {links.map((link) => {
+          {links.filter((link) => !link.adminOnly || role === "admin").map((link) => {
             const isActive = pathname === link.href;
             return (
               <Link

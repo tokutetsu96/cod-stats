@@ -9,11 +9,14 @@ export interface Team {
   created_at: string;
 }
 
+export type UserRole = "admin" | "member";
+
 export interface Profile {
   id: string;
   username: string;
   avatar: string | null;
   team_id: string;
+  role: UserRole;
   created_at: string;
 }
 

@@ -7,7 +7,7 @@ import { formatDate } from "@/lib/utils";
 
 const typeLabel: Record<string, string> = { scrim: "Scrim", tournament: "大会" };
 
-export function SeriesList({ seriesList }: { seriesList: Series[] }) {
+export function SeriesList({ seriesList, isAdmin }: { seriesList: Series[]; isAdmin: boolean }) {
   return (
     <div className="space-y-4">
       {seriesList.length === 0 ? (
@@ -67,12 +67,16 @@ export function SeriesList({ seriesList }: { seriesList: Series[] }) {
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>
-                        <Link href={`/matches/${s.id}/edit`}>
-                          <Button size="icon" variant="ghost">
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <DeleteSeriesButton id={s.id} />
+                        {isAdmin && (
+                          <>
+                            <Link href={`/matches/${s.id}/edit`}>
+                              <Button size="icon" variant="ghost">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <DeleteSeriesButton id={s.id} />
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

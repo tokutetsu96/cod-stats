@@ -16,7 +16,7 @@ export default async function MatchesPage() {
         <h1 className="text-2xl font-bold">対戦一覧</h1>
         <Card>
           <CardContent className="pt-6">
-            <SeriesList seriesList={seriesList ?? []} />
+            <SeriesList seriesList={seriesList ?? []} isAdmin={profile.role === "admin"} />
           </CardContent>
         </Card>
       </main>

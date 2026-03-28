@@ -20,7 +20,7 @@ interface OpponentWithStats {
   opponent_players: OpponentPlayer[];
 }
 
-export function OpponentList({ opponents, teamId }: { opponents: OpponentWithStats[]; teamId: string }) {
+export function OpponentList({ opponents, teamId, isAdmin }: { opponents: OpponentWithStats[]; teamId: string; isAdmin: boolean }) {
   const [name, setName] = useState("");
   const [memo, setMemo] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
@@ -96,17 +96,19 @@ export function OpponentList({ opponents, teamId }: { opponents: OpponentWithSta
 
   return (
     <div className="space-y-4">
-      <form onSubmit={handleAdd} className="flex gap-2 items-end">
-        <div className="flex-1 space-y-1">
-          <Input placeholder="チーム名" value={name} onChange={(e) => setName(e.target.value)} required />
-        </div>
-        <div className="flex-1 space-y-1">
-          <Input placeholder="メモ（任意）" value={memo} onChange={(e) => setMemo(e.target.value)} />
-        </div>
-        <Button type="submit" size="sm" disabled={loading}>
-          {loading ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
-        </Button>
-      </form>
+      {isAdmin && (
+        <form onSubmit={handleAdd} className="flex gap-2 items-end">
+          <div className="flex-1 space-y-1">
+            <Input placeholder="チーム名" value={name} onChange={(e) => setName(e.target.value)} required />
+          </div>
+          <div className="flex-1 space-y-1">
+            <Input placeholder="メモ（任意）" value={memo} onChange={(e) => setMemo(e.target.value)} />
+          </div>
+          <Button type="submit" size="sm" disabled={loading}>
+            {loading ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
+          </Button>
+        </form>
+      )}
 
       {opponents.length === 0 ? (
         <p className="text-sm text-muted-foreground">対戦相手が登録されていません</p>
@@ -139,12 +141,16 @@ export function OpponentList({ opponents, teamId }: { opponents: OpponentWithSta
                       <span>{opp.opponent_players.length}</span>
                       {expandedId === opp.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                     </button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditId(opp.id); setEditName(opp.name); setEditMemo(opp.memo ?? ""); }}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(opp.id)} disabled={deletingId === opp.id}>
-                      {deletingId === opp.id ? <Spinner className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
-                    </Button>
+                    {isAdmin && (
+                      <>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditId(opp.id); setEditName(opp.name); setEditMemo(opp.memo ?? ""); }}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(opp.id)} disabled={deletingId === opp.id}>
+                          {deletingId === opp.id ? <Spinner className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
+                        </Button>
+                      </>
+                    )}
                   </>
                 )}
               </div>
@@ -158,30 +164,38 @@ export function OpponentList({ opponents, teamId }: { opponents: OpponentWithSta
                   <tr key={p.id} className="border-b last:border-0">
                     <td className="py-1.5 font-medium">{p.name}</td>
                     <td className="py-1.5 text-center">
-                      <button
-                        onClick={() => handleTogglePlayerDefault(p.id, p.is_default, opp.opponent_players)}
-                        aria-label={p.is_default ? "デフォルトから外す" : "デフォルトに設定"}
-                        disabled={!p.is_default && defaultP.length >= 4}
-                        className="disabled:opacity-30 disabled:cursor-not-allowed"
-                      >
+                      {isAdmin ? (
+                        <button
+                          onClick={() => handleTogglePlayerDefault(p.id, p.is_default, opp.opponent_players)}
+                          aria-label={p.is_default ? "デフォルトから外す" : "デフォルトに設定"}
+                          disabled={!p.is_default && defaultP.length >= 4}
+                          className="disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <Star className={`h-4 w-4 ${p.is_default ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
+                        </button>
+                      ) : (
                         <Star className={`h-4 w-4 ${p.is_default ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
-                      </button>
+                      )}
                     </td>
-                    <td className="py-1.5">
-                      <button onClick={() => handleDeletePlayer(p.id)} className="text-muted-foreground hover:text-destructive" disabled={deletingPlayerId === p.id}>
-                        {deletingPlayerId === p.id ? <Spinner className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
-                      </button>
-                    </td>
+                    {isAdmin && (
+                      <td className="py-1.5">
+                        <button onClick={() => handleDeletePlayer(p.id)} className="text-muted-foreground hover:text-destructive" disabled={deletingPlayerId === p.id}>
+                          {deletingPlayerId === p.id ? <Spinner className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
                 return (
                   <div className="border-t px-4 py-3 bg-muted/30 space-y-4">
-                    <form onSubmit={(e) => handleAddPlayer(e, opp.id)} className="flex gap-2">
-                      <Input placeholder="選手名" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} className="h-8 max-w-48" />
-                      <Button type="submit" size="sm" variant="outline" disabled={addingPlayerId === opp.id}>
-                        {addingPlayerId === opp.id ? <Spinner className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}追加
-                      </Button>
-                    </form>
+                    {isAdmin && (
+                      <form onSubmit={(e) => handleAddPlayer(e, opp.id)} className="flex gap-2">
+                        <Input placeholder="選手名" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} className="h-8 max-w-48" />
+                        <Button type="submit" size="sm" variant="outline" disabled={addingPlayerId === opp.id}>
+                          {addingPlayerId === opp.id ? <Spinner className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}追加
+                        </Button>
+                      </form>
+                    )}
 
                     {opp.opponent_players.length === 0 ? (
                       <p className="text-xs text-muted-foreground">選手が登録されていません</p>
@@ -200,7 +214,7 @@ export function OpponentList({ opponents, teamId }: { opponents: OpponentWithSta
                             <p className="text-xs text-muted-foreground pl-1">未設定</p>
                           ) : (
                             <table className="w-full text-sm">
-                              <thead><tr className="border-b text-left"><th className="pb-1.5 font-medium">名前</th><th className="pb-1.5 w-16 text-center font-medium">デフォルト</th><th className="pb-1.5 w-8"></th></tr></thead>
+                              <thead><tr className="border-b text-left"><th className="pb-1.5 font-medium">名前</th><th className="pb-1.5 w-16 text-center font-medium">デフォルト</th>{isAdmin && <th className="pb-1.5 w-8"></th>}</tr></thead>
                               <tbody>{defaultP.map(renderPlayerRow)}</tbody>
                             </table>
                           )}
@@ -213,7 +227,7 @@ export function OpponentList({ opponents, teamId }: { opponents: OpponentWithSta
                               <span className="text-xs font-medium text-muted-foreground">その他</span>
                             </div>
                             <table className="w-full text-sm">
-                              <thead><tr className="border-b text-left"><th className="pb-1.5 font-medium">名前</th><th className="pb-1.5 w-16 text-center font-medium">デフォルト</th><th className="pb-1.5 w-8"></th></tr></thead>
+                              <thead><tr className="border-b text-left"><th className="pb-1.5 font-medium">名前</th><th className="pb-1.5 w-16 text-center font-medium">デフォルト</th>{isAdmin && <th className="pb-1.5 w-8"></th>}</tr></thead>
                               <tbody>{otherP.map(renderPlayerRow)}</tbody>
                             </table>
                           </div>

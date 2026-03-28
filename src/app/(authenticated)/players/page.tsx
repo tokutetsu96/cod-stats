@@ -16,7 +16,7 @@ export default async function PlayersPage() {
             <CardTitle>プレイヤー一覧</CardTitle>
           </CardHeader>
           <CardContent>
-            <PlayerList players={players ?? []} teamId={profile.team_id} />
+            <PlayerList players={players ?? []} teamId={profile.team_id} isAdmin={profile.role === "admin"} />
           </CardContent>
         </Card>
       </main>

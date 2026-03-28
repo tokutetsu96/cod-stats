@@ -10,7 +10,7 @@ import { Pencil, Trash2, Plus, Star } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import type { Player } from "@/lib/types";
 
-export function PlayerList({ players, teamId }: { players: Player[]; teamId: string }) {
+export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; teamId: string; isAdmin: boolean }) {
   const [name, setName] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -79,23 +79,29 @@ export function PlayerList({ players, teamId }: { players: Player[]; teamId: str
             <Link href={`/players/${p.id}`} className="text-primary hover:underline">{p.name}</Link>
           </td>
           <td className="py-2 text-center">
-            <button
-              onClick={() => handleToggleDefault(p.id, p.is_default)}
-              aria-label={p.is_default ? "デフォルトから外す" : "デフォルトに設定"}
-              disabled={!p.is_default && defaultPlayers.length >= 4}
-              className="disabled:opacity-30 disabled:cursor-not-allowed"
-            >
+            {isAdmin ? (
+              <button
+                onClick={() => handleToggleDefault(p.id, p.is_default)}
+                aria-label={p.is_default ? "デフォルトから外す" : "デフォルトに設定"}
+                disabled={!p.is_default && defaultPlayers.length >= 4}
+                className="disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <Star className={`h-4 w-4 ${p.is_default ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
+              </button>
+            ) : (
               <Star className={`h-4 w-4 ${p.is_default ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
-            </button>
+            )}
           </td>
-          <td className="py-2 space-x-1">
-            <Button size="icon" variant="ghost" onClick={() => { setEditId(p.id); setEditName(p.name); }}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button size="icon" variant="ghost" onClick={() => handleDelete(p.id)} disabled={deletingId === p.id}>
-              {deletingId === p.id ? <Spinner /> : <Trash2 className="h-4 w-4" />}
-            </Button>
-          </td>
+          {isAdmin && (
+            <td className="py-2 space-x-1">
+              <Button size="icon" variant="ghost" onClick={() => { setEditId(p.id); setEditName(p.name); }}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button size="icon" variant="ghost" onClick={() => handleDelete(p.id)} disabled={deletingId === p.id}>
+                {deletingId === p.id ? <Spinner /> : <Trash2 className="h-4 w-4" />}
+              </Button>
+            </td>
+          )}
         </>
       )}
     </tr>
@@ -103,14 +109,16 @@ export function PlayerList({ players, teamId }: { players: Player[]; teamId: str
 
   return (
     <div className="space-y-4">
-      <form onSubmit={handleAdd} className="flex gap-2 items-end">
-        <div className="flex-1">
-          <Input placeholder="プレイヤー名" value={name} onChange={(e) => setName(e.target.value)} required />
-        </div>
-        <Button type="submit" size="sm" disabled={loading}>
-          {loading ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
-        </Button>
-      </form>
+      {isAdmin && (
+        <form onSubmit={handleAdd} className="flex gap-2 items-end">
+          <div className="flex-1">
+            <Input placeholder="プレイヤー名" value={name} onChange={(e) => setName(e.target.value)} required />
+          </div>
+          <Button type="submit" size="sm" disabled={loading}>
+            {loading ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
+          </Button>
+        </form>
+      )}
 
       {players.length === 0 ? (
         <p className="text-sm text-muted-foreground">プレイヤーが登録されていません</p>
@@ -133,7 +141,7 @@ export function PlayerList({ players, teamId }: { players: Player[]; teamId: str
                   <tr className="border-b text-left">
                     <th className="pb-2 font-medium">名前</th>
                     <th className="pb-2 font-medium w-16 text-center">デフォルト</th>
-                    <th className="pb-2 font-medium w-24">操作</th>
+                    {isAdmin && <th className="pb-2 font-medium w-24">操作</th>}
                   </tr>
                 </thead>
                 <tbody>{defaultPlayers.map(renderRow)}</tbody>
@@ -152,7 +160,7 @@ export function PlayerList({ players, teamId }: { players: Player[]; teamId: str
                   <tr className="border-b text-left">
                     <th className="pb-2 font-medium">名前</th>
                     <th className="pb-2 font-medium w-16 text-center">デフォルト</th>
-                    <th className="pb-2 font-medium w-24">操作</th>
+                    {isAdmin && <th className="pb-2 font-medium w-24">操作</th>}
                   </tr>
                 </thead>
                 <tbody>{otherPlayers.map(renderRow)}</tbody>

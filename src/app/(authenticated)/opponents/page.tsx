@@ -33,7 +33,7 @@ export default async function OpponentsPage() {
             <CardTitle>対戦相手一覧</CardTitle>
           </CardHeader>
           <CardContent>
-            <OpponentList opponents={opponentStats} teamId={profile.team_id} />
+            <OpponentList opponents={opponentStats} teamId={profile.team_id} isAdmin={profile.role === "admin"} />
           </CardContent>
         </Card>
       </main>
