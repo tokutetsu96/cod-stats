@@ -65,7 +65,7 @@ export function Nav({ teamName, username, avatar, role }: NavProps) {
         {/* Team badge */}
         {teamName && (
           <div className="flex items-center mr-4">
-            <span className="text-xs text-muted-foreground border border-border rounded px-2 py-0.5 bg-muted/40 shrink-0">
+            <span className="text-sm font-semibold tracking-wide text-primary shrink-0">
               {teamName}
             </span>
           </div>
