@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "CoD Stats Dashboard",
   description: "Call of Duty チーム戦績管理ダッシュボード",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
