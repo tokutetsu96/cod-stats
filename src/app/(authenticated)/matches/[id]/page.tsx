@@ -165,7 +165,7 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
                       <td className="py-2.5 font-medium">{row.name}</td>
                       <td className="py-2.5 stat-number">{row.kills}</td>
                       <td className="py-2.5 stat-number">{row.deaths}</td>
-                      <td className="py-2.5 stat-number font-semibold">{calcKD(row.kills, row.deaths)}</td>
+                      <td className="py-2.5 stat-number font-semibold" style={{ color: row.deaths === 0 ? (row.kills > 0 ? "var(--win)" : undefined) : row.kills / row.deaths >= 1.0 ? "var(--win)" : "var(--loss)" }}>{calcKD(row.kills, row.deaths)}</td>
                       <td className="py-2.5 stat-number">{row.damage}</td>
                       {game.mode === "hardpoint" && <td className="py-2.5 stat-number">{row.hill_time ?? 0}s</td>}
                       {game.mode === "snd" && <><td className="py-2.5 stat-number">{row.plants ?? 0}</td><td className="py-2.5 stat-number">{row.defuses ?? 0}</td><td className="py-2.5 stat-number">{row.first_bloods ?? 0}</td><td className="py-2.5 stat-number">{row.first_deaths ?? 0}</td></>}
