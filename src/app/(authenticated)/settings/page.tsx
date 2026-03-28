@@ -1,9 +1,9 @@
 import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { MapManager } from "./map-manager";
-import { TeamManagement } from "./team-management";
-import { CopyTeamId } from "./copy-team-id";
-import { AvatarSetting } from "./avatar-setting";
+import { MapManager } from "./_components/map-manager";
+import { TeamManagement } from "./_components/team-management";
+import { CopyTeamId } from "./_components/copy-team-id";
+import { AvatarSetting } from "./_components/avatar-setting";
 
 export default async function SettingsPage() {
   const { supabase, profile } = await getProfile();

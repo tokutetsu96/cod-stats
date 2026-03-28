@@ -7,9 +7,9 @@ import type { GameMode, MatchResult } from "@/lib/types";
 const modeLabel: Record<string, string> = { hardpoint: "Hardpoint", snd: "S&D", overload: "Overload" };
 const resultLabel: Record<string, string> = { win: "勝", lose: "負", draw: "分" };
 const resultClass: Record<string, string> = {
-  win: "text-green-600 font-bold",
-  lose: "text-red-500 font-bold",
-  draw: "text-muted-foreground font-bold",
+  win: "text-win font-bold stat-number",
+  lose: "text-loss font-bold stat-number",
+  draw: "text-muted-foreground font-bold stat-number",
 };
 
 export default async function OpponentStatsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -27,10 +27,10 @@ export default async function OpponentStatsPage({ params }: { params: Promise<{ 
 
   if (!opponent) notFound();
 
-  type GameRow = { id: string; mode: GameMode; result: MatchResult; score_team: number; score_opponent: number; maps: { name: string } | null };
+  type GameRow = { id: string; mode: GameMode; result: MatchResult; score_team: number; score_opponent: number; maps: { name: string } | { name: string }[] | null };
   type SeriesRow = { id: string; series_date: string; type: string; games: GameRow[] };
 
-  const series = (seriesData ?? []) as SeriesRow[];
+  const series = (seriesData ?? []) as unknown as SeriesRow[];
   const allGames = series.flatMap((s) => s.games ?? []);
 
   const wins = allGames.filter((g) => g.result === "win").length;
@@ -69,30 +69,32 @@ export default async function OpponentStatsPage({ params }: { params: Promise<{ 
       {opponent.memo && <p className="text-sm text-muted-foreground">{opponent.memo}</p>}
 
       {/* サマリーカード */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">総シリーズ</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-bold">{series.length}</p>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <Card className="border-l-2 border-l-primary">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">総シリーズ</p>
+            <p className="stat-number text-4xl">{series.length}</p>
             <p className="text-xs text-muted-foreground mt-1">{seriesWins}勝 {seriesLosses}敗</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">総ゲーム</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-bold">{total}</p>
+        <Card className="border-l-2 border-l-border">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">総ゲーム</p>
+            <p className="stat-number text-4xl">{total}</p>
             <p className="text-xs text-muted-foreground mt-1">{wins}勝 {losses}敗{draws > 0 ? ` ${draws}分` : ""}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">ゲーム勝率</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{total > 0 ? ((wins / total) * 100).toFixed(1) : "-"}%</p>
+        <Card className="border-l-2 border-l-border">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">ゲーム勝率</p>
+            <p className="stat-number text-4xl">{total > 0 ? ((wins / total) * 100).toFixed(1) : "-"}<span className="text-lg text-muted-foreground">%</span></p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">シリーズ勝率</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">
-              {series.length > 0 ? ((seriesWins / series.length) * 100).toFixed(1) : "-"}%
+        <Card className="border-l-2 border-l-border">
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">シリーズ勝率</p>
+            <p className="stat-number text-4xl">
+              {series.length > 0 ? ((seriesWins / series.length) * 100).toFixed(1) : "-"}<span className="text-lg text-muted-foreground">%</span>
             </p>
           </CardContent>
         </Card>
@@ -100,26 +102,28 @@ export default async function OpponentStatsPage({ params }: { params: Promise<{ 
 
       {/* モード別 */}
       <Card>
-        <CardHeader><CardTitle>モード別成績</CardTitle></CardHeader>
-        <CardContent>
-          <table className="w-full text-sm">
+        <CardHeader className="pb-3 px-5 pt-5">
+          <CardTitle className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">モード別成績</CardTitle>
+        </CardHeader>
+        <CardContent className="px-5 pb-5">
+          <table className="w-full text-sm data-table">
             <thead>
               <tr className="border-b text-left">
-                <th className="pb-2 font-medium">モード</th>
-                <th className="pb-2 font-medium text-right">ゲーム数</th>
-                <th className="pb-2 font-medium text-right">勝</th>
-                <th className="pb-2 font-medium text-right">負</th>
-                <th className="pb-2 font-medium text-right">勝率</th>
+                <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">モード</th>
+                <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-right">ゲーム数</th>
+                <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-right">勝</th>
+                <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-right">負</th>
+                <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-right">勝率</th>
               </tr>
             </thead>
             <tbody>
               {modeData.map((md) => (
-                <tr key={md.mode} className="border-b last:border-0">
-                  <td className="py-2 font-medium">{modeLabel[md.mode]}</td>
-                  <td className="py-2 text-right">{md.total}</td>
-                  <td className="py-2 text-right text-green-600">{md.wins}</td>
-                  <td className="py-2 text-right text-red-500">{md.losses}</td>
-                  <td className="py-2 text-right font-medium">{md.winRate ? `${md.winRate}%` : "-"}</td>
+                <tr key={md.mode} className="border-b border-border/50">
+                  <td className="py-2.5 font-medium">{modeLabel[md.mode]}</td>
+                  <td className="py-2.5 text-right stat-number">{md.total}</td>
+                  <td className="py-2.5 text-right text-win stat-number">{md.wins}</td>
+                  <td className="py-2.5 text-right text-loss stat-number">{md.losses}</td>
+                  <td className="py-2.5 text-right stat-number font-medium">{md.winRate ? `${md.winRate}%` : "-"}</td>
                 </tr>
               ))}
             </tbody>

@@ -31,7 +31,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
   return (
     <ReactDatePicker
       selected={value ? strToDate(value) : null}
-      onChange={(date) => date && onChange(dateToStr(date))}
+      onChange={(date: Date | null) => date && onChange(dateToStr(date))}
       dateFormat="yyyy/MM/dd (EEE)"
       locale="ja"
       className={cn(

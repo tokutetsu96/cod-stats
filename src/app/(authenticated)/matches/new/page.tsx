@@ -1,5 +1,5 @@
 import { getProfile } from "@/lib/supabase/auth";
-import { SeriesForm } from "./series-form";
+import { SeriesForm } from "./_components/series-form";
 
 export default async function NewSeriesPage() {
   const { supabase, profile } = await getProfile();

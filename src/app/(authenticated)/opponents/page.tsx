@@ -1,6 +1,6 @@
 import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { OpponentList } from "./opponent-list";
+import { OpponentList } from "./_components/opponent-list";
 
 export default async function OpponentsPage() {
   const { supabase, profile } = await getProfile();

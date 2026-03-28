@@ -38,10 +38,10 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
           </h1>
           <p className="text-muted-foreground text-sm">
             {formatDate(series.series_date)} / {typeLabel[series.type]} /
-            <span className="text-green-500 font-medium ml-1">{wins}W</span>
+            <span className="text-win font-medium ml-1 stat-number">{wins}W</span>
             {" - "}
-            <span className="text-red-500 font-medium">{losses}L</span>
-            {draws > 0 && <><span> - </span><span className="text-yellow-500 font-medium">{draws}D</span></>}
+            <span className="text-loss font-medium stat-number">{losses}L</span>
+            {draws > 0 && <><span> - </span><span className="text-primary font-medium stat-number">{draws}D</span></>}
           </p>
           {series.memo && <p className="text-sm mt-1">{series.memo}</p>}
         </div>
@@ -67,30 +67,30 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
                 <span>KD: <span className="font-medium">{calcKD(totalKills, totalDeaths)}</span></span>
               </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm data-table">
                 <thead>
                   <tr className="border-b text-left">
-                    <th className="pb-2 font-medium">プレイヤー</th>
-                    <th className="pb-2 font-medium">K</th>
-                    <th className="pb-2 font-medium">D</th>
-                    <th className="pb-2 font-medium">KD</th>
-                    <th className="pb-2 font-medium">Dmg</th>
-                    {game.mode === "hardpoint" && <th className="pb-2 font-medium">Hill</th>}
-                    {game.mode === "snd" && <><th className="pb-2 font-medium">P</th><th className="pb-2 font-medium">Def</th><th className="pb-2 font-medium">FB</th><th className="pb-2 font-medium">FD</th></>}
-                    {game.mode === "overload" && <th className="pb-2 font-medium">Goals</th>}
+                    <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">プレイヤー</th>
+                    <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">K</th>
+                    <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">D</th>
+                    <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">KD</th>
+                    <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Dmg</th>
+                    {game.mode === "hardpoint" && <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Hill</th>}
+                    {game.mode === "snd" && <><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">P</th><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Def</th><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">FB</th><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">FD</th></>}
+                    {game.mode === "overload" && <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Goals</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((row) => (
-                    <tr key={row.id} className="border-b">
-                      <td className="py-2 font-medium">{row.name}</td>
-                      <td className="py-2">{row.kills}</td>
-                      <td className="py-2">{row.deaths}</td>
-                      <td className="py-2">{calcKD(row.kills, row.deaths)}</td>
-                      <td className="py-2">{row.damage}</td>
-                      {game.mode === "hardpoint" && <td className="py-2">{row.hill_time ?? 0}s</td>}
-                      {game.mode === "snd" && <><td className="py-2">{row.plants ?? 0}</td><td className="py-2">{row.defuses ?? 0}</td><td className="py-2">{row.first_bloods ?? 0}</td><td className="py-2">{row.first_deaths ?? 0}</td></>}
-                      {game.mode === "overload" && <td className="py-2">{row.goals ?? 0}</td>}
+                    <tr key={row.id} className="border-b border-border/50">
+                      <td className="py-2.5 font-medium">{row.name}</td>
+                      <td className="py-2.5 stat-number">{row.kills}</td>
+                      <td className="py-2.5 stat-number">{row.deaths}</td>
+                      <td className="py-2.5 stat-number font-semibold">{calcKD(row.kills, row.deaths)}</td>
+                      <td className="py-2.5 stat-number">{row.damage}</td>
+                      {game.mode === "hardpoint" && <td className="py-2.5 stat-number">{row.hill_time ?? 0}s</td>}
+                      {game.mode === "snd" && <><td className="py-2.5 stat-number">{row.plants ?? 0}</td><td className="py-2.5 stat-number">{row.defuses ?? 0}</td><td className="py-2.5 stat-number">{row.first_bloods ?? 0}</td><td className="py-2.5 stat-number">{row.first_deaths ?? 0}</td></>}
+                      {game.mode === "overload" && <td className="py-2.5 stat-number">{row.goals ?? 0}</td>}
                     </tr>
                   ))}
                 </tbody>
@@ -112,7 +112,7 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
                   <span className="text-sm font-medium">
                     {game.score_team} - {game.score_opponent}
                   </span>
-                  <span className={`font-medium text-sm ${game.result === "win" ? "text-green-500" : game.result === "lose" ? "text-red-500" : "text-yellow-500"}`}>
+                  <span className={`font-bold text-xs px-1.5 py-0.5 rounded stat-number ${game.result === "win" ? "text-win bg-win/10" : game.result === "lose" ? "text-loss bg-loss/10" : "text-primary bg-primary/10"}`}>
                     {game.result === "win" ? "WIN" : game.result === "lose" ? "LOSE" : "DRAW"}
                   </span>
                 </CardTitle>

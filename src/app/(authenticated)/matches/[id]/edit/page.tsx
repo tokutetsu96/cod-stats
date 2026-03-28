@@ -1,6 +1,6 @@
 import { getProfile } from "@/lib/supabase/auth";
 import { notFound } from "next/navigation";
-import { EditSeriesForm } from "./edit-form";
+import { EditSeriesForm } from "./_components/edit-form";
 
 export default async function EditSeriesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

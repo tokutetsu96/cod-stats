@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
 @import "tailwindcss";
 
 @theme inline {
@@ -20,14 +21,17 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-win: var(--win);
+  --color-loss: var(--loss);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --font-display: 'Barlow Condensed', sans-serif;
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -47,28 +51,32 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+  --win: oklch(0.64 0.18 142);
+  --loss: oklch(0.58 0.20 25);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
+  --background: oklch(0.11 0.012 255);
+  --foreground: oklch(0.93 0 0);
+  --card: oklch(0.16 0.01 255);
+  --card-foreground: oklch(0.93 0 0);
+  --popover: oklch(0.16 0.01 255);
+  --popover-foreground: oklch(0.93 0 0);
+  --primary: oklch(0.76 0.17 78);
+  --primary-foreground: oklch(0.11 0 0);
+  --secondary: oklch(0.22 0.01 255);
+  --secondary-foreground: oklch(0.93 0 0);
+  --muted: oklch(0.22 0.01 255);
+  --muted-foreground: oklch(0.56 0.01 255);
+  --accent: oklch(0.24 0.01 255);
+  --accent-foreground: oklch(0.93 0 0);
+  --destructive: oklch(0.50 0.19 25);
+  --destructive-foreground: oklch(0.93 0 0);
+  --border: oklch(0.26 0.01 255);
+  --input: oklch(0.22 0.01 255);
+  --ring: oklch(0.76 0.17 78);
+  --win: oklch(0.64 0.18 142);
+  --loss: oklch(0.58 0.20 25);
 }
 
 @layer base {
@@ -77,7 +85,27 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Noto Sans JP', sans-serif;
   }
+  h1, h2, h3 {
+    letter-spacing: -0.01em;
+  }
+}
+
+/* Stat display typography */
+.stat-number {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+
+/* Table row hover */
+.data-table tbody tr {
+  transition: background-color 0.1s ease;
+}
+.data-table tbody tr:hover {
+  background-color: var(--accent);
 }
 
 /* react-datepicker theme */

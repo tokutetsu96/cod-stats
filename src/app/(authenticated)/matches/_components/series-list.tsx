@@ -15,15 +15,15 @@ export function SeriesList({ seriesList }: { seriesList: Series[] }) {
         <p className="text-sm text-muted-foreground">対戦データがありません</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm data-table">
             <thead>
               <tr className="border-b text-left">
-                <th className="pb-2 font-medium">日付</th>
-                <th className="pb-2 font-medium">タイプ</th>
-                <th className="pb-2 font-medium">対戦相手</th>
-                <th className="pb-2 font-medium">ゲーム</th>
-                <th className="pb-2 font-medium">戦績</th>
-                <th className="pb-2 font-medium w-28">操作</th>
+                <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">日付</th>
+                <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">タイプ</th>
+                <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">対戦相手</th>
+                <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">ゲーム</th>
+                <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">戦績</th>
+                <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider w-24">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -38,22 +38,27 @@ export function SeriesList({ seriesList }: { seriesList: Series[] }) {
                   .join(", ");
 
                 return (
-                  <tr key={s.id} className="border-b">
-                    <td className="py-2">{formatDate(s.series_date)}</td>
-                    <td className="py-2">
-                      <span className={s.type === "tournament" ? "text-yellow-500 font-medium" : ""}>
+                  <tr key={s.id} className="border-b border-border/50">
+                    <td className="py-2.5 text-muted-foreground text-xs">{formatDate(s.series_date)}</td>
+                    <td className="py-2.5">
+                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${s.type === "tournament" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
                         {typeLabel[s.type]}
                       </span>
                     </td>
-                    <td className="py-2 font-medium">{s.opponents?.name ?? "-"}</td>
-                    <td className="py-2 text-xs text-muted-foreground">{gamesSummary || "-"}</td>
-                    <td className="py-2">
-                      <span className="text-green-500 font-medium">{wins}W</span>
-                      {" - "}
-                      <span className="text-red-500 font-medium">{losses}L</span>
-                      {draws > 0 && <><span> - </span><span className="text-yellow-500 font-medium">{draws}D</span></>}
+                    <td className="py-2.5 font-medium">{s.opponents?.name ?? "-"}</td>
+                    <td className="py-2.5 text-xs text-muted-foreground">{gamesSummary || "-"}</td>
+                    <td className="py-2.5">
+                      <span className="text-win font-medium stat-number">{wins}W</span>
+                      <span className="text-muted-foreground mx-1">-</span>
+                      <span className="text-loss font-medium stat-number">{losses}L</span>
+                      {draws > 0 && (
+                        <>
+                          <span className="text-muted-foreground mx-1">-</span>
+                          <span className="text-primary font-medium stat-number">{draws}D</span>
+                        </>
+                      )}
                     </td>
-                    <td className="py-2">
+                    <td className="py-2.5">
                       <div className="flex items-center gap-1">
                         <Link href={`/matches/${s.id}`}>
                           <Button size="icon" variant="ghost">
