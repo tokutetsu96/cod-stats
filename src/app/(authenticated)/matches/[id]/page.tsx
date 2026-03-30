@@ -58,25 +58,33 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
     }
   }
 
+  function avg(total: number, count: number) {
+    return count > 0 ? Math.round((total / count) * 10) / 10 : 0;
+  }
+
   function toModeStats(m: ModeAcc): PlayerModeStats {
+    const c = m.count;
     return {
-      kills: m.kills, deaths: m.deaths, damage: m.damage, count: m.count,
-      kd: m.count > 0 ? calcKD(m.kills, m.deaths) : "-",
-      avgHillTime: m.count > 0 ? Math.round(m.hillTime / m.count) : null,
-      totalPlants: m.plants, totalDefuses: m.defuses,
-      totalFirstBloods: m.firstBloods, totalFirstDeaths: m.firstDeaths,
-      totalGoals: m.goals,
+      avgKills: avg(m.kills, c), avgDeaths: avg(m.deaths, c), avgDamage: avg(m.damage, c), count: c,
+      kd: c > 0 ? calcKD(m.kills, m.deaths) : "-",
+      avgHillTime: c > 0 ? avg(m.hillTime, c) : null,
+      avgPlants: c > 0 ? avg(m.plants, c) : null, avgDefuses: c > 0 ? avg(m.defuses, c) : null,
+      avgFirstBloods: c > 0 ? avg(m.firstBloods, c) : null, avgFirstDeaths: c > 0 ? avg(m.firstDeaths, c) : null,
+      avgGoals: c > 0 ? avg(m.goals, c) : null,
     };
   }
 
-  const playerKDData: PlayerKDData[] = [...playerMap.values()].map((p) => ({
+  const playerKDData: PlayerKDData[] = [...playerMap.values()].map((p) => {
+    const c = allStats.filter((s) => s.player_id === p.id).length;
+    return {
     id: p.id,
     name: p.name,
-    overall: { kills: p.kills, deaths: p.deaths, damage: p.damage, count: allStats.filter((s) => s.player_id === p.id).length, kd: calcKD(p.kills, p.deaths), avgHillTime: null, totalPlants: null, totalDefuses: null, totalFirstBloods: null, totalFirstDeaths: null, totalGoals: null },
+    overall: { avgKills: avg(p.kills, c), avgDeaths: avg(p.deaths, c), avgDamage: avg(p.damage, c), count: c, kd: calcKD(p.kills, p.deaths), avgHillTime: null, avgPlants: null, avgDefuses: null, avgFirstBloods: null, avgFirstDeaths: null, avgGoals: null },
     hardpoint: toModeStats(p.modes.hardpoint),
     snd: toModeStats(p.modes.snd),
     overload: toModeStats(p.modes.overload),
-  }));
+  };
+  });
 
   return (
     <>

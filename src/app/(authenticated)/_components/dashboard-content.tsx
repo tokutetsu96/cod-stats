@@ -85,14 +85,19 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
   type ModeAcc = { kills: number; deaths: number; damage: number; count: number; hillTime: number; plants: number; defuses: number; firstBloods: number; firstDeaths: number; goals: number };
   const emptyModeAcc = (): ModeAcc => ({ kills: 0, deaths: 0, damage: 0, count: 0, hillTime: 0, plants: 0, defuses: 0, firstBloods: 0, firstDeaths: 0, goals: 0 });
 
+  function avg(total: number, count: number) {
+    return count > 0 ? Math.round((total / count) * 10) / 10 : 0;
+  }
+
   function toModeStats(m: ModeAcc): PlayerModeStats {
+    const c = m.count;
     return {
-      kills: m.kills, deaths: m.deaths, damage: m.damage, count: m.count,
-      kd: m.count > 0 ? calcKD(m.kills, m.deaths) : "-",
-      avgHillTime: m.count > 0 ? Math.round(m.hillTime / m.count) : null,
-      totalPlants: m.plants, totalDefuses: m.defuses,
-      totalFirstBloods: m.firstBloods, totalFirstDeaths: m.firstDeaths,
-      totalGoals: m.goals,
+      avgKills: avg(m.kills, c), avgDeaths: avg(m.deaths, c), avgDamage: avg(m.damage, c), count: c,
+      kd: c > 0 ? calcKD(m.kills, m.deaths) : "-",
+      avgHillTime: c > 0 ? avg(m.hillTime, c) : null,
+      avgPlants: c > 0 ? avg(m.plants, c) : null, avgDefuses: c > 0 ? avg(m.defuses, c) : null,
+      avgFirstBloods: c > 0 ? avg(m.firstBloods, c) : null, avgFirstDeaths: c > 0 ? avg(m.firstDeaths, c) : null,
+      avgGoals: c > 0 ? avg(m.goals, c) : null,
     };
   }
 
@@ -119,10 +124,11 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
         m.goals += s.goals ?? 0;
       }
     }
+    const c = pStats.length;
     return {
       id: player.id,
       name: player.name,
-      overall: { kills: totalKills, deaths: totalDeaths, damage: totalDamage, count: pStats.length, kd: pStats.length > 0 ? calcKD(totalKills, totalDeaths) : "-", avgHillTime: null, totalPlants: null, totalDefuses: null, totalFirstBloods: null, totalFirstDeaths: null, totalGoals: null },
+      overall: { avgKills: avg(totalKills, c), avgDeaths: avg(totalDeaths, c), avgDamage: avg(totalDamage, c), count: c, kd: c > 0 ? calcKD(totalKills, totalDeaths) : "-", avgHillTime: null, avgPlants: null, avgDefuses: null, avgFirstBloods: null, avgFirstDeaths: null, avgGoals: null },
       hardpoint: toModeStats(modes.hardpoint),
       snd: toModeStats(modes.snd),
       overload: toModeStats(modes.overload),

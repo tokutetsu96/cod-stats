@@ -5,17 +5,17 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export interface PlayerModeStats {
-  kills: number;
-  deaths: number;
-  damage: number;
+  avgKills: number;
+  avgDeaths: number;
+  avgDamage: number;
   kd: string;
   count: number;
   avgHillTime: number | null;
-  totalPlants: number | null;
-  totalDefuses: number | null;
-  totalFirstBloods: number | null;
-  totalFirstDeaths: number | null;
-  totalGoals: number | null;
+  avgPlants: number | null;
+  avgDefuses: number | null;
+  avgFirstBloods: number | null;
+  avgFirstDeaths: number | null;
+  avgGoals: number | null;
 }
 
 export interface PlayerKDData {
@@ -110,20 +110,20 @@ export function PlayerKDTabs({
                   {s.kd}
                 </span>
                 <div className="flex gap-2 text-xs text-muted-foreground">
-                  <span className="stat-number">{s.kills}K</span>
-                  <span className="stat-number">{s.deaths}D</span>
-                  <span className="stat-number">{s.damage}Dmg</span>
+                  <span className="stat-number">{s.avgKills}K</span>
+                  <span className="stat-number">{s.avgDeaths}D</span>
+                  <span className="stat-number">{s.avgDamage}Dmg</span>
                   {activeTab === "hardpoint" && s.avgHillTime !== null && (
                     <span className="stat-number">{s.avgHillTime}s</span>
                   )}
                   {activeTab === "snd" && (
                     <>
-                      <span className="stat-number">{s.totalPlants ?? 0}P</span>
-                      <span className="stat-number">{s.totalFirstBloods ?? 0}FB</span>
+                      <span className="stat-number">{s.avgPlants ?? 0}P</span>
+                      <span className="stat-number">{s.avgFirstBloods ?? 0}FB</span>
                     </>
                   )}
                   {activeTab === "overload" && (
-                    <span className="stat-number">{s.totalGoals ?? 0}G</span>
+                    <span className="stat-number">{s.avgGoals ?? 0}G</span>
                   )}
                 </div>
               </div>
@@ -139,9 +139,9 @@ export function PlayerKDTabs({
             <tr className="border-b text-left">
               <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">プレイヤー</th>
               <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">KD</th>
-              <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">K</th>
-              <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">D</th>
-              <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">Dmg</th>
+              <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">Avg K</th>
+              <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">Avg D</th>
+              <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">Avg Dmg</th>
               {activeTab === "hardpoint" && (
                 <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">Avg Hill</th>
               )}
@@ -170,22 +170,22 @@ export function PlayerKDTabs({
                       {noData ? "-" : s.kd}
                     </span>
                   </td>
-                  <td className="py-2.5 text-center stat-number">{noData ? "-" : s.kills}</td>
-                  <td className="py-2.5 text-center stat-number">{noData ? "-" : s.deaths}</td>
-                  <td className="py-2.5 text-center stat-number">{noData ? "-" : s.damage}</td>
+                  <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgKills}</td>
+                  <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgDeaths}</td>
+                  <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgDamage}</td>
                   {activeTab === "hardpoint" && (
                     <td className="py-2.5 text-center stat-number">{noData ? "-" : `${s.avgHillTime ?? 0}s`}</td>
                   )}
                   {activeTab === "snd" && (
                     <>
-                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.totalPlants ?? 0}</td>
-                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.totalDefuses ?? 0}</td>
-                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.totalFirstBloods ?? 0}</td>
-                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.totalFirstDeaths ?? 0}</td>
+                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgPlants ?? 0}</td>
+                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgDefuses ?? 0}</td>
+                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgFirstBloods ?? 0}</td>
+                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgFirstDeaths ?? 0}</td>
                     </>
                   )}
                   {activeTab === "overload" && (
-                    <td className="py-2.5 text-center stat-number">{noData ? "-" : s.totalGoals ?? 0}</td>
+                    <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgGoals ?? 0}</td>
                   )}
                 </tr>
               );
