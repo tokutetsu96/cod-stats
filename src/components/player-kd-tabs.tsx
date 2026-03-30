@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 export interface PlayerModeStats {
   kills: number;
   deaths: number;
+  damage: number;
   kd: string;
   count: number;
   avgHillTime: number | null;
@@ -111,6 +112,7 @@ export function PlayerKDTabs({
                 <div className="flex gap-2 text-xs text-muted-foreground">
                   <span className="stat-number">{s.kills}K</span>
                   <span className="stat-number">{s.deaths}D</span>
+                  <span className="stat-number">{s.damage}Dmg</span>
                   {activeTab === "hardpoint" && s.avgHillTime !== null && (
                     <span className="stat-number">{s.avgHillTime}s</span>
                   )}
@@ -139,6 +141,7 @@ export function PlayerKDTabs({
               <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">KD</th>
               <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">K</th>
               <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">D</th>
+              <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">Dmg</th>
               {activeTab === "hardpoint" && (
                 <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">Avg Hill</th>
               )}
@@ -169,6 +172,7 @@ export function PlayerKDTabs({
                   </td>
                   <td className="py-2.5 text-center stat-number">{noData ? "-" : s.kills}</td>
                   <td className="py-2.5 text-center stat-number">{noData ? "-" : s.deaths}</td>
+                  <td className="py-2.5 text-center stat-number">{noData ? "-" : s.damage}</td>
                   {activeTab === "hardpoint" && (
                     <td className="py-2.5 text-center stat-number">{noData ? "-" : `${s.avgHillTime ?? 0}s`}</td>
                   )}

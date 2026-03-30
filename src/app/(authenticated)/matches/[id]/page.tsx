@@ -29,23 +29,25 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
   const allStats = games.flatMap((g) => (g.game_stats ?? []) as GameStat[]);
   const gameIdToMode = new Map(games.map((g) => [g.id, g.mode]));
 
-  type ModeAcc = { kills: number; deaths: number; count: number; hillTime: number; plants: number; defuses: number; firstBloods: number; firstDeaths: number; goals: number };
-  const emptyModeAcc = (): ModeAcc => ({ kills: 0, deaths: 0, count: 0, hillTime: 0, plants: 0, defuses: 0, firstBloods: 0, firstDeaths: 0, goals: 0 });
+  type ModeAcc = { kills: number; deaths: number; damage: number; count: number; hillTime: number; plants: number; defuses: number; firstBloods: number; firstDeaths: number; goals: number };
+  const emptyModeAcc = (): ModeAcc => ({ kills: 0, deaths: 0, damage: 0, count: 0, hillTime: 0, plants: 0, defuses: 0, firstBloods: 0, firstDeaths: 0, goals: 0 });
 
-  const playerMap = new Map<string, { id: string; name: string; kills: number; deaths: number; modes: Record<string, ModeAcc> }>();
+  const playerMap = new Map<string, { id: string; name: string; kills: number; deaths: number; damage: number; modes: Record<string, ModeAcc> }>();
   for (const stat of allStats) {
     const pid = stat.player_id;
     const mode = gameIdToMode.get(stat.game_id) ?? "";
     if (!playerMap.has(pid)) {
-      playerMap.set(pid, { id: pid, name: stat.players?.name ?? "-", kills: 0, deaths: 0, modes: { hardpoint: emptyModeAcc(), snd: emptyModeAcc(), overload: emptyModeAcc() } });
+      playerMap.set(pid, { id: pid, name: stat.players?.name ?? "-", kills: 0, deaths: 0, damage: 0, modes: { hardpoint: emptyModeAcc(), snd: emptyModeAcc(), overload: emptyModeAcc() } });
     }
     const p = playerMap.get(pid)!;
     p.kills += stat.kills;
     p.deaths += stat.deaths;
+    p.damage += stat.damage;
     const m = p.modes[mode];
     if (m) {
       m.kills += stat.kills;
       m.deaths += stat.deaths;
+      m.damage += stat.damage;
       m.count++;
       m.hillTime += stat.hill_time ?? 0;
       m.plants += stat.plants ?? 0;
@@ -58,7 +60,7 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
 
   function toModeStats(m: ModeAcc): PlayerModeStats {
     return {
-      kills: m.kills, deaths: m.deaths, count: m.count,
+      kills: m.kills, deaths: m.deaths, damage: m.damage, count: m.count,
       kd: m.count > 0 ? calcKD(m.kills, m.deaths) : "-",
       avgHillTime: m.count > 0 ? Math.round(m.hillTime / m.count) : null,
       totalPlants: m.plants, totalDefuses: m.defuses,
@@ -70,7 +72,7 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
   const playerKDData: PlayerKDData[] = [...playerMap.values()].map((p) => ({
     id: p.id,
     name: p.name,
-    overall: { kills: p.kills, deaths: p.deaths, count: allStats.filter((s) => s.player_id === p.id).length, kd: calcKD(p.kills, p.deaths), avgHillTime: null, totalPlants: null, totalDefuses: null, totalFirstBloods: null, totalFirstDeaths: null, totalGoals: null },
+    overall: { kills: p.kills, deaths: p.deaths, damage: p.damage, count: allStats.filter((s) => s.player_id === p.id).length, kd: calcKD(p.kills, p.deaths), avgHillTime: null, totalPlants: null, totalDefuses: null, totalFirstBloods: null, totalFirstDeaths: null, totalGoals: null },
     hardpoint: toModeStats(p.modes.hardpoint),
     snd: toModeStats(p.modes.snd),
     overload: toModeStats(p.modes.overload),

@@ -50,7 +50,7 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
   let filteredStats: GameStat[] = [];
   if (seriesIds.length > 0) {
     const { data: gamesData } = await supabase
-      .from("games").select("id, mode, result, series_id, game_stats(player_id, kills, deaths, game_id, hill_time, plants, defuses, first_bloods, first_deaths, goals)").in("series_id", seriesIds);
+      .from("games").select("id, mode, result, series_id, game_stats(player_id, kills, deaths, damage, game_id, hill_time, plants, defuses, first_bloods, first_deaths, goals)").in("series_id", seriesIds);
     const games = (gamesData ?? []) as (Game & { game_stats: GameStat[] })[];
     allGames = games.map(({ game_stats, ...g }) => g) as Game[];
     filteredStats = games.flatMap((g) => g.game_stats ?? []);
@@ -82,12 +82,12 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
     return { mode, total: mc.total, wins: mc.wins, losses: mc.losses, rate };
   });
 
-  type ModeAcc = { kills: number; deaths: number; count: number; hillTime: number; plants: number; defuses: number; firstBloods: number; firstDeaths: number; goals: number };
-  const emptyModeAcc = (): ModeAcc => ({ kills: 0, deaths: 0, count: 0, hillTime: 0, plants: 0, defuses: 0, firstBloods: 0, firstDeaths: 0, goals: 0 });
+  type ModeAcc = { kills: number; deaths: number; damage: number; count: number; hillTime: number; plants: number; defuses: number; firstBloods: number; firstDeaths: number; goals: number };
+  const emptyModeAcc = (): ModeAcc => ({ kills: 0, deaths: 0, damage: 0, count: 0, hillTime: 0, plants: 0, defuses: 0, firstBloods: 0, firstDeaths: 0, goals: 0 });
 
   function toModeStats(m: ModeAcc): PlayerModeStats {
     return {
-      kills: m.kills, deaths: m.deaths, count: m.count,
+      kills: m.kills, deaths: m.deaths, damage: m.damage, count: m.count,
       kd: m.count > 0 ? calcKD(m.kills, m.deaths) : "-",
       avgHillTime: m.count > 0 ? Math.round(m.hillTime / m.count) : null,
       totalPlants: m.plants, totalDefuses: m.defuses,
@@ -98,16 +98,18 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
 
   const playerKDData: PlayerKDData[] = allPlayers.map((player) => {
     const pStats = filteredStats.filter((s) => s.player_id === player.id);
-    let totalKills = 0, totalDeaths = 0;
+    let totalKills = 0, totalDeaths = 0, totalDamage = 0;
     const modes: Record<string, ModeAcc> = { hardpoint: emptyModeAcc(), snd: emptyModeAcc(), overload: emptyModeAcc() };
     for (const s of pStats) {
       totalKills += s.kills;
       totalDeaths += s.deaths;
+      totalDamage += s.damage ?? 0;
       const mode = gameIdToMode.get(s.game_id);
       const m = mode ? modes[mode] : undefined;
       if (m) {
         m.kills += s.kills;
         m.deaths += s.deaths;
+        m.damage += s.damage ?? 0;
         m.count++;
         m.hillTime += s.hill_time ?? 0;
         m.plants += s.plants ?? 0;
@@ -120,7 +122,7 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
     return {
       id: player.id,
       name: player.name,
-      overall: { kills: totalKills, deaths: totalDeaths, count: pStats.length, kd: pStats.length > 0 ? calcKD(totalKills, totalDeaths) : "-", avgHillTime: null, totalPlants: null, totalDefuses: null, totalFirstBloods: null, totalFirstDeaths: null, totalGoals: null },
+      overall: { kills: totalKills, deaths: totalDeaths, damage: totalDamage, count: pStats.length, kd: pStats.length > 0 ? calcKD(totalKills, totalDeaths) : "-", avgHillTime: null, totalPlants: null, totalDefuses: null, totalFirstBloods: null, totalFirstDeaths: null, totalGoals: null },
       hardpoint: toModeStats(modes.hardpoint),
       snd: toModeStats(modes.snd),
       overload: toModeStats(modes.overload),
