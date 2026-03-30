@@ -13,7 +13,7 @@ export default async function NewSeriesPage() {
   return (
     <>
       <main className="mx-auto max-w-6xl p-4 space-y-6">
-        <h1 className="text-2xl font-bold">対戦登録</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">対戦登録</h1>
         <SeriesForm
           opponents={opponents ?? []}
           players={players ?? []}

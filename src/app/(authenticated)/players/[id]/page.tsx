@@ -83,7 +83,7 @@ export default async function PlayerStatsPage({ params }: { params: Promise<{ id
   return (
     <>
       <main className="mx-auto max-w-6xl p-4 space-y-6">
-        <h1 className="text-2xl font-bold">{player.name} のスタッツ</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">{player.name} のスタッツ</h1>
 
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <Card>

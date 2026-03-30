@@ -54,6 +54,7 @@ export function MapManager({ maps, teamId, isAdmin }: { maps: MapEntry[]; teamId
             key={mode}
             variant={activeMode === mode ? "default" : "outline"}
             size="sm"
+            className="flex-1 sm:flex-none"
             onClick={() => setActiveMode(mode)}
           >
             {modeLabel[mode]}

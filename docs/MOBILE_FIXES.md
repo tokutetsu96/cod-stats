@@ -64,32 +64,27 @@
 
 ---
 
-## MEDIUM (改善が望ましい)
+## MEDIUM (改善が望ましい) - 全件修正済み
 
-### 14. ダッシュボード概要カードの文字サイズ
-- **場所**: `src/app/(authenticated)/dashboard/_components/dashboard-content.tsx`
-- **問題**: `grid-cols-2` で各カード約165px幅。`text-4xl` の数値がカード幅に対して大きすぎる場合がある
-- **修正案**: `text-3xl sm:text-4xl` でモバイル時にやや縮小
+### 14. ~~ダッシュボード概要カードの文字サイズ~~ (修正済み)
+- **場所**: `src/app/(authenticated)/_components/dashboard-content.tsx`, `src/app/(authenticated)/opponents/[id]/page.tsx`
+- **対応**: `text-3xl sm:text-4xl` でモバイル時にやや縮小
 
-### 15. ページタイトルのサイズ
-- **場所**: 各ページの `<h1 className="text-2xl">`
-- **問題**: 375pxでは `text-2xl` がやや大きく、コンテンツエリアを圧迫
-- **修正案**: `text-xl sm:text-2xl` にレスポンシブ化
+### 15. ~~ページタイトルのサイズ~~ (修正済み)
+- **場所**: 各ページの `<h1>` (全9箇所)
+- **対応**: `text-xl sm:text-2xl` にレスポンシブ化
 
-### 16. 選手リスト・対戦チームリストのテーブル列幅
+### 16. ~~選手リスト・対戦チームリストのテーブル列幅~~ (修正済み)
 - **場所**: `players/_components/player-list.tsx`, `opponents/_components/opponent-list.tsx`
-- **問題**: `w-16`, `w-24` の固定幅列がモバイルでは窮屈
-- **修正案**: 固定幅を除去し、flexまたはpercentage指定に変更
+- **対応**: 固定幅をレスポンシブ化 (`w-12 sm:w-16`, `w-16 sm:w-24`)
 
-### 17. 設定ページのモード切替ボタン
+### 17. ~~設定ページのモード切替ボタン~~ (修正済み)
 - **場所**: `src/app/(authenticated)/settings/_components/map-manager.tsx`
-- **問題**: 「Hardpoint」「S&D」「Overload」の3ボタンが `flex gap-2` 配置。375pxでは窮屈
-- **修正案**: ボタンを `flex-1` にするか、略称表示に変更
+- **対応**: ボタンに `flex-1 sm:flex-none` を追加し、モバイルで均等幅に
 
-### 18. チームメンバー管理の操作ボタン
+### 18. ~~チームメンバー管理の操作ボタン~~ (修正済み)
 - **場所**: `src/app/(authenticated)/settings/_components/team-management.tsx`
-- **問題**: ロールバッジ(`text-[10px]`)が極めて小さく読みにくい。シールド + キックの2アイコンボタンが密接
-- **修正案**: バッジサイズを `text-xs` に拡大、ボタン間隔を広げる
+- **対応**: バッジサイズを `text-xs` に拡大、ボタン間隔を `gap-2 sm:gap-1` でモバイル時に拡大
 
 ---
 

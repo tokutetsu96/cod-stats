@@ -128,12 +128,12 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
                       {user.username}
                       {isCurrentUser && <span className="text-muted-foreground ml-1">(自分)</span>}
                     </span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${user.role === "admin" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${user.role === "admin" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
                       {user.role === "admin" ? "管理者" : "メンバー"}
                     </span>
                   </div>
                   {isAdmin && !isCurrentUser && (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2 sm:gap-1">
                       <button
                         onClick={() => handleToggleRole(user.id, user.role)}
                         className="text-muted-foreground hover:text-foreground transition-colors p-1"

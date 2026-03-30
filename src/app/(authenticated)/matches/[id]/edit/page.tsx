@@ -22,7 +22,7 @@ export default async function EditSeriesPage({ params }: { params: Promise<{ id:
   return (
     <>
       <main className="mx-auto max-w-6xl p-4 space-y-6">
-        <h1 className="text-2xl font-bold">対戦編集</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">対戦編集</h1>
         <EditSeriesForm
           series={series}
           opponents={opponents ?? []}

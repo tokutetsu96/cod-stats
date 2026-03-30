@@ -78,34 +78,34 @@ export default async function OpponentStatsPage({ params }: { params: Promise<{ 
       <div className="flex items-center gap-2">
         <Link href="/opponents" className="text-sm text-muted-foreground hover:text-foreground">対戦相手</Link>
         <span className="text-muted-foreground">/</span>
-        <h1 className="text-2xl font-bold">{opponent.name}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">{opponent.name}</h1>
       </div>
       {/* サマリーカード */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Card className="border-l-2 border-l-primary">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">総シリーズ</p>
-            <p className="stat-number text-4xl">{series.length}</p>
+            <p className="stat-number text-3xl sm:text-4xl">{series.length}</p>
             <p className="text-xs text-muted-foreground mt-1">{seriesWins}勝 {seriesLosses}敗</p>
           </CardContent>
         </Card>
         <Card className="border-l-2 border-l-border">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">総ゲーム</p>
-            <p className="stat-number text-4xl">{total}</p>
+            <p className="stat-number text-3xl sm:text-4xl">{total}</p>
             <p className="text-xs text-muted-foreground mt-1">{wins}勝 {losses}敗{draws > 0 ? ` ${draws}分` : ""}</p>
           </CardContent>
         </Card>
         <Card className="border-l-2 border-l-border">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">ゲーム勝率</p>
-            <p className="stat-number text-4xl">{total > 0 ? ((wins / total) * 100).toFixed(1) : "-"}<span className="text-lg text-muted-foreground">%</span></p>
+            <p className="stat-number text-3xl sm:text-4xl">{total > 0 ? ((wins / total) * 100).toFixed(1) : "-"}<span className="text-lg text-muted-foreground">%</span></p>
           </CardContent>
         </Card>
         <Card className="border-l-2 border-l-border">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">シリーズ勝率</p>
-            <p className="stat-number text-4xl">
+            <p className="stat-number text-3xl sm:text-4xl">
               {series.length > 0 ? ((seriesWins / series.length) * 100).toFixed(1) : "-"}<span className="text-lg text-muted-foreground">%</span>
             </p>
           </CardContent>

@@ -119,7 +119,7 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
         <Card className="border-l-2 border-l-primary">
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">総ゲーム数</p>
-            <p className="stat-number text-4xl">{totalGames}</p>
+            <p className="stat-number text-3xl sm:text-4xl">{totalGames}</p>
             <p className="text-xs text-muted-foreground mt-1">{totalWins}勝 {totalLosses}敗</p>
           </CardContent>
         </Card>
@@ -127,7 +127,7 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
         <Card className="border-l-2" style={{ borderLeftColor: parseFloat(winRate) >= 50 ? "var(--win)" : "var(--loss)" }}>
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">全体勝率</p>
-            <p className="stat-number text-4xl">{winRate}<span className="text-lg text-muted-foreground">%</span></p>
+            <p className="stat-number text-3xl sm:text-4xl">{winRate}<span className="text-lg text-muted-foreground">%</span></p>
             <WinRateBar rate={winRate} />
           </CardContent>
         </Card>
@@ -139,7 +139,7 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
           <Card key={ms.mode} className="border-l-2 border-l-border">
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{modeLabel[ms.mode]}</p>
-              <p className="stat-number text-4xl">{ms.rate}<span className="text-lg text-muted-foreground">%</span></p>
+              <p className="stat-number text-3xl sm:text-4xl">{ms.rate}<span className="text-lg text-muted-foreground">%</span></p>
               <p className="text-xs text-muted-foreground mt-1">{ms.wins}勝 / {ms.total}試合</p>
               <WinRateBar rate={ms.rate} />
             </CardContent>

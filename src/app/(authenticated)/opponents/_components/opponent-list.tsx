@@ -236,7 +236,7 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
                             <p className="text-xs text-muted-foreground pl-1">未設定</p>
                           ) : (
                             <table className="w-full text-sm">
-                              <thead><tr className="border-b text-left"><th className="pb-1.5 font-medium">名前</th><th className="pb-1.5 w-16 text-center font-medium">デフォルト</th>{isAdmin && <th className="pb-1.5 w-8"></th>}</tr></thead>
+                              <thead><tr className="border-b text-left"><th className="pb-1.5 font-medium">名前</th><th className="pb-1.5 w-12 sm:w-16 text-center font-medium">デフォルト</th>{isAdmin && <th className="pb-1.5 w-8"></th>}</tr></thead>
                               <tbody>{defaultP.map(renderPlayerRow)}</tbody>
                             </table>
                           )}
@@ -249,7 +249,7 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
                               <span className="text-xs font-medium text-muted-foreground">その他</span>
                             </div>
                             <table className="w-full text-sm">
-                              <thead><tr className="border-b text-left"><th className="pb-1.5 font-medium">名前</th><th className="pb-1.5 w-16 text-center font-medium">デフォルト</th>{isAdmin && <th className="pb-1.5 w-8"></th>}</tr></thead>
+                              <thead><tr className="border-b text-left"><th className="pb-1.5 font-medium">名前</th><th className="pb-1.5 w-12 sm:w-16 text-center font-medium">デフォルト</th>{isAdmin && <th className="pb-1.5 w-8"></th>}</tr></thead>
                               <tbody>{otherP.map(renderPlayerRow)}</tbody>
                             </table>
                           </div>

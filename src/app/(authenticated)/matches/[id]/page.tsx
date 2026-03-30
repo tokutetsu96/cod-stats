@@ -61,7 +61,7 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
     <>
       <main className="mx-auto max-w-6xl p-4 space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-xl sm:text-2xl font-bold">
             vs {series.opponents?.name}
           </h1>
           <p className="text-muted-foreground text-sm">

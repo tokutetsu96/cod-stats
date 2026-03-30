@@ -140,8 +140,8 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
                 <thead>
                   <tr className="border-b text-left">
                     <th className="pb-2 font-medium">名前</th>
-                    <th className="pb-2 font-medium w-16 text-center">デフォルト</th>
-                    {isAdmin && <th className="pb-2 font-medium w-24">操作</th>}
+                    <th className="pb-2 font-medium w-12 sm:w-16 text-center">デフォルト</th>
+                    {isAdmin && <th className="pb-2 font-medium w-16 sm:w-24">操作</th>}
                   </tr>
                 </thead>
                 <tbody>{defaultPlayers.map(renderRow)}</tbody>
@@ -159,8 +159,8 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
                 <thead>
                   <tr className="border-b text-left">
                     <th className="pb-2 font-medium">名前</th>
-                    <th className="pb-2 font-medium w-16 text-center">デフォルト</th>
-                    {isAdmin && <th className="pb-2 font-medium w-24">操作</th>}
+                    <th className="pb-2 font-medium w-12 sm:w-16 text-center">デフォルト</th>
+                    {isAdmin && <th className="pb-2 font-medium w-16 sm:w-24">操作</th>}
                   </tr>
                 </thead>
                 <tbody>{otherPlayers.map(renderRow)}</tbody>

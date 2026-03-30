@@ -33,7 +33,7 @@ export default async function OpponentsPage() {
   return (
     <>
       <main className="mx-auto max-w-6xl p-4 space-y-6">
-        <h1 className="text-2xl font-bold">対戦相手管理</h1>
+        <h1 className="text-xl sm:text-2xl font-bold">対戦相手管理</h1>
         <Card>
           <CardHeader>
             <CardTitle>対戦相手一覧</CardTitle>
