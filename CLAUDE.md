@@ -1,55 +1,99 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Project Overview
 
-Call of Duty team stats management dashboard (Japanese UI). Tracks match results and individual player statistics across game modes (Hardpoint, S&D, Overload) with team-scoped multi-tenancy.
+Call of Duty チーム戦績管理ダッシュボード（日本語UI）。試合結果と個人スタッツをゲームモード別（Hardpoint, S&D, Overload）に記録・管理する。チーム単位のマルチテナンシー構成。
 
 ## Commands
 
-- `npm run dev` — Start dev server with Turbopack
-- `npm run build` — Production build
-- `npm run lint` — ESLint
+```bash
+npm run dev          # 開発サーバー起動（Turbopack）
+npm run build        # 本番ビルド
+npm run lint         # ESLint
+```
 
 ## Tech Stack
 
-- **Next.js 16** (App Router, server components) + **React 19** + **TypeScript**
-- **Supabase** for database (PostgreSQL) and auth (email/password)
-- **Tailwind CSS v4** with oklch color system + **shadcn/ui** components
-- Deployed on **Vercel**
+- **Next.js 16** (App Router, Server Components) + **React 19** + **TypeScript 6**
+- **Supabase** — PostgreSQL + RLS + Auth（email/password）
+- **Tailwind CSS v4** + **shadcn/ui** — ダークモード固定、フォント: Barlow Condensed / Noto Sans JP
+- **dnd-kit** — ドラッグ&ドロップによるプレイヤー並び替え
+- **Vercel** にデプロイ
 
 ## Architecture
 
-### Data Flow Pattern
+### Directory Structure
 
-Server components (pages) fetch data via `getProfile()` from `src/lib/supabase/auth.ts`, which authenticates and returns the user's profile with team_id. All Supabase queries filter by `team_id` for multi-tenancy. Client components receive data as props and use `router.refresh()` after mutations.
+```
+src/
+├── app/
+│   ├── (authenticated)/       # 認証必須ルート（layoutでgetProfile()実行）
+│   │   ├── _components/       # ダッシュボード共通コンポーネント
+│   │   ├── matches/           # 試合一覧・作成・編集・詳細
+│   │   ├── opponents/         # 対戦チーム管理
+│   │   ├── players/           # プレイヤー管理
+│   │   └── settings/          # チーム設定
+│   ├── auth/callback/         # OAuth コールバック
+│   └── login/                 # ログイン・サインアップ
+├── components/
+│   ├── nav.tsx                # ナビゲーションバー（client component）
+│   ├── stats-table.tsx        # スタッツテーブル（dnd-kit統合）
+│   └── ui/                    # shadcn/ui コンポーネント群
+└── lib/
+    ├── supabase/
+    │   ├── server.ts          # サーバー用Supabaseクライアント
+    │   ├── client.ts          # ブラウザ用Supabaseクライアント
+    │   ├── middleware.ts      # セッション更新ミドルウェア
+    │   └── auth.ts            # getProfile() — React cache()でキャッシュ
+    ├── types.ts               # 全TypeScript型定義
+    └── utils.ts               # cn(), formatDate()
+```
 
-### Supabase Client Setup
+### Data Flow
 
-- `src/lib/supabase/server.ts` — Server-side client (uses cookies from `next/headers`)
-- `src/lib/supabase/client.ts` — Browser-side client
-- `src/lib/supabase/middleware.ts` — Session refresh on every request
-- No API routes — components query Supabase directly, relying on RLS policies
-
-### Component Pattern
-
-Pages are async server components that pre-fetch all data. Interactive features (forms, CRUD) are client components (`"use client"`) receiving data as props. CRUD uses inline editing with `router.refresh()` after mutations.
+1. ページ（Server Component）が `getProfile()` で認証・プロフィール取得（`team_id`付き）
+2. Supabaseクエリは全て `team_id` でフィルタ（RLSベースのマルチテナンシー）
+3. Client Component はprops経由でデータ受取、mutation後は `router.refresh()` で再取得
+4. API Routeは使わない — コンポーネントがSupabaseに直接クエリ
 
 ### Data Model
 
-The core hierarchy is: `series` → `games` → `game_stats`. A series groups games from a single session (scrim/tournament). Each game has a mode, map, and scores. Game stats store per-player stats with mode-specific optional fields (hill_time for HP, plants/defuses/first_bloods/first_deaths for S&D, goals for Overload).
+`series` → `games` → `game_stats` / `opponent_game_stats` の階層構造。
 
-Key tables: `teams`, `profiles`, `players`, `opponents`, `maps`, `series`, `games`, `game_stats`.
+| テーブル | 説明 |
+|---------|------|
+| `teams` | チーム情報 |
+| `profiles` | ユーザープロフィール（role: admin/member） |
+| `players` | 自チームプレイヤー |
+| `opponents` | 対戦チーム |
+| `opponent_players` | 対戦チームのプレイヤー |
+| `maps` | マップ（mode別） |
+| `series` | シリーズ（scrim/tournament） |
+| `games` | 個別ゲーム（mode, map, score） |
+| `game_stats` | 自チームの個人スタッツ |
+| `opponent_game_stats` | 相手チームの個人スタッツ |
+
+モード別固有フィールド:
+- **Hardpoint**: `hill_time`
+- **S&D**: `plants`, `defuses`, `first_bloods`, `first_deaths`
+- **Overload**: `goals`
 
 ### Types
 
-`src/lib/types.ts` defines all TypeScript interfaces. Game modes use abbreviated strings: `"hp"`, `"s&d"`, `"ol"`. Display labels use lookup objects (`modeLabel`, `typeLabel`, `resultLabel`).
+`src/lib/types.ts` に全型定義。GameModeは `"hardpoint"` | `"snd"` | `"overload"`。
 
-### Path Aliases
+### Auth & Middleware
 
-`@/*` maps to `./src/*`.
+- `src/proxy.ts` がミドルウェアとして全リクエストで `updateSession()` を実行
+- 未認証ユーザーは `/login` にリダイレクト（`/login`, `/auth` を除く）
+- ロールベースアクセス制御: `role === "admin"` でUI表示を切替（試合作成・削除等）
 
 ## Coding Guidelines
 
-- ソースコード修正時は `/vercel-react-best-practices` スキルを参照し、パフォーマンスやベストプラクティスに沿ったコードを書くこと。
+- UIテキストは全て**日本語**で記述する
+- ソースコード修正時は `/vercel-react-best-practices` スキルを参照し、パフォーマンスやベストプラクティスに沿ったコードを書くこと
+- Server Component をデフォルトとし、インタラクティブな機能のみ `"use client"` を使う
+- Supabaseクエリには必ず `team_id` フィルタを含める（マルチテナンシー）
+- shadcn/ui コンポーネント（`src/components/ui/`）は既存のものを再利用する
+- パスエイリアス: `@/*` → `./src/*`
+- `cn()` ユーティリティ（clsx + tailwind-merge）でクラス名を結合する
