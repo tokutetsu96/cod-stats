@@ -5,6 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function calcKD(kills: number, deaths: number) {
+  if (deaths === 0) return kills.toFixed(2);
+  return (kills / deaths).toFixed(2);
+}
+
 const WEEKDAYS = ["\u65E5", "\u6708", "\u706B", "\u6C34", "\u6728", "\u91D1", "\u571F"];
 
 export function formatDate(dateStr: string): string {

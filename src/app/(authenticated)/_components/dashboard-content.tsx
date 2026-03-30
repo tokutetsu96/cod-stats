@@ -2,12 +2,8 @@ import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import type { Game, GameStat, Player, Series } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
-
-function calcKD(kills: number, deaths: number) {
-  if (deaths === 0) return kills.toFixed(2);
-  return (kills / deaths).toFixed(2);
-}
+import { formatDate, calcKD } from "@/lib/utils";
+import { PlayerKDTabs, type PlayerKDData, type PlayerModeStats } from "@/components/player-kd-tabs";
 
 const modeLabel: Record<string, string> = { hardpoint: "Hardpoint", snd: "S&D", overload: "Overload" };
 
@@ -54,7 +50,7 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
   let filteredStats: GameStat[] = [];
   if (seriesIds.length > 0) {
     const { data: gamesData } = await supabase
-      .from("games").select("id, mode, result, series_id, game_stats(player_id, kills, deaths, game_id)").in("series_id", seriesIds);
+      .from("games").select("id, mode, result, series_id, game_stats(player_id, kills, deaths, game_id, hill_time, plants, defuses, first_bloods, first_deaths, goals)").in("series_id", seriesIds);
     const games = (gamesData ?? []) as (Game & { game_stats: GameStat[] })[];
     allGames = games.map(({ game_stats, ...g }) => g) as Game[];
     filteredStats = games.flatMap((g) => g.game_stats ?? []);
@@ -86,27 +82,50 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
     return { mode, total: mc.total, wins: mc.wins, losses: mc.losses, rate };
   });
 
-  const playerStats = allPlayers.map((player) => {
+  type ModeAcc = { kills: number; deaths: number; count: number; hillTime: number; plants: number; defuses: number; firstBloods: number; firstDeaths: number; goals: number };
+  const emptyModeAcc = (): ModeAcc => ({ kills: 0, deaths: 0, count: 0, hillTime: 0, plants: 0, defuses: 0, firstBloods: 0, firstDeaths: 0, goals: 0 });
+
+  function toModeStats(m: ModeAcc): PlayerModeStats {
+    return {
+      kills: m.kills, deaths: m.deaths, count: m.count,
+      kd: m.count > 0 ? calcKD(m.kills, m.deaths) : "-",
+      avgHillTime: m.count > 0 ? Math.round(m.hillTime / m.count) : null,
+      totalPlants: m.plants, totalDefuses: m.defuses,
+      totalFirstBloods: m.firstBloods, totalFirstDeaths: m.firstDeaths,
+      totalGoals: m.goals,
+    };
+  }
+
+  const playerKDData: PlayerKDData[] = allPlayers.map((player) => {
     const pStats = filteredStats.filter((s) => s.player_id === player.id);
     let totalKills = 0, totalDeaths = 0;
-    const modeAcc = { hardpoint: { kills: 0, deaths: 0, count: 0 }, snd: { kills: 0, deaths: 0, count: 0 }, overload: { kills: 0, deaths: 0, count: 0 } };
+    const modes: Record<string, ModeAcc> = { hardpoint: emptyModeAcc(), snd: emptyModeAcc(), overload: emptyModeAcc() };
     for (const s of pStats) {
       totalKills += s.kills;
       totalDeaths += s.deaths;
-      const mode = gameIdToMode.get(s.game_id) as keyof typeof modeAcc | undefined;
-      if (mode && modeAcc[mode]) {
-        modeAcc[mode].kills += s.kills;
-        modeAcc[mode].deaths += s.deaths;
-        modeAcc[mode].count++;
+      const mode = gameIdToMode.get(s.game_id);
+      const m = mode ? modes[mode] : undefined;
+      if (m) {
+        m.kills += s.kills;
+        m.deaths += s.deaths;
+        m.count++;
+        m.hillTime += s.hill_time ?? 0;
+        m.plants += s.plants ?? 0;
+        m.defuses += s.defuses ?? 0;
+        m.firstBloods += s.first_bloods ?? 0;
+        m.firstDeaths += s.first_deaths ?? 0;
+        m.goals += s.goals ?? 0;
       }
     }
-    const modeKD = (["hardpoint", "snd", "overload"] as const).map((mode) => {
-      const m = modeAcc[mode];
-      return { mode, count: m.count, kd: m.count > 0 ? calcKD(m.kills, m.deaths) : "-" };
-    });
-    const overallKD = pStats.length > 0 ? calcKD(totalKills, totalDeaths) : "-";
-    return { ...player, modeKD, overallKD };
-  }).sort((a, b) => parseFloat(b.overallKD === "-" ? "0" : b.overallKD) - parseFloat(a.overallKD === "-" ? "0" : a.overallKD));
+    return {
+      id: player.id,
+      name: player.name,
+      overall: { kills: totalKills, deaths: totalDeaths, count: pStats.length, kd: pStats.length > 0 ? calcKD(totalKills, totalDeaths) : "-", avgHillTime: null, totalPlants: null, totalDefuses: null, totalFirstBloods: null, totalFirstDeaths: null, totalGoals: null },
+      hardpoint: toModeStats(modes.hardpoint),
+      snd: toModeStats(modes.snd),
+      overload: toModeStats(modes.overload),
+    };
+  });
 
   const recentSeries = opponentId
     ? allSeries.filter((s) => s.opponent_id === opponentId).slice(0, 5)
@@ -153,75 +172,10 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
           <CardTitle className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">メンバー別 K/D</CardTitle>
         </CardHeader>
         <CardContent className="px-5 pb-5">
-          {playerStats.length === 0 ? (
+          {playerKDData.length === 0 ? (
             <p className="text-muted-foreground text-sm">プレイヤーが登録されていません</p>
           ) : (
-            <>
-            {/* Mobile card layout */}
-            <div className="space-y-2 sm:hidden">
-              {playerStats.map((p) => {
-                const kd = parseFloat(p.overallKD);
-                const kdColor = !isNaN(kd) && kd >= 1.0 ? "var(--win)" : !isNaN(kd) ? "var(--loss)" : undefined;
-                return (
-                  <div key={p.id} className="flex items-center justify-between py-2 border-b border-border/50">
-                    <Link href={`/players/${p.id}`} className="text-primary hover:underline font-medium text-sm">
-                      {p.name}
-                    </Link>
-                    <div className="flex items-center gap-3">
-                      <span className="stat-number text-base font-semibold" style={{ color: kdColor }}>
-                        {p.overallKD}
-                      </span>
-                      <div className="flex gap-2 text-xs text-muted-foreground">
-                        {p.modeKD.map(({ mode, kd: mkd }) => (
-                          <span key={mode} className="stat-number">{mkd}</span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Desktop table layout */}
-            <div className="overflow-x-auto hidden sm:block">
-              <table className="w-full text-sm data-table">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">プレイヤー</th>
-                    <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">総合</th>
-                    <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">HP</th>
-                    <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">S&D</th>
-                    <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">OL</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {playerStats.map((p) => {
-                    const kd = parseFloat(p.overallKD);
-                    const kdColor = !isNaN(kd) && kd >= 1.0 ? "var(--win)" : !isNaN(kd) ? "var(--loss)" : undefined;
-                    return (
-                      <tr key={p.id} className="border-b border-border/50">
-                        <td className="py-2.5">
-                          <Link href={`/players/${p.id}`} className="text-primary hover:underline font-medium">
-                            {p.name}
-                          </Link>
-                        </td>
-                        <td className="py-2.5 text-center">
-                          <span className="stat-number text-base font-semibold" style={{ color: kdColor }}>
-                            {p.overallKD}
-                          </span>
-                        </td>
-                        {p.modeKD.map(({ mode, kd: mkd }) => (
-                          <td key={mode} className="py-2.5 text-center">
-                            <span className="stat-number text-base text-muted-foreground">{mkd}</span>
-                          </td>
-                        ))}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            </>
+            <PlayerKDTabs players={playerKDData} playerLinkPrefix="/players/" />
           )}
         </CardContent>
       </Card>
