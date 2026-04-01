@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Game, GameStat, Player, Series } from "@/lib/types";
 import { formatDate, calcKD } from "@/lib/utils";
 import { PlayerKDTabs, type PlayerKDData, type PlayerModeStats } from "@/components/player-kd-tabs";
+import { Eye } from "lucide-react";
 
 const modeLabel: Record<string, string> = { hardpoint: "Hardpoint", snd: "S&D", overload: "Overload" };
 
@@ -210,7 +211,10 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
                 return (
                   <Link key={s.id} href={`/matches/${s.id}`} className="block border-b border-border/50 py-2.5">
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">{s.opponents?.name ?? "-"}</span>
+                      <div className="flex items-center gap-1.5">
+                        <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-medium text-sm">{s.opponents?.name ?? "-"}</span>
+                      </div>
                       <div className="flex items-center gap-1.5">
                         <span
                           className="inline-flex items-center justify-center w-5 h-5 rounded text-xs font-bold stat-number"
@@ -247,6 +251,7 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
                     <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">対戦相手</th>
                     <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">YouTube</th>
                     <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">戦績</th>
+                    <th className="pb-2.5 w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -294,6 +299,11 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
                               {w}W {l}L{d > 0 ? ` ${d}D` : ""}
                             </span>
                           </div>
+                        </td>
+                        <td className="py-2.5 text-right">
+                          <Link href={`/matches/${s.id}`} className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                            <Eye className="h-4 w-4" />
+                          </Link>
                         </td>
                       </tr>
                     );
