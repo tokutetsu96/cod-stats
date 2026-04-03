@@ -1,13 +1,17 @@
 import { Suspense } from "react";
 import { getProfile } from "@/lib/supabase/auth";
+import { createClient } from "@/lib/supabase/server";
 import type { Opponent } from "@/lib/types";
 import { DashboardFilter } from "./_components/dashboard-filter";
 import { DashboardContent } from "./_components/dashboard-content";
 import { DashboardSkeleton } from "./_components/dashboard-skeleton";
 
 async function DashboardFilterServer() {
-  const { supabase } = await getProfile();
-  const { data: opponents } = await supabase.from("opponents").select("id, name").order("name");
+  const supabase = await createClient();
+  const [, { data: opponents }] = await Promise.all([
+    getProfile(),
+    supabase.from("opponents").select("id, name").order("name"),
+  ]);
   return <DashboardFilter opponents={(opponents ?? []) as Opponent[]} />;
 }
 

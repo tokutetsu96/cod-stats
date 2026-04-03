@@ -1,4 +1,5 @@
 import { getProfile } from "@/lib/supabase/auth";
+import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import type { Game, GameStat, Player, Series } from "@/lib/types";
@@ -25,37 +26,34 @@ function WinRateBar({ rate }: { rate: string }) {
 }
 
 export async function DashboardContent({ opponentId }: { opponentId?: string }) {
-  const { supabase } = await getProfile();
+  const supabase = await createClient();
 
-  // Step 1: Get series IDs (filtered by opponent if needed) + players
-  let seriesQuery = supabase.from("series").select("*, opponents(*)").order("series_date", { ascending: false }).limit(10);
+  let seriesQuery = supabase
+    .from("series")
+    .select("id, opponent_id, series_date, type, youtube_url, memo, opponents(name), games(id, mode, result, series_id, game_stats(player_id, kills, deaths, damage, game_id, hill_time, plants, defuses, first_bloods, first_deaths, goals))")
+    .order("series_date", { ascending: false })
+    .limit(100);
 
-  let allSeriesIdsQuery = supabase.from("series").select("id");
   if (opponentId) {
-    allSeriesIdsQuery = allSeriesIdsQuery.eq("opponent_id", opponentId);
     seriesQuery = seriesQuery.eq("opponent_id", opponentId);
   }
 
-  const [{ data: seriesData }, { data: allSeriesIdsData }, { data: players }] = await Promise.all([
+  const [, { data: allSeriesData }, { data: players }] = await Promise.all([
+    getProfile(),
     seriesQuery,
-    allSeriesIdsQuery,
     supabase.from("players").select("id, name"),
   ]);
 
-  const allSeries = (seriesData ?? []) as Series[];
+  const allSeriesRaw = (allSeriesData ?? []) as unknown as (Series & { games: (Game & { game_stats: GameStat[] })[] })[];
+  const allSeries = allSeriesRaw.map(({ games, ...s }) => ({ ...s, opponents: s.opponents } as Series));
   const allPlayers = (players ?? []) as Player[];
-  const seriesIds = (allSeriesIdsData ?? []).map((s: { id: string }) => s.id);
 
-  // Step 2: Fetch games with stats in a single joined query
-  let allGames: Game[] = [];
-  let filteredStats: GameStat[] = [];
-  if (seriesIds.length > 0) {
-    const { data: gamesData } = await supabase
-      .from("games").select("id, mode, result, series_id, game_stats(player_id, kills, deaths, damage, game_id, hill_time, plants, defuses, first_bloods, first_deaths, goals)").in("series_id", seriesIds);
-    const games = (gamesData ?? []) as (Game & { game_stats: GameStat[] })[];
-    allGames = games.map(({ game_stats, ...g }) => g) as Game[];
-    filteredStats = games.flatMap((g) => g.game_stats ?? []);
-  }
+  const allGames = allSeriesRaw.flatMap((s) =>
+    (s.games ?? []).map(({ game_stats, ...g }) => ({ ...g, series_id: s.id }) as Game)
+  );
+  const filteredStats = allSeriesRaw.flatMap((s) =>
+    (s.games ?? []).flatMap((g) => g.game_stats ?? [])
+  ) as GameStat[];
 
   const totalGames = allGames.length;
   let totalWins = 0;

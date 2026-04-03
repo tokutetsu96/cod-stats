@@ -1,16 +1,19 @@
 import { getProfile } from "@/lib/supabase/auth";
+import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { SeriesList } from "./_components/series-list";
 import type { Opponent } from "@/lib/types";
 
 export default async function MatchesPage() {
-  const { supabase, profile } = await getProfile();
+  const supabase = await createClient();
 
-  const [{ data: seriesList }, { data: opponents }] = await Promise.all([
+  const [{ profile }, { data: seriesList }, { data: opponents }] = await Promise.all([
+    getProfile(),
     supabase
       .from("series")
       .select("*, opponents(*), games(result)")
-      .order("series_date", { ascending: false }),
+      .order("series_date", { ascending: false })
+      .limit(50),
     supabase.from("opponents").select("id, name").order("name"),
   ]);
 

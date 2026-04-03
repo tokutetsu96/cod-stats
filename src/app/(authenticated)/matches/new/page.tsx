@@ -1,10 +1,12 @@
 import { getProfile } from "@/lib/supabase/auth";
+import { createClient } from "@/lib/supabase/server";
 import { SeriesForm } from "./_components/series-form";
 
 export default async function NewSeriesPage() {
-  const { supabase, profile } = await getProfile();
+  const supabase = await createClient();
 
-  const [{ data: opponents }, { data: players }, { data: maps }] = await Promise.all([
+  const [{ profile }, { data: opponents }, { data: players }, { data: maps }] = await Promise.all([
+    getProfile(),
     supabase.from("opponents").select("*, opponent_players(*)").order("name"),
     supabase.from("players").select("*").order("name"),
     supabase.from("maps").select("*").order("name"),

@@ -1,11 +1,15 @@
 import { getProfile } from "@/lib/supabase/auth";
+import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PlayerList } from "./_components/player-list";
 
 export default async function PlayersPage() {
-  const { supabase, profile } = await getProfile();
+  const supabase = await createClient();
 
-  const { data: players } = await supabase.from("players").select("*").order("created_at");
+  const [{ profile }, { data: players }] = await Promise.all([
+    getProfile(),
+    supabase.from("players").select("*").order("created_at"),
+  ]);
 
   return (
     <>

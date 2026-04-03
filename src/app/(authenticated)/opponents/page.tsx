@@ -1,13 +1,15 @@
 import { getProfile } from "@/lib/supabase/auth";
+import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { OpponentList } from "./_components/opponent-list";
 
 export default async function OpponentsPage() {
-  const { supabase, profile } = await getProfile();
+  const supabase = await createClient();
 
-  const [{ data: opponents }, { data: series }] = await Promise.all([
-    supabase.from("opponents").select("*, opponent_players(*)").order("name"),
-    supabase.from("series").select("opponent_id, games(mode, result)"),
+  const [{ profile }, { data: opponents }, { data: series }] = await Promise.all([
+    getProfile(),
+    supabase.from("opponents").select("id, name, opponent_players(*)").order("name"),
+    supabase.from("series").select("opponent_id, games(mode, result)").limit(200),
   ]);
 
   const opponentStats = (opponents ?? []).map((opp) => {

@@ -1,12 +1,14 @@
 import { getProfile } from "@/lib/supabase/auth";
+import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { EditSeriesForm } from "./_components/edit-form";
 
 export default async function EditSeriesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { supabase, profile } = await getProfile();
+  const supabase = await createClient();
 
-  const [{ data: series }, { data: opponents }, { data: players }, { data: maps }] = await Promise.all([
+  const [{ profile }, { data: series }, { data: opponents }, { data: players }, { data: maps }] = await Promise.all([
+    getProfile(),
     supabase
       .from("series")
       .select("*, games(*, game_stats(*), opponent_game_stats(*))")
