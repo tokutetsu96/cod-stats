@@ -90,6 +90,11 @@ src/
 
 ## Coding Guidelines
 
+> **[MANDATORY]** ソースコード修正・実装を行う前に、必ず以下のスキルを参照すること。スキルの参照を省略してはならない。
+> - `/vercel-react-best-practices` — React/Next.js パフォーマンスとベストプラクティス
+> - `/vercel-plugin:nextjs` — Next.js App Router の実装ガイド
+> - `/vercel-plugin:react-best-practices` — TSX ファイルのベストプラクティスレビュー
+
 - UIテキストは全て**日本語**で記述する
 - ソースコード修正時は `/vercel-react-best-practices` スキルを参照し、パフォーマンスやベストプラクティスに沿ったコードを書くこと
 - Server Component をデフォルトとし、インタラクティブな機能のみ `"use client"` を使う
