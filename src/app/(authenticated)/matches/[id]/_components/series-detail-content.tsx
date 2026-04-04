@@ -16,7 +16,7 @@ export async function SeriesDetailContent({ id }: { id: string }) {
     getProfile(),
     supabase
       .from("series")
-      .select("*, opponents(*), games(id, game_number, mode, result, score_team, score_opponent, maps(name), game_stats(player_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, players(name, created_at)), opponent_game_stats(kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, opponent_players(name, created_at)))")
+      .select("*, opponents(*), games(id, game_number, mode, result, score_team, score_opponent, maps(name), game_stats(id, game_id, player_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, players(name, created_at)), opponent_game_stats(id, game_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, opponent_players(name, created_at)))")
       .eq("id", id)
       .single(),
   ]);
