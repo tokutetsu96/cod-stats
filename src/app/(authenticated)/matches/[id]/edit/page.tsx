@@ -1,7 +1,13 @@
 import { getProfile } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
-import { EditSeriesForm } from "./_components/edit-form";
+import dynamic from "next/dynamic";
+import { Spinner } from "@/components/ui/spinner";
+
+const EditSeriesForm = dynamic(
+  () => import("./_components/edit-form").then((m) => m.EditSeriesForm),
+  { loading: () => <div className="flex justify-center p-8"><Spinner className="h-6 w-6" /></div> },
+);
 
 export default async function EditSeriesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

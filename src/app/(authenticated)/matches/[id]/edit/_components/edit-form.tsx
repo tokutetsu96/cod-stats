@@ -10,86 +10,23 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Trash2, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
-import { NumericInput } from "@/components/ui/numeric-input";
-import { StatsTable } from "@/components/stats-table";
 import { arrayMove } from "@dnd-kit/sortable";
+import { GameCard } from "@/app/(authenticated)/matches/_components/game-card";
+import {
+  calcResult,
+  emptyStats,
+  type StatInput,
+  type GameInput,
+} from "@/app/(authenticated)/matches/_components/series-form-shared";
 import type {
   GameMode,
   SeriesType,
-  MatchResult,
   Opponent,
   Player,
   MapEntry,
 } from "@/lib/types";
-
-function calcResult(scoreTeam: string, scoreOpponent: string): MatchResult {
-  const t = parseInt(scoreTeam) || 0;
-  const o = parseInt(scoreOpponent) || 0;
-  if (t > o) return "win";
-  if (t < o) return "lose";
-  return "draw";
-}
-
-const resultLabel: Record<MatchResult, string> = {
-  win: "WIN",
-  lose: "LOSE",
-  draw: "DRAW",
-};
-const resultColor: Record<MatchResult, string> = {
-  win: "text-green-500",
-  lose: "text-red-500",
-  draw: "text-yellow-500",
-};
-const modeLabel: Record<GameMode, string> = {
-  hardpoint: "Hardpoint",
-  snd: "S&D",
-  overload: "Overload",
-};
-
-interface StatInput {
-  player_id: string;
-  kills: string;
-  deaths: string;
-  damage: string;
-  hill_time: string;
-  plants: string;
-  defuses: string;
-  first_bloods: string;
-  first_deaths: string;
-  goals: string;
-}
-
-interface GameInput {
-  mode: GameMode;
-  map_id: string;
-  score_team: string;
-  score_opponent: string;
-  hill_times: {
-    team: string[][];
-    opponent: string[][];
-    winner: ("team" | "opponent" | null)[][];
-  };
-  stats: StatInput[];
-  opponent_stats: StatInput[];
-  expanded: boolean;
-}
-
-function emptyStats(): StatInput {
-  return {
-    player_id: "",
-    kills: "",
-    deaths: "",
-    damage: "",
-    hill_time: "",
-    plants: "",
-    defuses: "",
-    first_bloods: "",
-    first_deaths: "",
-    goals: "",
-  };
-}
 
 function padStats(stats: StatInput[]): StatInput[] {
   const result = [...stats];
@@ -239,10 +176,10 @@ export function EditSeriesForm({
   };
 
   const removeGame = (idx: number) =>
-    setGames(games.filter((_, i) => i !== idx));
+    setGames((prev) => prev.filter((_, i) => i !== idx));
 
   const updateGame = (idx: number, updates: Partial<GameInput>) =>
-    setGames(games.map((g, i) => (i === idx ? { ...g, ...updates } : g)));
+    setGames((prev) => prev.map((g, i) => (i === idx ? { ...g, ...updates } : g)));
 
   const toggleExpand = (idx: number) =>
     updateGame(idx, { expanded: !games[idx].expanded });
@@ -370,7 +307,15 @@ export function EditSeriesForm({
     }
 
     // 2. Delete existing games (cascades to game_stats, opponent_game_stats)
-    await supabase.from("games").delete().eq("series_id", series.id);
+    const { error: deleteErr } = await supabase
+      .from("games")
+      .delete()
+      .eq("series_id", series.id);
+    if (deleteErr) {
+      setError(deleteErr.message);
+      setLoading(false);
+      return;
+    }
 
     // 3. Re-insert games
     const { data: gamesData, error: gamesErr } = await supabase
@@ -545,305 +490,24 @@ export function EditSeriesForm({
       </Card>
 
       {/* Games */}
-      {games.map((game, gIdx) => {
-        const modeMaps = maps.filter((m) => m.mode === game.mode);
-        const selectedMap = maps.find((m) => m.id === game.map_id);
-        const hillCount =
-          game.mode === "hardpoint" ? (selectedMap?.hill_count ?? 0) : 0;
-        return (
-          <Card key={gIdx}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base sm:text-lg flex flex-wrap items-center gap-1.5 sm:gap-2">
-                  <button
-                    type="button"
-                    onClick={() => toggleExpand(gIdx)}
-                    className="cursor-pointer"
-                  >
-                    {game.expanded ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
-                    )}
-                  </button>
-                  Game {gIdx + 1}
-                  <span className="text-xs sm:text-sm font-normal text-muted-foreground">
-                    {modeLabel[game.mode]} - {game.score_team} :{" "}
-                    {game.score_opponent}
-                  </span>
-                  <span
-                    className={`text-xs sm:text-sm font-medium ${resultColor[calcResult(game.score_team, game.score_opponent)]}`}
-                  >
-                    {
-                      resultLabel[
-                        calcResult(game.score_team, game.score_opponent)
-                      ]
-                    }
-                  </span>
-                </CardTitle>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeGame(gIdx)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            {game.expanded && (
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
-                  <div className="space-y-2">
-                    <Label>モード</Label>
-                    <Select
-                      value={game.mode}
-                      onChange={(e) =>
-                        updateGame(gIdx, {
-                          mode: e.target.value as GameMode,
-                          map_id: "",
-                          hill_times: {
-                            team: [[]],
-                            opponent: [[]],
-                            winner: [[]],
-                          },
-                        })
-                      }
-                    >
-                      <option value="hardpoint">Hardpoint</option>
-                      <option value="snd">S&D</option>
-                      <option value="overload">Overload</option>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>マップ</Label>
-                    <Select
-                      value={game.map_id}
-                      onChange={(e) =>
-                        updateGame(gIdx, {
-                          map_id: e.target.value,
-                          hill_times: {
-                            team: [[]],
-                            opponent: [[]],
-                            winner: [[]],
-                          },
-                        })
-                      }
-                    >
-                      <option value="">未選択</option>
-                      {modeMaps.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.name}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>自チーム</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={game.score_team}
-                      onChange={(e) =>
-                        updateGame(gIdx, { score_team: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>相手チーム</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={game.score_opponent}
-                      onChange={(e) =>
-                        updateGame(gIdx, { score_opponent: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-
-                {game.mode === "hardpoint" && hillCount > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">
-                        地点別 Hill Time（秒）
-                      </Label>
-                      <div className="flex gap-2">
-                        {game.hill_times.team.length < 3 && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              updateGame(gIdx, {
-                                hill_times: {
-                                  team: [...game.hill_times.team, []],
-                                  opponent: [...game.hill_times.opponent, []],
-                                  winner: [...game.hill_times.winner, []],
-                                },
-                              })
-                            }
-                          >
-                            <Plus className="h-3 w-3 mr-1" /> 周追加
-                          </Button>
-                        )}
-                        {game.hill_times.team.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() =>
-                              updateGame(gIdx, {
-                                hill_times: {
-                                  team: game.hill_times.team.slice(0, -1),
-                                  opponent: game.hill_times.opponent.slice(
-                                    0,
-                                    -1,
-                                  ),
-                                  winner: game.hill_times.winner.slice(0, -1),
-                                },
-                              })
-                            }
-                          >
-                            <Trash2 className="h-3 w-3 mr-1" /> 削除
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    {(() => {
-                      const t = game.hill_times.team.flat().reduce((s, v) => s + (parseInt(v) || 0), 0);
-                      const o = game.hill_times.opponent.flat().reduce((s, v) => s + (parseInt(v) || 0), 0);
-                      if (t === 0 && o === 0) return null;
-                      return (
-                        <div className="text-sm text-muted-foreground">
-                          合計: 自 <span className="font-semibold stat-number text-foreground">{t}s</span> / 相手 <span className="font-semibold stat-number text-foreground">{o}s</span>
-                        </div>
-                      );
-                    })()}
-                    <div className="overflow-x-auto">
-                      <table className="text-sm border-separate border-spacing-x-3 border-spacing-y-1">
-                        <thead>
-                          <tr>
-                            <th className="text-xs text-muted-foreground font-medium text-left min-w-[90px]"></th>
-                            {Array.from({ length: hillCount }, (_, h) => (
-                              <th
-                                key={h}
-                                className="text-xs text-muted-foreground font-medium text-center"
-                              >
-                                Hill {h + 1}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {game.hill_times.team.map((_, rIdx) => (
-                            <React.Fragment key={rIdx}>
-                              <tr>
-                                <td className="text-xs text-muted-foreground pr-2 whitespace-nowrap">
-                                  自 {rIdx + 1}周目
-                                </td>
-                                {Array.from({ length: hillCount }, (_, h) => (
-                                  <td key={h}>
-                                    <NumericInput
-                                      className="w-16"
-                                      value={
-                                        game.hill_times.team[rIdx]?.[h] ?? ""
-                                      }
-                                      onChange={(v) =>
-                                        updateHillTime(gIdx, "team", rIdx, h, v)
-                                      }
-                                    />
-                                  </td>
-                                ))}
-                              </tr>
-                              <tr>
-                                <td className="text-xs text-muted-foreground pr-2 whitespace-nowrap">
-                                  相手 {rIdx + 1}周目
-                                </td>
-                                {Array.from({ length: hillCount }, (_, h) => (
-                                    <td key={h}>
-                                      <NumericInput
-                                        className="w-16"
-                                        value={
-                                          game.hill_times.opponent[rIdx]?.[h] ??
-                                          ""
-                                        }
-                                        onChange={(v) =>
-                                          updateHillTime(
-                                            gIdx,
-                                            "opponent",
-                                            rIdx,
-                                            h,
-                                            v,
-                                          )
-                                        }
-                                      />
-                                    </td>
-                                ))}
-                              </tr>
-                              <tr>
-                                <td className="text-xs text-muted-foreground pr-2 whitespace-nowrap py-0.5">
-                                  ローテ
-                                </td>
-                                {Array.from({ length: hillCount }, (_, h) => {
-                                  const w =
-                                    game.hill_times.winner[rIdx]?.[h] ?? null;
-                                  return (
-                                    <td key={h} className="text-center py-0.5">
-                                      <input
-                                        type="checkbox"
-                                        checked={w === "team"}
-                                        onChange={(e) =>
-                                          updateHillWinner(
-                                            gIdx,
-                                            rIdx,
-                                            h,
-                                            e.target.checked
-                                              ? "team"
-                                              : "opponent",
-                                          )
-                                        }
-                                        className="h-4 w-4"
-                                      />
-                                    </td>
-                                  );
-                                })}
-                              </tr>
-                            </React.Fragment>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                <StatsTable
-                  label="自チームスタッツ"
-                  mode={game.mode}
-                  stats={game.stats}
-                  playerOptions={players}
-                  onUpdate={(sIdx, u) => updateStat(gIdx, sIdx, u)}
-                  onReorder={(oldIdx, newIdx) =>
-                    reorderStats(gIdx, "team", oldIdx, newIdx)
-                  }
-                />
-                <div className="border-t pt-4">
-                  <StatsTable
-                    label={`相手チームスタッツ（${selectedOpponent?.name ?? ""}）`}
-                    mode={game.mode}
-                    stats={game.opponent_stats}
-                    playerOptions={selectedOpponent?.opponent_players ?? []}
-                    onUpdate={(sIdx, u) => updateOpponentStat(gIdx, sIdx, u)}
-                    onReorder={(oldIdx, newIdx) =>
-                      reorderStats(gIdx, "opponent", oldIdx, newIdx)
-                    }
-                  />
-                </div>
-              </CardContent>
-            )}
-          </Card>
-        );
-      })}
+      {games.map((game, gIdx) => (
+        <GameCard
+          key={gIdx}
+          game={game}
+          gIdx={gIdx}
+          maps={maps}
+          players={players}
+          selectedOpponent={selectedOpponent}
+          onToggleExpand={toggleExpand}
+          onRemove={removeGame}
+          onUpdateGame={updateGame}
+          onUpdateStat={updateStat}
+          onUpdateOpponentStat={updateOpponentStat}
+          onUpdateHillTime={updateHillTime}
+          onUpdateHillWinner={updateHillWinner}
+          onReorderStats={reorderStats}
+        />
+      ))}
 
       <Button
         type="button"
