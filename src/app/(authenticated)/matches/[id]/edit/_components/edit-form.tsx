@@ -747,6 +747,31 @@ export function EditSeriesForm({
                                 ))}
                               </tr>
                               <tr>
+                                <td className="text-xs text-muted-foreground pr-2 whitespace-nowrap">
+                                  相手 {rIdx + 1}周目
+                                </td>
+                                {Array.from({ length: hillCount }, (_, h) => (
+                                    <td key={h}>
+                                      <NumericInput
+                                        className="w-16"
+                                        value={
+                                          game.hill_times.opponent[rIdx]?.[h] ??
+                                          ""
+                                        }
+                                        onChange={(v) =>
+                                          updateHillTime(
+                                            gIdx,
+                                            "opponent",
+                                            rIdx,
+                                            h,
+                                            v,
+                                          )
+                                        }
+                                      />
+                                    </td>
+                                ))}
+                              </tr>
+                              <tr>
                                 <td className="text-xs text-muted-foreground pr-2 whitespace-nowrap py-0.5">
                                   ローテ
                                 </td>
@@ -773,31 +798,6 @@ export function EditSeriesForm({
                                     </td>
                                   );
                                 })}
-                              </tr>
-                              <tr>
-                                <td className="text-xs text-muted-foreground pr-2 whitespace-nowrap">
-                                  相手 {rIdx + 1}周目
-                                </td>
-                                {Array.from({ length: hillCount }, (_, h) => (
-                                    <td key={h}>
-                                      <NumericInput
-                                        className="w-16"
-                                        value={
-                                          game.hill_times.opponent[rIdx]?.[h] ??
-                                          ""
-                                        }
-                                        onChange={(v) =>
-                                          updateHillTime(
-                                            gIdx,
-                                            "opponent",
-                                            rIdx,
-                                            h,
-                                            v,
-                                          )
-                                        }
-                                      />
-                                    </td>
-                                ))}
                               </tr>
                             </React.Fragment>
                           ))}
