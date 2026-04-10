@@ -50,6 +50,7 @@ export interface MapEntry {
   id: string;
   name: string;
   mode: GameMode;
+  hill_count: number | null;
   team_id: string;
   created_at: string;
 }
@@ -76,6 +77,7 @@ export interface Game {
   result: MatchResult;
   score_team: number;
   score_opponent: number;
+  hill_times: { team: number[][]; opponent: number[][]; winner?: ("team" | "opponent" | null)[][] } | null;
   team_id: string;
   created_at: string;
   maps?: MapEntry;

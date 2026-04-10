@@ -1,3 +1,4 @@
+import React from "react";
 import { getProfile } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -16,7 +17,7 @@ export async function SeriesDetailContent({ id }: { id: string }) {
     getProfile(),
     supabase
       .from("series")
-      .select("*, opponents(*), games(id, game_number, mode, result, score_team, score_opponent, maps(name), game_stats(id, game_id, player_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, players(name, created_at)), opponent_game_stats(id, game_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, opponent_players(name, created_at)))")
+      .select("*, opponents(*), games(id, game_number, mode, result, score_team, score_opponent, hill_times, maps(name), game_stats(id, game_id, player_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, players(name, created_at)), opponent_game_stats(id, game_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, opponent_players(name, created_at)))")
       .eq("id", id)
       .single(),
   ]);
@@ -193,7 +194,100 @@ export async function SeriesDetailContent({ id }: { id: string }) {
                 </span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              {game.mode === "hardpoint" && game.hill_times && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">地点別 Hill Time</p>
+                  <div className="overflow-x-auto">
+                    {(() => {
+                      const raw = game.hill_times!;
+                      // 旧データ互換: フラット配列 → Round1扱い、1次元オブジェクト → 2次元に変換
+                      let ht: { team: number[][]; opponent: number[][]; winner?: ("team" | "opponent" | null)[][] };
+                      if (Array.isArray(raw)) {
+                        ht = { team: [raw as unknown as number[]], opponent: [[]], winner: [[]] };
+                      } else if (Array.isArray(raw.team) && raw.team.length > 0 && !Array.isArray(raw.team[0])) {
+                        ht = { team: [raw.team as unknown as number[]], opponent: [raw.opponent as unknown as number[]], winner: [[]] };
+                      } else {
+                        ht = raw as { team: number[][]; opponent: number[][]; winner?: ("team" | "opponent" | null)[][] };
+                      }
+                      const hasData = ht.team.flat().some((v) => v > 0) || ht.opponent.flat().some((v) => v > 0);
+                      if (!hasData) return null;
+
+                      const hillCount = Math.max(
+                        ...ht.team.map((r) => r.length),
+                        ...ht.opponent.map((r) => r.length),
+                        0
+                      );
+                      const roundCount = Math.max(ht.team.length, ht.opponent.length, 1);
+                      return (
+                        <table className="text-sm border-separate border-spacing-x-4 border-spacing-y-0.5">
+                          <thead>
+                            <tr>
+                              <th className="text-xs text-muted-foreground font-medium text-left min-w-[90px]"></th>
+                              {Array.from({ length: hillCount }, (_, h) => (
+                                <th key={h} className="text-xs text-muted-foreground font-medium text-center">Hill {h + 1}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Array.from({ length: roundCount }, (_, rIdx) => (
+                              <React.Fragment key={rIdx}>
+                                {rIdx > 0 && (
+                                  <tr><td colSpan={hillCount + 1} className="pt-2" /></tr>
+                                )}
+                                <tr>
+                                  <td className="text-xs text-muted-foreground pr-2 whitespace-nowrap font-medium">{rIdx + 1}周目</td>
+                                  <td colSpan={hillCount} />
+                                </tr>
+                                <tr>
+                                  <td className="text-xs text-muted-foreground pr-2 whitespace-nowrap pl-2">{teamName}</td>
+                                  {Array.from({ length: hillCount }, (_, h) => {
+                                    const tv = ht.team[rIdx]?.[h] ?? 0;
+                                    const ov = ht.opponent[rIdx]?.[h] ?? 0;
+                                    const color = tv > ov ? "text-win" : tv < ov ? "text-loss" : "";
+                                    return (
+                                      <td key={h} className={`text-center stat-number text-sm font-medium ${color}`}>
+                                        {tv > 0 ? `${tv}s` : ""}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                                <tr>
+                                  <td className="text-xs text-muted-foreground pr-2 whitespace-nowrap pl-2">{series.opponents?.name}</td>
+                                  {Array.from({ length: hillCount }, (_, h) => {
+                                    const tv = ht.team[rIdx]?.[h] ?? 0;
+                                    const ov = ht.opponent[rIdx]?.[h] ?? 0;
+                                    const color = ov > tv ? "text-win" : ov < tv ? "text-loss" : "";
+                                    return (
+                                      <td key={h} className={`text-center stat-number text-sm font-medium ${color}`}>
+                                        {ov > 0 ? `${ov}s` : ""}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                                {ht.winner && (
+                                  <tr>
+                                    <td />
+                                    {Array.from({ length: hillCount }, (_, h) => {
+                                      const w = ht.winner?.[rIdx]?.[h] ?? null;
+                                      if (w === null) return <td key={h} />;
+                                      return (
+                                        <td key={h} className={`text-center text-sm font-bold ${w === "team" ? "text-win" : "text-loss"}`}>
+                                          {w === "team" ? "◯" : "☓"}
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            ))}
+                          </tbody>
+                        </table>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-2">{teamName}</p>

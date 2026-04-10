@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,14 @@ import { Spinner } from "@/components/ui/spinner";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { StatsTable } from "@/components/stats-table";
 import { arrayMove } from "@dnd-kit/sortable";
-import type { GameMode, SeriesType, MatchResult, Opponent, Player, MapEntry } from "@/lib/types";
+import type {
+  GameMode,
+  SeriesType,
+  MatchResult,
+  Opponent,
+  Player,
+  MapEntry,
+} from "@/lib/types";
 
 function calcResult(scoreTeam: string, scoreOpponent: string): MatchResult {
   const t = parseInt(scoreTeam) || 0;
@@ -25,9 +32,21 @@ function calcResult(scoreTeam: string, scoreOpponent: string): MatchResult {
   return "draw";
 }
 
-const resultLabel: Record<MatchResult, string> = { win: "WIN", lose: "LOSE", draw: "DRAW" };
-const resultColor: Record<MatchResult, string> = { win: "text-green-500", lose: "text-red-500", draw: "text-yellow-500" };
-const modeLabel: Record<GameMode, string> = { hardpoint: "Hardpoint", snd: "S&D", overload: "Overload" };
+const resultLabel: Record<MatchResult, string> = {
+  win: "WIN",
+  lose: "LOSE",
+  draw: "DRAW",
+};
+const resultColor: Record<MatchResult, string> = {
+  win: "text-green-500",
+  lose: "text-red-500",
+  draw: "text-yellow-500",
+};
+const modeLabel: Record<GameMode, string> = {
+  hardpoint: "Hardpoint",
+  snd: "S&D",
+  overload: "Overload",
+};
 
 interface StatInput {
   player_id: string;
@@ -47,13 +66,29 @@ interface GameInput {
   map_id: string;
   score_team: string;
   score_opponent: string;
+  hill_times: {
+    team: string[][];
+    opponent: string[][];
+    winner: ("team" | "opponent" | null)[][];
+  };
   stats: StatInput[];
   opponent_stats: StatInput[];
   expanded: boolean;
 }
 
 function emptyStats(): StatInput {
-  return { player_id: "", kills: "", deaths: "", damage: "", hill_time: "", plants: "", defuses: "", first_bloods: "", first_deaths: "", goals: "" };
+  return {
+    player_id: "",
+    kills: "",
+    deaths: "",
+    damage: "",
+    hill_time: "",
+    plants: "",
+    defuses: "",
+    first_bloods: "",
+    first_deaths: "",
+    goals: "",
+  };
 }
 
 interface SeriesFormProps {
@@ -63,7 +98,12 @@ interface SeriesFormProps {
   teamId: string;
 }
 
-export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps) {
+export function SeriesForm({
+  opponents,
+  players,
+  maps,
+  teamId,
+}: SeriesFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -88,59 +128,162 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
 
     let defaultStats: StatInput[];
     if (lastGame) {
-      defaultStats = pad(lastGame.stats.map((s) => ({ ...emptyStats(), player_id: s.player_id })));
+      defaultStats = pad(
+        lastGame.stats.map((s) => ({
+          ...emptyStats(),
+          player_id: s.player_id,
+        })),
+      );
     } else {
-      defaultStats = pad(players.filter((p) => p.is_default).map((p) => ({ ...emptyStats(), player_id: p.id })));
+      defaultStats = pad(
+        players
+          .filter((p) => p.is_default)
+          .map((p) => ({ ...emptyStats(), player_id: p.id })),
+      );
     }
 
     let defaultOpponentStats: StatInput[];
     if (lastGame) {
-      defaultOpponentStats = pad(lastGame.opponent_stats.map((s) => ({ ...emptyStats(), player_id: s.player_id })));
+      defaultOpponentStats = pad(
+        lastGame.opponent_stats.map((s) => ({
+          ...emptyStats(),
+          player_id: s.player_id,
+        })),
+      );
     } else {
       const selectedOpponent = opponents.find((o) => o.id === opponentId);
-      defaultOpponentStats = pad((selectedOpponent?.opponent_players ?? [])
-        .filter((p) => p.is_default)
-        .map((p) => ({ ...emptyStats(), player_id: p.id })));
+      defaultOpponentStats = pad(
+        (selectedOpponent?.opponent_players ?? [])
+          .filter((p) => p.is_default)
+          .map((p) => ({ ...emptyStats(), player_id: p.id })),
+      );
     }
 
-    setGames([...games, { mode: "hardpoint", map_id: "", score_team: "", score_opponent: "", stats: defaultStats, opponent_stats: defaultOpponentStats, expanded: true }]);
+    setGames([
+      ...games,
+      {
+        mode: "hardpoint",
+        map_id: "",
+        score_team: "",
+        score_opponent: "",
+        hill_times: { team: [[]], opponent: [[]], winner: [[]] },
+        stats: defaultStats,
+        opponent_stats: defaultOpponentStats,
+        expanded: true,
+      },
+    ]);
   };
 
-  const removeGame = (idx: number) => setGames(games.filter((_, i) => i !== idx));
+  const removeGame = (idx: number) =>
+    setGames(games.filter((_, i) => i !== idx));
 
   const updateGame = (idx: number, updates: Partial<GameInput>) =>
     setGames(games.map((g, i) => (i === idx ? { ...g, ...updates } : g)));
 
-  const toggleExpand = (idx: number) => updateGame(idx, { expanded: !games[idx].expanded });
+  const toggleExpand = (idx: number) =>
+    updateGame(idx, { expanded: !games[idx].expanded });
 
-  const updateStat = (gameIdx: number, statIdx: number, updates: Partial<StatInput>) =>
-    updateGame(gameIdx, { stats: games[gameIdx].stats.map((s, i) => (i === statIdx ? { ...s, ...updates } : s)) });
+  const updateStat = (
+    gameIdx: number,
+    statIdx: number,
+    updates: Partial<StatInput>,
+  ) =>
+    updateGame(gameIdx, {
+      stats: games[gameIdx].stats.map((s, i) =>
+        i === statIdx ? { ...s, ...updates } : s,
+      ),
+    });
 
-  const updateOpponentStat = (gameIdx: number, statIdx: number, updates: Partial<StatInput>) =>
-    updateGame(gameIdx, { opponent_stats: games[gameIdx].opponent_stats.map((s, i) => (i === statIdx ? { ...s, ...updates } : s)) });
+  const updateOpponentStat = (
+    gameIdx: number,
+    statIdx: number,
+    updates: Partial<StatInput>,
+  ) =>
+    updateGame(gameIdx, {
+      opponent_stats: games[gameIdx].opponent_stats.map((s, i) =>
+        i === statIdx ? { ...s, ...updates } : s,
+      ),
+    });
 
-  const reorderStats = (gameIdx: number, side: "team" | "opponent", oldIndex: number, newIndex: number) => {
-    setGames((prev) => prev.map((g, i) => {
-      if (i < gameIdx) return g;
-      const key = side === "team" ? "stats" : "opponent_stats";
-      if (i === gameIdx) return { ...g, [key]: arrayMove(g[key], oldIndex, newIndex) };
-      // For subsequent games, apply same player_id order
-      const reorderedIds = arrayMove(prev[gameIdx][key], oldIndex, newIndex).map((s) => s.player_id);
-      const newStats = [...g[key]];
-      const sorted: typeof newStats = [];
-      for (const pid of reorderedIds) {
-        const idx = newStats.findIndex((s) => s.player_id === pid);
-        if (idx !== -1) sorted.push(newStats.splice(idx, 1)[0]);
-      }
-      sorted.push(...newStats);
-      return { ...g, [key]: sorted };
-    }));
+  const updateHillWinner = (
+    gameIdx: number,
+    roundIdx: number,
+    hillIdx: number,
+    value: "team" | "opponent" | null,
+  ) => {
+    setGames((prev) =>
+      prev.map((g, i) => {
+        if (i !== gameIdx) return g;
+        const rows = g.hill_times.winner.map((r) => [...r]);
+        while (rows.length <= roundIdx) rows.push([]);
+        const row = rows[roundIdx];
+        while (row.length <= hillIdx) row.push(null);
+        row[hillIdx] = value;
+        return { ...g, hill_times: { ...g.hill_times, winner: rows } };
+      }),
+    );
+  };
+
+  const updateHillTime = (
+    gameIdx: number,
+    side: "team" | "opponent",
+    roundIdx: number,
+    hillIdx: number,
+    value: string,
+  ) => {
+    setGames((prev) =>
+      prev.map((g, i) => {
+        if (i !== gameIdx) return g;
+        const rounds = g.hill_times[side].map((r) => [...r]);
+        while (rounds.length <= roundIdx) rounds.push([]);
+        const round = rounds[roundIdx];
+        while (round.length <= hillIdx) round.push("");
+        round[hillIdx] = value;
+        return { ...g, hill_times: { ...g.hill_times, [side]: rounds } };
+      }),
+    );
+  };
+
+  const reorderStats = (
+    gameIdx: number,
+    side: "team" | "opponent",
+    oldIndex: number,
+    newIndex: number,
+  ) => {
+    setGames((prev) =>
+      prev.map((g, i) => {
+        if (i < gameIdx) return g;
+        const key = side === "team" ? "stats" : "opponent_stats";
+        if (i === gameIdx)
+          return { ...g, [key]: arrayMove(g[key], oldIndex, newIndex) };
+        // For subsequent games, apply same player_id order
+        const reorderedIds = arrayMove(
+          prev[gameIdx][key],
+          oldIndex,
+          newIndex,
+        ).map((s) => s.player_id);
+        const newStats = [...g[key]];
+        const sorted: typeof newStats = [];
+        for (const pid of reorderedIds) {
+          const idx = newStats.findIndex((s) => s.player_id === pid);
+          if (idx !== -1) sorted.push(newStats.splice(idx, 1)[0]);
+        }
+        sorted.push(...newStats);
+        return { ...g, [key]: sorted };
+      }),
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!opponentId) { setError("対戦相手を選択してください"); return; }
-    if (games.length === 0) { setError("ゲームを1つ以上追加してください"); return; }
+    if (!opponentId) {
+      setError("対戦相手を選択してください");
+      return;
+    }
+    if (games.length === 0) {
+      setError("ゲームを1つ以上追加してください");
+      return;
+    }
     setError("");
     setLoading(true);
 
@@ -149,26 +292,55 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
     // 1. Create series
     const { data: seriesData, error: seriesErr } = await supabase
       .from("series")
-      .insert({ series_date: seriesDate, type: seriesType, opponent_id: opponentId, team_id: teamId, memo: memo.trim() || null, youtube_url: youtubeUrl.trim() || null })
+      .insert({
+        series_date: seriesDate,
+        type: seriesType,
+        opponent_id: opponentId,
+        team_id: teamId,
+        memo: memo.trim() || null,
+        youtube_url: youtubeUrl.trim() || null,
+      })
       .select("id")
       .single();
-    if (seriesErr || !seriesData) { setError(seriesErr?.message ?? "シリーズ作成失敗"); setLoading(false); return; }
+    if (seriesErr || !seriesData) {
+      setError(seriesErr?.message ?? "シリーズ作成失敗");
+      setLoading(false);
+      return;
+    }
 
     // 2. Create games
     const { data: gamesData, error: gamesErr } = await supabase
       .from("games")
-      .insert(games.map((g, idx) => ({
-        series_id: seriesData.id,
-        game_number: idx + 1,
-        mode: g.mode,
-        map_id: g.map_id || null,
-        result: calcResult(g.score_team, g.score_opponent),
-        score_team: parseInt(g.score_team) || 0,
-        score_opponent: parseInt(g.score_opponent) || 0,
-        team_id: teamId,
-      })))
+      .insert(
+        games.map((g, idx) => ({
+          series_id: seriesData.id,
+          game_number: idx + 1,
+          mode: g.mode,
+          map_id: g.map_id || null,
+          result: calcResult(g.score_team, g.score_opponent),
+          score_team: parseInt(g.score_team) || 0,
+          score_opponent: parseInt(g.score_opponent) || 0,
+          hill_times:
+            g.mode === "hardpoint"
+              ? {
+                  team: g.hill_times.team.map((round) =>
+                    round.map((t) => parseInt(t) || 0),
+                  ),
+                  opponent: g.hill_times.opponent.map((round) =>
+                    round.map((t) => parseInt(t) || 0),
+                  ),
+                  winner: g.hill_times.winner,
+                }
+              : null,
+          team_id: teamId,
+        })),
+      )
       .select("id, game_number");
-    if (gamesErr || !gamesData) { setError(gamesErr?.message ?? "ゲーム作成失敗"); setLoading(false); return; }
+    if (gamesErr || !gamesData) {
+      setError(gamesErr?.message ?? "ゲーム作成失敗");
+      setLoading(false);
+      return;
+    }
 
     // 3. Create game_stats (自チーム)
     const statsInsert: Array<Record<string, unknown>> = [];
@@ -186,11 +358,14 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
           kills: parseInt(stat.kills) || 0,
           deaths: parseInt(stat.deaths) || 0,
           damage: parseInt(stat.damage) || 0,
-          hill_time: game.mode === "hardpoint" ? parseInt(stat.hill_time) || 0 : null,
+          hill_time:
+            game.mode === "hardpoint" ? parseInt(stat.hill_time) || 0 : null,
           plants: game.mode === "snd" ? parseInt(stat.plants) || 0 : null,
           defuses: game.mode === "snd" ? parseInt(stat.defuses) || 0 : null,
-          first_bloods: game.mode === "snd" ? parseInt(stat.first_bloods) || 0 : null,
-          first_deaths: game.mode === "snd" ? parseInt(stat.first_deaths) || 0 : null,
+          first_bloods:
+            game.mode === "snd" ? parseInt(stat.first_bloods) || 0 : null,
+          first_deaths:
+            game.mode === "snd" ? parseInt(stat.first_deaths) || 0 : null,
           goals: game.mode === "overload" ? parseInt(stat.goals) || 0 : null,
           team_id: teamId,
         });
@@ -204,11 +379,14 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
           kills: parseInt(stat.kills) || 0,
           deaths: parseInt(stat.deaths) || 0,
           damage: parseInt(stat.damage) || 0,
-          hill_time: game.mode === "hardpoint" ? parseInt(stat.hill_time) || 0 : null,
+          hill_time:
+            game.mode === "hardpoint" ? parseInt(stat.hill_time) || 0 : null,
           plants: game.mode === "snd" ? parseInt(stat.plants) || 0 : null,
           defuses: game.mode === "snd" ? parseInt(stat.defuses) || 0 : null,
-          first_bloods: game.mode === "snd" ? parseInt(stat.first_bloods) || 0 : null,
-          first_deaths: game.mode === "snd" ? parseInt(stat.first_deaths) || 0 : null,
+          first_bloods:
+            game.mode === "snd" ? parseInt(stat.first_bloods) || 0 : null,
+          first_deaths:
+            game.mode === "snd" ? parseInt(stat.first_deaths) || 0 : null,
           goals: game.mode === "overload" ? parseInt(stat.goals) || 0 : null,
           team_id: teamId,
         });
@@ -216,12 +394,24 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
     }
 
     if (statsInsert.length > 0) {
-      const { error: statsErr } = await supabase.from("game_stats").insert(statsInsert);
-      if (statsErr) { setError(statsErr.message); setLoading(false); return; }
+      const { error: statsErr } = await supabase
+        .from("game_stats")
+        .insert(statsInsert);
+      if (statsErr) {
+        setError(statsErr.message);
+        setLoading(false);
+        return;
+      }
     }
     if (opponentStatsInsert.length > 0) {
-      const { error: oppStatsErr } = await supabase.from("opponent_game_stats").insert(opponentStatsInsert);
-      if (oppStatsErr) { setError(oppStatsErr.message); setLoading(false); return; }
+      const { error: oppStatsErr } = await supabase
+        .from("opponent_game_stats")
+        .insert(opponentStatsInsert);
+      if (oppStatsErr) {
+        setError(oppStatsErr.message);
+        setLoading(false);
+        return;
+      }
     }
 
     router.push("/matches");
@@ -241,7 +431,10 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
             <div className="space-y-2">
               <Label>タイプ</Label>
-              <Select value={seriesType} onChange={(e) => setSeriesType(e.target.value as SeriesType)}>
+              <Select
+                value={seriesType}
+                onChange={(e) => setSeriesType(e.target.value as SeriesType)}
+              >
                 <option value="scrim">Scrim</option>
                 <option value="tournament">大会</option>
               </Select>
@@ -252,20 +445,36 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
             </div>
             <div className="space-y-2 col-span-1 sm:col-span-2">
               <Label>対戦相手</Label>
-              <Select value={opponentId} onChange={(e) => setOpponentId(e.target.value)} required>
+              <Select
+                value={opponentId}
+                onChange={(e) => setOpponentId(e.target.value)}
+                required
+              >
                 <option value="">選択してください</option>
                 {opponents.map((opp) => (
-                  <option key={opp.id} value={opp.id}>{opp.name}</option>
+                  <option key={opp.id} value={opp.id}>
+                    {opp.name}
+                  </option>
                 ))}
               </Select>
             </div>
             <div className="space-y-2 col-span-1 sm:col-span-2 md:col-span-4">
               <Label>YouTube URL</Label>
-              <Input type="url" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." />
+              <Input
+                type="url"
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
+              />
             </div>
             <div className="space-y-2 col-span-1 sm:col-span-2 md:col-span-4">
               <Label>メモ</Label>
-              <Textarea value={memo} onChange={(e) => setMemo(e.target.value)} placeholder="メモ（任意）" className="h-16" />
+              <Textarea
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                placeholder="メモ（任意）"
+                className="h-16"
+              />
             </div>
           </div>
         </CardContent>
@@ -274,23 +483,46 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
       {/* Games */}
       {games.map((game, gIdx) => {
         const modeMaps = maps.filter((m) => m.mode === game.mode);
+        const selectedMap = maps.find((m) => m.id === game.map_id);
+        const hillCount =
+          game.mode === "hardpoint" ? (selectedMap?.hill_count ?? 0) : 0;
         return (
           <Card key={gIdx}>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base sm:text-lg flex flex-wrap items-center gap-1.5 sm:gap-2">
-                  <button type="button" onClick={() => toggleExpand(gIdx)} className="cursor-pointer">
-                    {game.expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  <button
+                    type="button"
+                    onClick={() => toggleExpand(gIdx)}
+                    className="cursor-pointer"
+                  >
+                    {game.expanded ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
                   </button>
                   Game {gIdx + 1}
                   <span className="text-xs sm:text-sm font-normal text-muted-foreground">
-                    {modeLabel[game.mode]} - {game.score_team} : {game.score_opponent}
+                    {modeLabel[game.mode]} - {game.score_team} :{" "}
+                    {game.score_opponent}
                   </span>
-                  <span className={`text-xs sm:text-sm font-medium ${resultColor[calcResult(game.score_team, game.score_opponent)]}`}>
-                    {resultLabel[calcResult(game.score_team, game.score_opponent)]}
+                  <span
+                    className={`text-xs sm:text-sm font-medium ${resultColor[calcResult(game.score_team, game.score_opponent)]}`}
+                  >
+                    {
+                      resultLabel[
+                        calcResult(game.score_team, game.score_opponent)
+                      ]
+                    }
                   </span>
                 </CardTitle>
-                <Button type="button" variant="ghost" size="icon" onClick={() => removeGame(gIdx)}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removeGame(gIdx)}
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -300,7 +532,20 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
                   <div className="space-y-2">
                     <Label>モード</Label>
-                    <Select value={game.mode} onChange={(e) => updateGame(gIdx, { mode: e.target.value as GameMode, map_id: "" })}>
+                    <Select
+                      value={game.mode}
+                      onChange={(e) =>
+                        updateGame(gIdx, {
+                          mode: e.target.value as GameMode,
+                          map_id: "",
+                          hill_times: {
+                            team: [[]],
+                            opponent: [[]],
+                            winner: [[]],
+                          },
+                        })
+                      }
+                    >
                       <option value="hardpoint">Hardpoint</option>
                       <option value="snd">S&D</option>
                       <option value="overload">Overload</option>
@@ -308,22 +553,189 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
                   </div>
                   <div className="space-y-2">
                     <Label>マップ</Label>
-                    <Select value={game.map_id} onChange={(e) => updateGame(gIdx, { map_id: e.target.value })}>
+                    <Select
+                      value={game.map_id}
+                      onChange={(e) =>
+                        updateGame(gIdx, {
+                          map_id: e.target.value,
+                          hill_times: {
+                            team: [[]],
+                            opponent: [[]],
+                            winner: [[]],
+                          },
+                        })
+                      }
+                    >
                       <option value="">未選択</option>
                       {modeMaps.map((m) => (
-                        <option key={m.id} value={m.id}>{m.name}</option>
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
                       ))}
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>自チーム</Label>
-                    <NumericInput value={game.score_team} onChange={(v) => updateGame(gIdx, { score_team: v })} className="w-full" />
+                    <NumericInput
+                      value={game.score_team}
+                      onChange={(v) => updateGame(gIdx, { score_team: v })}
+                      className="w-full"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>相手チーム</Label>
-                    <NumericInput value={game.score_opponent} onChange={(v) => updateGame(gIdx, { score_opponent: v })} className="w-full" />
+                    <NumericInput
+                      value={game.score_opponent}
+                      onChange={(v) => updateGame(gIdx, { score_opponent: v })}
+                      className="w-full"
+                    />
                   </div>
                 </div>
+
+                {game.mode === "hardpoint" && hillCount > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium">
+                        地点別 Hill Time（秒）
+                      </Label>
+                      <div className="flex gap-2">
+                        {game.hill_times.team.length < 3 && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              updateGame(gIdx, {
+                                hill_times: {
+                                  team: [...game.hill_times.team, []],
+                                  opponent: [...game.hill_times.opponent, []],
+                                  winner: [...game.hill_times.winner, []],
+                                },
+                              })
+                            }
+                          >
+                            <Plus className="h-3 w-3 mr-1" /> 周追加
+                          </Button>
+                        )}
+                        {game.hill_times.team.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              updateGame(gIdx, {
+                                hill_times: {
+                                  team: game.hill_times.team.slice(0, -1),
+                                  opponent: game.hill_times.opponent.slice(
+                                    0,
+                                    -1,
+                                  ),
+                                  winner: game.hill_times.winner.slice(0, -1),
+                                },
+                              })
+                            }
+                          >
+                            <Trash2 className="h-3 w-3 mr-1" /> 削除
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="text-sm border-separate border-spacing-x-3 border-spacing-y-1">
+                        <thead>
+                          <tr>
+                            <th className="text-xs text-muted-foreground font-medium text-left min-w-[90px]"></th>
+                            {Array.from({ length: hillCount }, (_, h) => (
+                              <th
+                                key={h}
+                                className="text-xs text-muted-foreground font-medium text-center"
+                              >
+                                Hill {h + 1}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {game.hill_times.team.map((_, rIdx) => (
+                            <React.Fragment key={rIdx}>
+                              <tr>
+                                <td className="text-xs text-muted-foreground pr-2 whitespace-nowrap">
+                                  自 {rIdx + 1}周目
+                                </td>
+                                {Array.from({ length: hillCount }, (_, h) => (
+                                  <td key={h}>
+                                    <NumericInput
+                                      className="w-16"
+                                      value={
+                                        game.hill_times.team[rIdx]?.[h] ?? ""
+                                      }
+                                      onChange={(v) =>
+                                        updateHillTime(gIdx, "team", rIdx, h, v)
+                                      }
+                                    />
+                                  </td>
+                                ))}
+                              </tr>
+                              <tr>
+                                <td className="text-xs text-muted-foreground pr-2 whitespace-nowrap py-0.5">
+                                  ローテ
+                                </td>
+                                {Array.from({ length: hillCount }, (_, h) => {
+                                  const w =
+                                    game.hill_times.winner[rIdx]?.[h] ?? null;
+                                  return (
+                                    <td key={h} className="text-center py-0.5">
+                                      <input
+                                        type="checkbox"
+                                        checked={w === "team"}
+                                        onChange={(e) =>
+                                          updateHillWinner(
+                                            gIdx,
+                                            rIdx,
+                                            h,
+                                            e.target.checked
+                                              ? "team"
+                                              : "opponent",
+                                          )
+                                        }
+                                        className="h-4 w-4"
+                                      />
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                              <tr>
+                                <td className="text-xs text-muted-foreground pr-2 whitespace-nowrap">
+                                  相手 {rIdx + 1}周目
+                                </td>
+                                {Array.from({ length: hillCount }, (_, h) => (
+                                  <td key={h}>
+                                    <NumericInput
+                                      className="w-16"
+                                      value={
+                                        game.hill_times.opponent[rIdx]?.[h] ??
+                                        ""
+                                      }
+                                      onChange={(v) =>
+                                        updateHillTime(
+                                          gIdx,
+                                          "opponent",
+                                          rIdx,
+                                          h,
+                                          v,
+                                        )
+                                      }
+                                    />
+                                  </td>
+                                ))}
+                              </tr>
+                            </React.Fragment>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
 
                 <StatsTable
                   label="自チームスタッツ"
@@ -331,7 +743,9 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
                   stats={game.stats}
                   playerOptions={players}
                   onUpdate={(sIdx, u) => updateStat(gIdx, sIdx, u)}
-                  onReorder={(oldIdx, newIdx) => reorderStats(gIdx, "team", oldIdx, newIdx)}
+                  onReorder={(oldIdx, newIdx) =>
+                    reorderStats(gIdx, "team", oldIdx, newIdx)
+                  }
                 />
 
                 <div className="border-t pt-4">
@@ -341,7 +755,9 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
                     stats={game.opponent_stats}
                     playerOptions={selectedOpponent?.opponent_players ?? []}
                     onUpdate={(sIdx, u) => updateOpponentStat(gIdx, sIdx, u)}
-                    onReorder={(oldIdx, newIdx) => reorderStats(gIdx, "opponent", oldIdx, newIdx)}
+                    onReorder={(oldIdx, newIdx) =>
+                      reorderStats(gIdx, "opponent", oldIdx, newIdx)
+                    }
                   />
                 </div>
               </CardContent>
@@ -350,7 +766,13 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
         );
       })}
 
-      <Button type="button" variant="outline" onClick={addGame} className="w-full" disabled={!opponentId}>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={addGame}
+        className="w-full"
+        disabled={!opponentId}
+      >
         <Plus className="h-4 w-4 mr-2" /> ゲームを追加
       </Button>
 
@@ -358,7 +780,14 @@ export function SeriesForm({ opponents, players, maps, teamId }: SeriesFormProps
 
       <div className="flex gap-2">
         <Button type="submit" disabled={loading}>
-          {loading ? <><Spinner className="h-4 w-4 mr-2" />保存中...</> : "登録"}
+          {loading ? (
+            <>
+              <Spinner className="h-4 w-4 mr-2" />
+              保存中...
+            </>
+          ) : (
+            "登録"
+          )}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>
           キャンセル
