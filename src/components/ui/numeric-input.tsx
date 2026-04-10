@@ -58,7 +58,7 @@ export function NumericInput({ value, onChange, className }: NumericInputProps) 
         if (e.key === "ArrowDown") { e.preventDefault(); moveFocus(e.currentTarget, "down"); }
         if (e.key === "ArrowRight") { e.preventDefault(); moveFocus(e.currentTarget, "next"); }
         if (e.key === "ArrowLeft") { e.preventDefault(); moveFocus(e.currentTarget, "prev"); }
-        if (e.key === "Enter" || e.key === "Tab") { moveFocus(e.currentTarget, "next"); }
+        if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); moveFocus(e.currentTarget, "next"); }
       }}
       className={cn(
         "h-9 w-16 sm:h-7 sm:w-14 rounded border border-input text-sm sm:text-xs text-center bg-transparent px-1",
