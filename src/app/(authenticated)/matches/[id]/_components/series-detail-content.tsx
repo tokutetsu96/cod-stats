@@ -247,7 +247,7 @@ export async function SeriesDetailContent({ id }: { id: string }) {
                                     const color = tv > ov ? "text-win" : tv < ov ? "text-loss" : "";
                                     return (
                                       <td key={h} className={`text-center stat-number text-sm font-medium ${color}`}>
-                                        {tv > 0 ? `${tv}s` : ""}
+                                        {(tv > 0 || ov > 0) ? `${tv}s` : ""}
                                       </td>
                                     );
                                   })}
@@ -260,7 +260,7 @@ export async function SeriesDetailContent({ id }: { id: string }) {
                                     const color = ov > tv ? "text-win" : ov < tv ? "text-loss" : "";
                                     return (
                                       <td key={h} className={`text-center stat-number text-sm font-medium ${color}`}>
-                                        {ov > 0 ? `${ov}s` : ""}
+                                        {(tv > 0 || ov > 0) ? `${ov}s` : ""}
                                       </td>
                                     );
                                   })}

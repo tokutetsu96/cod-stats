@@ -640,6 +640,16 @@ export function SeriesForm({
                         )}
                       </div>
                     </div>
+                    {(() => {
+                      const t = game.hill_times.team.flat().reduce((s, v) => s + (parseInt(v) || 0), 0);
+                      const o = game.hill_times.opponent.flat().reduce((s, v) => s + (parseInt(v) || 0), 0);
+                      if (t === 0 && o === 0) return null;
+                      return (
+                        <div className="text-sm text-muted-foreground">
+                          合計: 自 <span className="font-semibold stat-number text-foreground">{t}s</span> / 相手 <span className="font-semibold stat-number text-foreground">{o}s</span>
+                        </div>
+                      );
+                    })()}
                     <div className="overflow-x-auto">
                       <table className="text-sm border-separate border-spacing-x-3 border-spacing-y-1">
                         <thead>
