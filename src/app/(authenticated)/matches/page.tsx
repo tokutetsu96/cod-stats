@@ -11,7 +11,7 @@ export default async function MatchesPage() {
     getProfile(),
     supabase
       .from("series")
-      .select("*, opponents(*), games(result)")
+      .select("*, opponents(id, name), games(result)")
       .order("series_date", { ascending: false })
       .limit(50),
     supabase.from("opponents").select("id, name").order("name"),

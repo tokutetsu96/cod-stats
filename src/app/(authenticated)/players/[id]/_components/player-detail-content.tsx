@@ -1,13 +1,8 @@
-import { getProfile } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { notFound } from "next/navigation";
 import type { GameStat, GameMode, MatchResult } from "@/lib/types";
-
-function calcKD(kills: number, deaths: number) {
-  if (deaths === 0) return kills.toFixed(2);
-  return (kills / deaths).toFixed(2);
-}
+import { calcKD } from "@/lib/utils";
 
 function avg(arr: number[]) {
   if (arr.length === 0) return "0";
@@ -19,8 +14,7 @@ const modeLabel: Record<string, string> = { hardpoint: "Hardpoint", snd: "S&D", 
 export async function PlayerDetailContent({ id }: { id: string }) {
   const supabase = await createClient();
 
-  const [, { data: player }, { data: stats }] = await Promise.all([
-    getProfile(),
+  const [{ data: player }, { data: stats }] = await Promise.all([
     supabase.from("players").select("*").eq("id", id).single(),
     supabase.from("game_stats").select("*, games(mode, result)").eq("player_id", id).limit(500),
   ]);
