@@ -1,4 +1,3 @@
-import { getProfile } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { notFound } from "next/navigation";
@@ -16,8 +15,7 @@ const resultClass: Record<string, string> = {
 export async function OpponentDetailContent({ id }: { id: string }) {
   const supabase = await createClient();
 
-  const [, { data: opponent }, { data: seriesData }] = await Promise.all([
-    getProfile(),
+  const [{ data: opponent }, { data: seriesData }] = await Promise.all([
     supabase.from("opponents").select("*").eq("id", id).single(),
     supabase
       .from("series")

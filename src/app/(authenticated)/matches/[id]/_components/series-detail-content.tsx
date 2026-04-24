@@ -35,17 +35,18 @@ export async function SeriesDetailContent({ id }: { id: string }) {
   type ModeAcc = { kills: number; deaths: number; damage: number; count: number; hillTime: number; plants: number; defuses: number; firstBloods: number; firstDeaths: number; goals: number };
   const emptyModeAcc = (): ModeAcc => ({ kills: 0, deaths: 0, damage: 0, count: 0, hillTime: 0, plants: 0, defuses: 0, firstBloods: 0, firstDeaths: 0, goals: 0 });
 
-  const playerMap = new Map<string, { id: string; name: string; kills: number; deaths: number; damage: number; modes: Record<string, ModeAcc> }>();
+  const playerMap = new Map<string, { id: string; name: string; kills: number; deaths: number; damage: number; count: number; modes: Record<string, ModeAcc> }>();
   for (const stat of allStats) {
     const pid = stat.player_id;
     const mode = gameIdToMode.get(stat.game_id) ?? "";
     if (!playerMap.has(pid)) {
-      playerMap.set(pid, { id: pid, name: stat.players?.name ?? "-", kills: 0, deaths: 0, damage: 0, modes: { hardpoint: emptyModeAcc(), snd: emptyModeAcc(), overload: emptyModeAcc() } });
+      playerMap.set(pid, { id: pid, name: stat.players?.name ?? "-", kills: 0, deaths: 0, damage: 0, count: 0, modes: { hardpoint: emptyModeAcc(), snd: emptyModeAcc(), overload: emptyModeAcc() } });
     }
     const p = playerMap.get(pid)!;
     p.kills += stat.kills;
     p.deaths += stat.deaths;
     p.damage += stat.damage;
+    p.count++;
     const m = p.modes[mode];
     if (m) {
       m.kills += stat.kills;
@@ -77,17 +78,14 @@ export async function SeriesDetailContent({ id }: { id: string }) {
     };
   }
 
-  const playerKDData: PlayerKDData[] = [...playerMap.values()].map((p) => {
-    const c = allStats.filter((s) => s.player_id === p.id).length;
-    return {
+  const playerKDData: PlayerKDData[] = [...playerMap.values()].map((p) => ({
     id: p.id,
     name: p.name,
-    overall: { avgKills: avg(p.kills, c), avgDeaths: avg(p.deaths, c), avgDamage: avg(p.damage, c), count: c, kd: calcKD(p.kills, p.deaths), avgHillTime: null, avgPlants: null, avgDefuses: null, avgFirstBloods: null, avgFirstDeaths: null, avgGoals: null },
+    overall: { avgKills: avg(p.kills, p.count), avgDeaths: avg(p.deaths, p.count), avgDamage: avg(p.damage, p.count), count: p.count, kd: calcKD(p.kills, p.deaths), avgHillTime: null, avgPlants: null, avgDefuses: null, avgFirstBloods: null, avgFirstDeaths: null, avgGoals: null },
     hardpoint: toModeStats(p.modes.hardpoint),
     snd: toModeStats(p.modes.snd),
     overload: toModeStats(p.modes.overload),
-  };
-  });
+  }));
 
   return (
     <>

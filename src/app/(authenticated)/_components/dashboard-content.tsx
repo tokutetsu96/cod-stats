@@ -1,4 +1,3 @@
-import { getProfile } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
@@ -38,8 +37,7 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
     seriesQuery = seriesQuery.eq("opponent_id", opponentId);
   }
 
-  const [, { data: allSeriesData }, { data: players }] = await Promise.all([
-    getProfile(),
+  const [{ data: allSeriesData }, { data: players }] = await Promise.all([
     seriesQuery,
     supabase.from("players").select("id, name"),
   ]);
@@ -75,6 +73,15 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
 
   const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : "0";
 
+  const seriesGameSummary = new Map<string, { wins: number; draws: number; losses: number }>();
+  for (const g of allGames) {
+    const entry = seriesGameSummary.get(g.series_id) ?? { wins: 0, draws: 0, losses: 0 };
+    if (g.result === "win") entry.wins++;
+    else if (g.result === "draw") entry.draws++;
+    else entry.losses++;
+    seriesGameSummary.set(g.series_id, entry);
+  }
+
   const modeStats = (["hardpoint", "snd", "overload"] as const).map((mode) => {
     const mc = modeCounts[mode];
     const rate = mc.total > 0 ? ((mc.wins / mc.total) * 100).toFixed(1) : "0";
@@ -100,8 +107,15 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
     };
   }
 
+  const statsByPlayerId = new Map<string, GameStat[]>();
+  for (const s of filteredStats) {
+    const arr = statsByPlayerId.get(s.player_id) ?? [];
+    arr.push(s);
+    statsByPlayerId.set(s.player_id, arr);
+  }
+
   const playerKDData: PlayerKDData[] = allPlayers.map((player) => {
-    const pStats = filteredStats.filter((s) => s.player_id === player.id);
+    const pStats = statsByPlayerId.get(player.id) ?? [];
     let totalKills = 0, totalDeaths = 0, totalDamage = 0;
     const modes: Record<string, ModeAcc> = { hardpoint: emptyModeAcc(), snd: emptyModeAcc(), overload: emptyModeAcc() };
     for (const s of pStats) {
@@ -134,9 +148,7 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
     };
   });
 
-  const recentSeries = opponentId
-    ? allSeries.filter((s) => s.opponent_id === opponentId).slice(0, 5)
-    : allSeries.slice(0, 5);
+  const recentSeries = allSeries.slice(0, 5);
 
   return (
     <>
@@ -200,10 +212,7 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
             {/* Mobile card layout */}
             <div className="space-y-2 sm:hidden">
               {recentSeries.map((s) => {
-                const sGames = allGames.filter((g) => g.series_id === s.id);
-                const w = sGames.filter((g) => g.result === "win").length;
-                const d = sGames.filter((g) => g.result === "draw").length;
-                const l = sGames.length - w - d;
+                const { wins: w, draws: d, losses: l } = seriesGameSummary.get(s.id) ?? { wins: 0, draws: 0, losses: 0 };
                 const isWin = w > l;
                 const isLoss = l > w;
                 return (
@@ -254,10 +263,7 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
                 </thead>
                 <tbody>
                   {recentSeries.map((s) => {
-                    const sGames = allGames.filter((g) => g.series_id === s.id);
-                    const w = sGames.filter((g) => g.result === "win").length;
-                    const d = sGames.filter((g) => g.result === "draw").length;
-                    const l = sGames.length - w - d;
+                    const { wins: w, draws: d, losses: l } = seriesGameSummary.get(s.id) ?? { wins: 0, draws: 0, losses: 0 };
                     const isWin = w > l;
                     const isLoss = l > w;
                     return (

@@ -8,7 +8,7 @@ export default async function OpponentsPage() {
 
   const [{ profile }, { data: opponents }, { data: series }] = await Promise.all([
     getProfile(),
-    supabase.from("opponents").select("id, name, opponent_players(*)").order("name"),
+    supabase.from("opponents").select("id, name, opponent_players(id, name, is_default, created_at, opponent_id, team_id)").order("name"),
     supabase.from("series").select("opponent_id, games(mode, result)").limit(200),
   ]);
 
