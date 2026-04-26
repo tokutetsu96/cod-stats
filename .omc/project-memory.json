@@ -198,6 +198,18 @@
       "type": "file"
     },
     {
+      "path": "docs/TODO.md",
+      "accessCount": 5,
+      "lastAccessed": 1777185258716,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 5,
+      "lastAccessed": 1777185713641,
+      "type": "file"
+    },
+    {
       "path": "src/app/(authenticated)/matches/_components/series-list.tsx",
       "accessCount": 4,
       "lastAccessed": 1777182941080,
@@ -225,18 +237,6 @@
       "path": "src/app/(authenticated)/matches/_components/series-form-shared.ts",
       "accessCount": 4,
       "lastAccessed": 1777183210626,
-      "type": "file"
-    },
-    {
-      "path": "docs/TODO.md",
-      "accessCount": 4,
-      "lastAccessed": 1777184069360,
-      "type": "file"
-    },
-    {
-      "path": "CLAUDE.md",
-      "accessCount": 3,
-      "lastAccessed": 1777088439478,
       "type": "file"
     },
     {
