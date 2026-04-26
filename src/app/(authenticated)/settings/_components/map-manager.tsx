@@ -8,12 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Trash2, Plus, Pencil, Check, X } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import type { GameMode, MapEntry } from "@/lib/types";
-
-const modeLabel: Record<GameMode, string> = {
-  hardpoint: "Hardpoint",
-  snd: "S&D",
-  overload: "Overload",
-};
+import { modeLabel } from "@/lib/constants";
 
 const modes: GameMode[] = ["hardpoint", "snd", "overload"];
 
@@ -27,6 +22,7 @@ export function MapManager({ maps, teamId, isAdmin }: { maps: MapEntry[]; teamId
   const [editName, setEditName] = useState("");
   const [editHillCount, setEditHillCount] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [mutationError, setMutationError] = useState("");
   const router = useRouter();
 
   const startEdit = (m: MapEntry) => {
@@ -38,11 +34,13 @@ export function MapManager({ maps, teamId, isAdmin }: { maps: MapEntry[]; teamId
   const cancelEdit = () => setEditingId(null);
 
   const handleSave = async (m: MapEntry) => {
-    if (!editName.trim()) return;
+    if (!isAdmin || !editName.trim()) return;
     setSavingId(m.id);
+    setMutationError("");
     const supabase = createClient();
     const hill_count = m.mode === "hardpoint" && editHillCount.trim() ? parseInt(editHillCount) || null : null;
-    await supabase.from("maps").update({ name: editName.trim(), hill_count }).eq("id", m.id);
+    const { error } = await supabase.from("maps").update({ name: editName.trim(), hill_count }).eq("id", m.id);
+    if (error) { setMutationError("更新に失敗しました"); setSavingId(null); return; }
     setSavingId(null);
     setEditingId(null);
     router.refresh();
@@ -52,11 +50,13 @@ export function MapManager({ maps, teamId, isAdmin }: { maps: MapEntry[]; teamId
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!isAdmin || !name.trim()) return;
     setLoading(true);
+    setMutationError("");
     const supabase = createClient();
     const hill_count = activeMode === "hardpoint" && hillCount.trim() ? parseInt(hillCount) || null : null;
-    await supabase.from("maps").insert({ name: name.trim(), mode: activeMode, team_id: teamId, hill_count });
+    const { error } = await supabase.from("maps").insert({ name: name.trim(), mode: activeMode, team_id: teamId, hill_count });
+    if (error) { setMutationError("追加に失敗しました"); setLoading(false); return; }
     setName("");
     setHillCount("");
     setLoading(false);
@@ -64,16 +64,20 @@ export function MapManager({ maps, teamId, isAdmin }: { maps: MapEntry[]; teamId
   };
 
   const handleDelete = async (id: string) => {
+    if (!isAdmin) return;
     if (!confirm("このマップを削除しますか？")) return;
     setDeletingId(id);
+    setMutationError("");
     const supabase = createClient();
-    await supabase.from("maps").delete().eq("id", id);
+    const { error } = await supabase.from("maps").delete().eq("id", id);
+    if (error) { setMutationError("削除に失敗しました"); setDeletingId(null); return; }
     router.refresh();
     setDeletingId(null);
   };
 
   return (
     <div className="space-y-4">
+      {mutationError && <p className="text-sm text-destructive">{mutationError}</p>}
       <div className="flex gap-2">
         {modes.map((mode) => (
           <Button

@@ -40,32 +40,41 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
   const [togglingPlayerId, setTogglingPlayerId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [newPlayerName, setNewPlayerName] = useState("");
+  const [mutationError, setMutationError] = useState("");
   const router = useRouter();
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!isAdmin || !name.trim()) return;
     setLoading(true);
+    setMutationError("");
     const supabase = createClient();
-    await supabase.from("opponents").insert({ name: name.trim(), team_id: teamId });
+    const { error } = await supabase.from("opponents").insert({ name: name.trim(), team_id: teamId });
+    if (error) { setMutationError("追加に失敗しました"); setLoading(false); return; }
     setName("");
     setLoading(false);
     router.refresh();
   };
 
   const handleDelete = async (id: string) => {
+    if (!isAdmin) return;
     if (!confirm("削除しますか？")) return;
     setDeletingId(id);
+    setMutationError("");
     const supabase = createClient();
-    await supabase.from("opponents").delete().eq("id", id);
+    const { error } = await supabase.from("opponents").delete().eq("id", id);
+    if (error) { setMutationError("削除に失敗しました"); setDeletingId(null); return; }
     router.refresh();
     setDeletingId(null);
   };
 
   const handleEdit = async (id: string) => {
+    if (!isAdmin) return;
     setLoading(true);
+    setMutationError("");
     const supabase = createClient();
-    await supabase.from("opponents").update({ name: editName.trim() }).eq("id", id);
+    const { error } = await supabase.from("opponents").update({ name: editName.trim() }).eq("id", id);
+    if (error) { setMutationError("更新に失敗しました"); setLoading(false); return; }
     setEditId(null);
     setLoading(false);
     router.refresh();
@@ -73,34 +82,42 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
 
   const handleAddPlayer = async (e: React.FormEvent, opponentId: string) => {
     e.preventDefault();
-    if (!newPlayerName.trim()) return;
+    if (!isAdmin || !newPlayerName.trim()) return;
     setAddingPlayerId(opponentId);
+    setMutationError("");
     const supabase = createClient();
-    await supabase.from("opponent_players").insert({ name: newPlayerName.trim(), opponent_id: opponentId, team_id: teamId });
+    const { error } = await supabase.from("opponent_players").insert({ name: newPlayerName.trim(), opponent_id: opponentId, team_id: teamId });
+    if (error) { setMutationError("選手の追加に失敗しました"); setAddingPlayerId(null); return; }
     setNewPlayerName("");
     setAddingPlayerId(null);
     router.refresh();
   };
 
   const handleDeletePlayer = async (playerId: string) => {
+    if (!isAdmin) return;
     setDeletingPlayerId(playerId);
+    setMutationError("");
     const supabase = createClient();
-    await supabase.from("opponent_players").delete().eq("id", playerId);
+    const { error } = await supabase.from("opponent_players").delete().eq("id", playerId);
+    if (error) { setMutationError("削除に失敗しました"); setDeletingPlayerId(null); return; }
     router.refresh();
     setDeletingPlayerId(null);
   };
 
   const handleTogglePlayerDefault = async (playerId: string, current: boolean, players: OpponentPlayer[]) => {
+    if (!isAdmin) return;
     if (!current && players.filter((p) => p.is_default).length >= 4) return;
     setTogglingPlayerId(playerId);
     const supabase = createClient();
-    await supabase.from("opponent_players").update({ is_default: !current }).eq("id", playerId);
+    const { error } = await supabase.from("opponent_players").update({ is_default: !current }).eq("id", playerId);
+    if (error) setMutationError("更新に失敗しました");
     router.refresh();
     setTogglingPlayerId(null);
   };
 
   return (
     <div className="space-y-4">
+      {mutationError && <p className="text-sm text-destructive">{mutationError}</p>}
       {isAdmin && (
         <form onSubmit={handleAdd} className="flex gap-2 items-end">
           <div className="flex-1 space-y-1">

@@ -28,6 +28,7 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
   const isAdmin = currentProfile.role === "admin";
 
   const handleSaveTeamName = async () => {
+    if (!isAdmin) return;
     const name = teamName.trim();
     if (!name) return;
     setSavingTeam(true);
@@ -41,6 +42,7 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
   };
 
   const handleToggleRole = async (userId: string, currentRole: UserRole) => {
+    if (!isAdmin) return;
     const newRole: UserRole = currentRole === "admin" ? "member" : "admin";
     setUpdatingUserId(userId);
     setError("");
@@ -55,6 +57,7 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
   };
 
   const handleKickUser = async (userId: string, username: string) => {
+    if (!isAdmin) return;
     if (!confirm(`${username} をチームから除外しますか？`)) return;
     setUpdatingUserId(userId);
     setError("");
@@ -68,8 +71,10 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
   const handleLeaveTeam = async () => {
     if (!confirm("チームから脱退しますか？この操作は取り消せません。")) return;
     setLeavingTeam(true);
+    setError("");
     const supabase = createClient();
-    await supabase.from("profiles").delete().eq("id", currentProfile.id);
+    const { error: profileError } = await supabase.from("profiles").delete().eq("id", currentProfile.id);
+    if (profileError) { setError("脱退処理に失敗しました"); setLeavingTeam(false); return; }
     await supabase.auth.signOut();
     router.push("/login");
   };

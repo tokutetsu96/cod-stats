@@ -84,7 +84,7 @@ export function SeriesList({ seriesList, opponents, isAdmin }: { seriesList: Ser
                           <Link href={`/matches/${s.id}/edit`} className={buttonVariants({ size: "icon", variant: "ghost" })}>
                             <Pencil className="h-4 w-4" />
                           </Link>
-                          <DeleteSeriesButton id={s.id} />
+                          <DeleteSeriesButton id={s.id} isAdmin={isAdmin} />
                         </>
                       )}
                     </div>
@@ -152,7 +152,7 @@ export function SeriesList({ seriesList, opponents, isAdmin }: { seriesList: Ser
                               <Link href={`/matches/${s.id}/edit`} className={buttonVariants({ size: "icon", variant: "ghost" })}>
                                 <Pencil className="h-4 w-4" />
                               </Link>
-                              <DeleteSeriesButton id={s.id} />
+                              <DeleteSeriesButton id={s.id} isAdmin={isAdmin} />
                             </>
                           )}
                         </div>

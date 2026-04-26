@@ -98,6 +98,7 @@ export function SeriesForm({
     setGames([
       ...games,
       {
+        id: crypto.randomUUID(),
         mode: "hardpoint",
         map_id: "",
         score_team: "",
@@ -419,7 +420,7 @@ export function SeriesForm({
       {/* Games */}
       {games.map((game, gIdx) => (
         <GameCard
-          key={gIdx}
+          key={game.id}
           game={game}
           gIdx={gIdx}
           maps={maps}

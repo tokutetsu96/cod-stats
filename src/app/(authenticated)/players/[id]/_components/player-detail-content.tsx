@@ -1,23 +1,37 @@
 import { createClient } from "@/lib/supabase/server";
+import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import type { GameStat, GameMode, MatchResult } from "@/lib/types";
 import { calcKD } from "@/lib/utils";
+import { modeLabel } from "@/lib/constants";
 
 function avg(arr: number[]) {
   if (arr.length === 0) return "0";
   return (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1);
 }
 
-const modeLabel: Record<string, string> = { hardpoint: "Hardpoint", snd: "S&D", overload: "Overload" };
+const PAGE_SIZE = 100;
 
-export async function PlayerDetailContent({ id }: { id: string }) {
+export async function PlayerDetailContent({ id, page = 1 }: { id: string; page?: number }) {
   const supabase = await createClient();
+  const { profile } = await getProfile();
 
-  const [{ data: player }, { data: stats }] = await Promise.all([
-    supabase.from("players").select("*").eq("id", id).single(),
-    supabase.from("game_stats").select("*, games(mode, result)").eq("player_id", id).limit(500),
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  const [{ data: player }, { data: stats, count }] = await Promise.all([
+    supabase.from("players").select("*").eq("id", id).eq("team_id", profile.team_id).single(),
+    supabase
+      .from("game_stats")
+      .select("*, games(mode, result)", { count: "exact" })
+      .eq("player_id", id)
+      .eq("team_id", profile.team_id)
+      .range(from, to),
   ]);
+
+  const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE);
 
   if (!player) notFound();
 
@@ -123,6 +137,22 @@ export async function PlayerDetailContent({ id }: { id: string }) {
           </CardContent>
         </Card>
       ))}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4">
+          {page > 1 && (
+            <Link href={`/players/${id}?page=${page - 1}`} className="text-sm text-primary hover:underline">
+              ← 前のページ
+            </Link>
+          )}
+          <span className="text-sm text-muted-foreground">{page} / {totalPages}</span>
+          {page < totalPages && (
+            <Link href={`/players/${id}?page=${page + 1}`} className="text-sm text-primary hover:underline">
+              次のページ →
+            </Link>
+          )}
+        </div>
+      )}
     </>
   );
 }

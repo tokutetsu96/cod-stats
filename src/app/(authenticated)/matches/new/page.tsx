@@ -10,12 +10,12 @@ const SeriesForm = dynamic(
 
 export default async function NewSeriesPage() {
   const supabase = await createClient();
+  const { profile } = await getProfile();
 
-  const [{ profile }, { data: opponents }, { data: players }, { data: maps }] = await Promise.all([
-    getProfile(),
-    supabase.from("opponents").select("*, opponent_players(*)").order("name"),
-    supabase.from("players").select("*").order("name"),
-    supabase.from("maps").select("*").order("name"),
+  const [{ data: opponents }, { data: players }, { data: maps }] = await Promise.all([
+    supabase.from("opponents").select("*, opponent_players(*)").eq("team_id", profile.team_id).order("name"),
+    supabase.from("players").select("*").eq("team_id", profile.team_id).order("name"),
+    supabase.from("maps").select("*").eq("team_id", profile.team_id).order("name"),
   ]);
 
   return (

@@ -22,39 +22,51 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
   const defaultPlayers = players.filter((p) => p.is_default);
   const otherPlayers = players.filter((p) => !p.is_default);
 
+  const [mutationError, setMutationError] = useState("");
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!isAdmin || !name.trim()) return;
     setLoading(true);
+    setMutationError("");
     const supabase = createClient();
-    await supabase.from("players").insert({ name: name.trim(), team_id: teamId });
+    const { error } = await supabase.from("players").insert({ name: name.trim(), team_id: teamId });
+    if (error) { setMutationError("追加に失敗しました"); setLoading(false); return; }
     setName("");
     setLoading(false);
     router.refresh();
   };
 
   const handleToggleDefault = async (id: string, current: boolean) => {
+    if (!isAdmin) return;
     if (!current && defaultPlayers.length >= 4) return;
     setTogglingId(id);
     const supabase = createClient();
-    await supabase.from("players").update({ is_default: !current }).eq("id", id);
+    const { error } = await supabase.from("players").update({ is_default: !current }).eq("id", id);
+    if (error) setMutationError("更新に失敗しました");
     router.refresh();
     setTogglingId(null);
   };
 
   const handleDelete = async (id: string) => {
+    if (!isAdmin) return;
     if (!confirm("このプレイヤーを削除しますか？関連する戦績データも確認してください。")) return;
     setDeletingId(id);
+    setMutationError("");
     const supabase = createClient();
-    await supabase.from("players").delete().eq("id", id);
+    const { error } = await supabase.from("players").delete().eq("id", id);
+    if (error) { setMutationError("削除に失敗しました"); setDeletingId(null); return; }
     router.refresh();
     setDeletingId(null);
   };
 
   const handleEdit = async (id: string) => {
+    if (!isAdmin) return;
     setLoading(true);
+    setMutationError("");
     const supabase = createClient();
-    await supabase.from("players").update({ name: editName.trim() }).eq("id", id);
+    const { error } = await supabase.from("players").update({ name: editName.trim() }).eq("id", id);
+    if (error) { setMutationError("更新に失敗しました"); setLoading(false); return; }
     setEditId(null);
     setLoading(false);
     router.refresh();
@@ -109,6 +121,7 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
 
   return (
     <div className="space-y-4">
+      {mutationError && <p className="text-sm text-destructive">{mutationError}</p>}
       {isAdmin && (
         <form onSubmit={handleAdd} className="flex gap-2 items-end">
           <div className="flex-1">

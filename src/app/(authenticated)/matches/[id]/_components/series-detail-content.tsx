@@ -6,21 +6,19 @@ import { notFound } from "next/navigation";
 import type { Game, GameStat, OpponentGameStat } from "@/lib/types";
 import { formatDate, calcKD } from "@/lib/utils";
 import { PlayerKDTabs, type PlayerKDData, type PlayerModeStats } from "@/components/player-kd-tabs";
-
-const modeLabel: Record<string, string> = { hardpoint: "Hardpoint", snd: "S&D", overload: "Overload" };
+import { modeLabel } from "@/lib/constants";
 const typeLabel: Record<string, string> = { scrim: "Scrim", tournament: "大会" };
 
 export async function SeriesDetailContent({ id }: { id: string }) {
   const supabase = await createClient();
 
-  const [{ teamName }, { data: series }] = await Promise.all([
-    getProfile(),
-    supabase
-      .from("series")
-      .select("*, opponents(*), games(id, game_number, mode, result, score_team, score_opponent, hill_times, maps(name), game_stats(id, game_id, player_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, players(name, created_at)), opponent_game_stats(id, game_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, opponent_players(name, created_at)))")
-      .eq("id", id)
-      .single(),
-  ]);
+  const { profile, teamName } = await getProfile();
+  const { data: series } = await supabase
+    .from("series")
+    .select("*, opponents(*), games(id, game_number, mode, result, score_team, score_opponent, hill_times, maps(name), game_stats(id, game_id, player_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, players(name, created_at)), opponent_game_stats(id, game_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, opponent_players(name, created_at)))")
+    .eq("id", id)
+    .eq("team_id", profile.team_id)
+    .single();
 
   if (!series) notFound();
 

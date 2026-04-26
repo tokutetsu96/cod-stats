@@ -1,12 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
+import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import type { Game, GameStat, Player, Series } from "@/lib/types";
+import { modeLabel } from "@/lib/constants";
 import { formatDate, calcKD } from "@/lib/utils";
 import { PlayerKDTabs, type PlayerKDData, type PlayerModeStats } from "@/components/player-kd-tabs";
 import { Eye } from "lucide-react";
 
-const modeLabel: Record<string, string> = { hardpoint: "Hardpoint", snd: "S&D", overload: "Overload" };
 
 function WinRateBar({ rate }: { rate: string }) {
   const pct = parseFloat(rate);
@@ -26,10 +27,12 @@ function WinRateBar({ rate }: { rate: string }) {
 
 export async function DashboardContent({ opponentId }: { opponentId?: string }) {
   const supabase = await createClient();
+  const { profile } = await getProfile();
 
   let seriesQuery = supabase
     .from("series")
     .select("id, opponent_id, series_date, type, youtube_url, memo, opponents(name), games(id, mode, result, series_id, game_stats(player_id, kills, deaths, damage, game_id, hill_time, plants, defuses, first_bloods, first_deaths, goals))")
+    .eq("team_id", profile.team_id)
     .order("series_date", { ascending: false })
     .limit(100);
 
@@ -39,7 +42,7 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
 
   const [{ data: allSeriesData }, { data: players }] = await Promise.all([
     seriesQuery,
-    supabase.from("players").select("id, name"),
+    supabase.from("players").select("id, name").eq("team_id", profile.team_id),
   ]);
 
   const allSeriesRaw = (allSeriesData ?? []) as unknown as (Series & { games: (Game & { game_stats: GameStat[] })[] })[];

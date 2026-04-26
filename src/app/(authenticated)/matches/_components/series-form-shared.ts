@@ -14,6 +14,7 @@ export interface StatInput {
 }
 
 export interface GameInput {
+  id: string;
   mode: GameMode;
   map_id: string;
   score_team: string;
@@ -63,8 +64,4 @@ export const resultColor: Record<MatchResult, string> = {
   draw: "text-yellow-500",
 };
 
-export const modeLabel: Record<GameMode, string> = {
-  hardpoint: "Hardpoint",
-  snd: "S&D",
-  overload: "Overload",
-};
+export { modeLabel } from "@/lib/constants";

@@ -6,10 +6,10 @@ import { OpponentList } from "./_components/opponent-list";
 export default async function OpponentsPage() {
   const supabase = await createClient();
 
-  const [{ profile }, { data: opponents }, { data: series }] = await Promise.all([
-    getProfile(),
-    supabase.from("opponents").select("id, name, opponent_players(id, name, is_default, created_at, opponent_id, team_id)").order("name"),
-    supabase.from("series").select("opponent_id, games(mode, result)").limit(200),
+  const { profile } = await getProfile();
+  const [{ data: opponents }, { data: series }] = await Promise.all([
+    supabase.from("opponents").select("id, name, opponent_players(id, name, is_default, created_at, opponent_id, team_id)").eq("team_id", profile.team_id).order("name"),
+    supabase.from("series").select("opponent_id, games(mode, result)").eq("team_id", profile.team_id).limit(200),
   ]);
 
   const opponentStats = (opponents ?? []).map((opp) => {

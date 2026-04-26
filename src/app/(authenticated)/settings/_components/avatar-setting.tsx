@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload, Trash2, Pencil } from "lucide-react";
 
-const SUPABASE_URL = "https://aaomqtwvwkvmyjdctrue.supabase.co";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
 export function AvatarSetting({ profileId, currentAvatar, username }: { profileId: string; currentAvatar: string | null; username: string }) {
   const router = useRouter();
@@ -61,8 +61,10 @@ export function AvatarSetting({ profileId, currentAvatar, username }: { profileI
 
   const handleRemoveAvatar = async () => {
     setUploading(true);
+    setAvatarError("");
     const supabase = createClient();
-    await supabase.from("profiles").update({ avatar: null }).eq("id", profileId);
+    const { error } = await supabase.from("profiles").update({ avatar: null }).eq("id", profileId);
+    if (error) { setAvatarError("削除に失敗しました"); setUploading(false); return; }
     setPreview(null);
     setUploading(false);
     router.refresh();

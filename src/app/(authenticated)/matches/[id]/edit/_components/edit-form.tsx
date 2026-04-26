@@ -26,7 +26,34 @@ import type {
   Opponent,
   Player,
   MapEntry,
+  Series,
+  Game,
+  GameStat,
+  OpponentGameStat,
 } from "@/lib/types";
+
+interface DbStatRow {
+  player_id?: string;
+  opponent_player_id?: string;
+  kills?: number;
+  deaths?: number;
+  damage?: number;
+  hill_time?: number | null;
+  plants?: number | null;
+  defuses?: number | null;
+  first_bloods?: number | null;
+  first_deaths?: number | null;
+  goals?: number | null;
+}
+
+type GameWithStats = Game & {
+  game_stats: GameStat[];
+  opponent_game_stats: OpponentGameStat[];
+};
+
+type SeriesWithGames = Series & {
+  games: GameWithStats[];
+};
 
 function padStats(stats: StatInput[]): StatInput[] {
   const result = [...stats];
@@ -34,8 +61,7 @@ function padStats(stats: StatInput[]): StatInput[] {
   return result.slice(0, 4);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function dbStatToInput(stat: any): StatInput {
+function dbStatToInput(stat: DbStatRow): StatInput {
   return {
     player_id: stat.player_id ?? stat.opponent_player_id ?? "",
     kills: String(stat.kills ?? 0),
@@ -51,8 +77,7 @@ function dbStatToInput(stat: any): StatInput {
 }
 
 interface EditSeriesFormProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  series: any;
+  series: SeriesWithGames;
   opponents: Opponent[];
   players: Player[];
   maps: MapEntry[];
@@ -78,7 +103,7 @@ export function EditSeriesForm({
   const [youtubeUrl, setYoutubeUrl] = useState(series.youtube_url ?? "");
 
   const initGames = (): GameInput[] =>
-    ((series.games ?? []) as any[])
+    (series.games ?? [])
       .sort((a, b) => a.game_number - b.game_number)
       .map((g) => ({
         mode: g.mode as GameMode,
@@ -103,8 +128,8 @@ export function EditSeriesForm({
           ) {
             // { team: number[], opponent: number[] } 形式（1次元）
             return {
-              team: [(ht.team as number[]).map(String)],
-              opponent: [(ht.opponent as number[]).map(String)],
+              team: [(ht.team as unknown as number[]).map(String)],
+              opponent: [(ht.opponent as unknown as number[]).map(String)],
               winner: [[]],
             };
           }
@@ -122,6 +147,7 @@ export function EditSeriesForm({
           (g.opponent_game_stats ?? []).map(dbStatToInput),
         ),
         expanded: false,
+        id: crypto.randomUUID(),
       }));
 
   const [games, setGames] = useState<GameInput[]>(initGames);
@@ -163,6 +189,7 @@ export function EditSeriesForm({
     setGames([
       ...games,
       {
+        id: crypto.randomUUID(),
         mode: "hardpoint",
         map_id: "",
         score_team: "",
@@ -492,7 +519,7 @@ export function EditSeriesForm({
       {/* Games */}
       {games.map((game, gIdx) => (
         <GameCard
-          key={gIdx}
+          key={game.id}
           game={game}
           gIdx={gIdx}
           maps={maps}

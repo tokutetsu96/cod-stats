@@ -1,10 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
+import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { GameMode, MatchResult } from "@/lib/types";
-
-const modeLabel: Record<string, string> = { hardpoint: "Hardpoint", snd: "S&D", overload: "Overload" };
+import { modeLabel } from "@/lib/constants";
 const resultLabel: Record<string, string> = { win: "勝", lose: "負", draw: "分" };
 const resultClass: Record<string, string> = {
   win: "text-win font-bold stat-number",
@@ -14,13 +14,15 @@ const resultClass: Record<string, string> = {
 
 export async function OpponentDetailContent({ id }: { id: string }) {
   const supabase = await createClient();
+  const { profile } = await getProfile();
 
   const [{ data: opponent }, { data: seriesData }] = await Promise.all([
-    supabase.from("opponents").select("*").eq("id", id).single(),
+    supabase.from("opponents").select("*").eq("id", id).eq("team_id", profile.team_id).single(),
     supabase
       .from("series")
       .select("id, series_date, type, games(id, mode, result, score_team, score_opponent, maps(name))")
       .eq("opponent_id", id)
+      .eq("team_id", profile.team_id)
       .order("series_date", { ascending: false }),
   ]);
 

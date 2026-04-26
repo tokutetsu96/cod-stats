@@ -6,15 +6,16 @@ import type { Opponent } from "@/lib/types";
 
 export default async function MatchesPage() {
   const supabase = await createClient();
+  const { profile } = await getProfile();
 
-  const [{ profile }, { data: seriesList }, { data: opponents }] = await Promise.all([
-    getProfile(),
+  const [{ data: seriesList }, { data: opponents }] = await Promise.all([
     supabase
       .from("series")
       .select("*, opponents(id, name), games(result)")
+      .eq("team_id", profile.team_id)
       .order("series_date", { ascending: false })
       .limit(50),
-    supabase.from("opponents").select("id, name").order("name"),
+    supabase.from("opponents").select("id, name").eq("team_id", profile.team_id).order("name"),
   ]);
 
   return (

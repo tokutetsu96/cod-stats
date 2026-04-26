@@ -13,16 +13,17 @@ export default async function EditSeriesPage({ params }: { params: Promise<{ id:
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ profile }, { data: series }, { data: opponents }, { data: players }, { data: maps }] = await Promise.all([
-    getProfile(),
+  const { profile } = await getProfile();
+  const [{ data: series }, { data: opponents }, { data: players }, { data: maps }] = await Promise.all([
     supabase
       .from("series")
       .select("*, games(*, game_stats(*), opponent_game_stats(*))")
       .eq("id", id)
+      .eq("team_id", profile.team_id)
       .single(),
-    supabase.from("opponents").select("*, opponent_players(*)").order("name"),
-    supabase.from("players").select("*").order("created_at"),
-    supabase.from("maps").select("*").order("name"),
+    supabase.from("opponents").select("*, opponent_players(*)").eq("team_id", profile.team_id).order("name"),
+    supabase.from("players").select("*").eq("team_id", profile.team_id).order("created_at"),
+    supabase.from("maps").select("*").eq("team_id", profile.team_id).order("name"),
   ]);
 
   if (!series) notFound();

@@ -8,10 +8,12 @@ import { DashboardSkeleton } from "./_components/dashboard-skeleton";
 
 async function DashboardFilterServer() {
   const supabase = await createClient();
-  const [, { data: opponents }] = await Promise.all([
-    getProfile(),
-    supabase.from("opponents").select("id, name").order("name"),
-  ]);
+  const { profile } = await getProfile();
+  const { data: opponents } = await supabase
+    .from("opponents")
+    .select("id, name")
+    .eq("team_id", profile.team_id)
+    .order("name");
   return <DashboardFilter opponents={(opponents ?? []) as Opponent[]} />;
 }
 
