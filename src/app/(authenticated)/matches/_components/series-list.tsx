@@ -1,22 +1,116 @@
 "use client";
 
-import { useState } from "react";
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { Eye, Pencil } from "lucide-react";
+import { Eye, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { DeleteSeriesButton } from "./delete-series-button";
 import type { Opponent, Series } from "@/lib/types";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
+const PAGE_SIZE = 20;
 const typeLabel: Record<string, string> = { scrim: "Scrim", tournament: "大会" };
 
-export function SeriesList({ seriesList, opponents, isAdmin }: { seriesList: Series[]; opponents: Opponent[]; isAdmin: boolean }) {
-  const [opponentId, setOpponentId] = useState("");
+function buildUrl(page: number, opponentId: string) {
+  const params = new URLSearchParams();
+  if (page > 1) params.set("page", String(page));
+  if (opponentId) params.set("opponent", opponentId);
+  const query = params.toString();
+  return `/matches${query ? `?${query}` : ""}`;
+}
 
-  const filtered = opponentId
-    ? seriesList.filter((s) => s.opponent_id === opponentId)
-    : seriesList;
+function Pagination({
+  currentPage,
+  totalPages,
+  opponentId,
+}: {
+  currentPage: number;
+  totalPages: number;
+  opponentId: string;
+}) {
+  const pages: (number | "ellipsis")[] = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (currentPage > 3) pages.push("ellipsis");
+    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+      pages.push(i);
+    }
+    if (currentPage < totalPages - 2) pages.push("ellipsis");
+    pages.push(totalPages);
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <Link
+        href={buildUrl(currentPage - 1, opponentId)}
+        aria-disabled={currentPage <= 1}
+        className={cn(
+          buttonVariants({ variant: "ghost", size: "icon" }),
+          currentPage <= 1 && "pointer-events-none opacity-40"
+        )}
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </Link>
+
+      {pages.map((p, i) =>
+        p === "ellipsis" ? (
+          <span key={`ellipsis-${i}`} className="px-1.5 text-muted-foreground text-sm select-none">
+            …
+          </span>
+        ) : (
+          <Link
+            key={p}
+            href={buildUrl(p, opponentId)}
+            className={cn(
+              buttonVariants({ variant: p === currentPage ? "default" : "ghost", size: "sm" }),
+              "min-w-[2rem]"
+            )}
+          >
+            {p}
+          </Link>
+        )
+      )}
+
+      <Link
+        href={buildUrl(currentPage + 1, opponentId)}
+        aria-disabled={currentPage >= totalPages}
+        className={cn(
+          buttonVariants({ variant: "ghost", size: "icon" }),
+          currentPage >= totalPages && "pointer-events-none opacity-40"
+        )}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </Link>
+    </div>
+  );
+}
+
+type Props = {
+  seriesList: Series[];
+  opponents: Opponent[];
+  isAdmin: boolean;
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  opponentId: string;
+};
+
+export function SeriesList({ seriesList, opponents, isAdmin, currentPage, totalPages, totalCount, opponentId }: Props) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  function handleOpponentChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    startTransition(() => {
+      router.push(buildUrl(1, e.target.value));
+    });
+  }
+
+  const rangeStart = totalCount === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(currentPage * PAGE_SIZE, totalCount);
 
   return (
     <div className="space-y-4">
@@ -24,21 +118,27 @@ export function SeriesList({ seriesList, opponents, isAdmin }: { seriesList: Ser
         <label className="text-xs text-muted-foreground uppercase tracking-wider whitespace-nowrap">
           対戦チーム
         </label>
-        <Select value={opponentId} onChange={(e) => setOpponentId(e.target.value)} className="w-full sm:w-48">
+        <Select
+          value={opponentId}
+          onChange={handleOpponentChange}
+          className={cn("w-full sm:w-48", isPending && "opacity-60")}
+        >
           <option value="">すべて</option>
           {opponents.map((o) => (
-            <option key={o.id} value={o.id}>{o.name}</option>
+            <option key={o.id} value={o.id}>
+              {o.name}
+            </option>
           ))}
         </Select>
       </div>
 
-      {filtered.length === 0 ? (
+      {seriesList.length === 0 ? (
         <p className="text-sm text-muted-foreground">対戦データがありません</p>
       ) : (
         <>
           {/* Mobile card layout */}
           <div className="space-y-2 md:hidden">
-            {filtered.map((s) => {
+            {seriesList.map((s) => {
               const games = s.games ?? [];
               const wins = games.filter((g) => g.result === "win").length;
               const draws = games.filter((g) => g.result === "draw").length;
@@ -47,7 +147,11 @@ export function SeriesList({ seriesList, opponents, isAdmin }: { seriesList: Ser
                 <div key={s.id} className="border rounded-md p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-sm">{s.opponents?.name ?? "-"}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${s.type === "tournament" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                    <span
+                      className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                        s.type === "tournament" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+                      }`}
+                    >
                       {typeLabel[s.type]}
                     </span>
                   </div>
@@ -108,7 +212,7 @@ export function SeriesList({ seriesList, opponents, isAdmin }: { seriesList: Ser
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((s) => {
+                {seriesList.map((s) => {
                   const games = s.games ?? [];
                   const wins = games.filter((g) => g.result === "win").length;
                   const draws = games.filter((g) => g.result === "draw").length;
@@ -117,7 +221,11 @@ export function SeriesList({ seriesList, opponents, isAdmin }: { seriesList: Ser
                     <tr key={s.id} className="border-b border-border/50">
                       <td className="py-2.5 text-muted-foreground text-xs">{formatDate(s.series_date)}</td>
                       <td className="py-2.5">
-                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${s.type === "tournament" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        <span
+                          className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                            s.type === "tournament" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+                          }`}
+                        >
                           {typeLabel[s.type]}
                         </span>
                       </td>
@@ -162,6 +270,16 @@ export function SeriesList({ seriesList, opponents, isAdmin }: { seriesList: Ser
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex flex-col items-center gap-2 pt-2">
+            <p className="text-xs text-muted-foreground">
+              {totalCount}件中 {rangeStart}〜{rangeEnd}件表示
+            </p>
+            {totalPages > 1 && (
+              <Pagination currentPage={currentPage} totalPages={totalPages} opponentId={opponentId} />
+            )}
           </div>
         </>
       )}
