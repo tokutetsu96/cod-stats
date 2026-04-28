@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import type { Game, GameStat, Player, Series } from "@/lib/types";
+import type { GameStat, Player } from "@/lib/types";
 import { modeLabel } from "@/lib/constants";
 import { formatDate, calcKD } from "@/lib/utils";
 import { PlayerKDTabs, type PlayerKDData, type PlayerModeStats } from "@/components/player-kd-tabs";
@@ -25,44 +25,101 @@ function WinRateBar({ rate }: { rate: string }) {
   );
 }
 
+type RecentSeriesRow = {
+  id: string;
+  series_date: string;
+  type: string;
+  youtube_url: string | null;
+  memo: string | null;
+  opponent_id: string;
+  opponents: { name: string } | null;
+  games: { id: string; result: string }[];
+};
+
 export async function DashboardContent({ opponentId }: { opponentId?: string }) {
   const supabase = await createClient();
   const { profile } = await getProfile();
 
-  let seriesQuery = supabase
-    .from("series")
-    .select("id, opponent_id, series_date, type, youtube_url, memo, opponents(name), games(id, mode, result, series_id, game_stats(player_id, kills, deaths, damage, game_id, hill_time, plants, defuses, first_bloods, first_deaths, goals))")
-    .eq("team_id", profile.team_id)
-    .order("series_date", { ascending: false })
-    .limit(100);
-
+  // opponentId が指定された場合、series IDs を先に解決して後続クエリを効率化
+  let seriesIds: string[] | null = null;
   if (opponentId) {
-    seriesQuery = seriesQuery.eq("opponent_id", opponentId);
+    const { data: opponentSeries } = await supabase
+      .from("series")
+      .select("id")
+      .eq("team_id", profile.team_id)
+      .eq("opponent_id", opponentId);
+    seriesIds = (opponentSeries ?? []).map((s) => s.id);
   }
 
-  const [{ data: allSeriesData }, { data: players }] = await Promise.all([
-    seriesQuery,
+  // 関心事ごとに分離した並列クエリ
+  // - recentSeries: 直近5件の表示用（game_stats不要）
+  // - games: 全ゲームの集計用（mode + result のみ、軽量）
+  // - gameStats: プレイヤーK/D計算用
+  // - players: プレイヤー一覧
+  const recentSeriesQuery = (() => {
+    let q = supabase
+      .from("series")
+      .select("id, series_date, type, youtube_url, memo, opponent_id, opponents(name), games(id, result)")
+      .eq("team_id", profile.team_id)
+      .order("series_date", { ascending: false })
+      .limit(5);
+    if (seriesIds !== null) q = q.in("id", seriesIds);
+    return q;
+  })();
+
+  const gamesQuery = (() => {
+    let q = supabase
+      .from("games")
+      .select("id, mode, result, series_id")
+      .eq("team_id", profile.team_id);
+    if (seriesIds !== null) q = q.in("series_id", seriesIds);
+    return q;
+  })();
+
+  // opponentId あり: games との inner join でシリーズ単位にフィルタ
+  // opponentId なし: team_id のみでフィルタ（join オーバーヘッドなし）
+  const gameStatsQuery = (() => {
+    if (seriesIds !== null) {
+      return supabase
+        .from("game_stats")
+        .select("player_id, kills, deaths, damage, game_id, hill_time, plants, defuses, first_bloods, first_deaths, goals, games!inner(series_id)")
+        .eq("team_id", profile.team_id)
+        .in("games.series_id", seriesIds);
+    }
+    return supabase
+      .from("game_stats")
+      .select("player_id, kills, deaths, damage, game_id, hill_time, plants, defuses, first_bloods, first_deaths, goals")
+      .eq("team_id", profile.team_id);
+  })();
+
+  const [
+    { data: recentSeriesData },
+    { data: gamesData },
+    { data: gameStatsData },
+    { data: playersData },
+  ] = await Promise.all([
+    recentSeriesQuery,
+    gamesQuery,
+    gameStatsQuery,
     supabase.from("players").select("id, name").eq("team_id", profile.team_id),
   ]);
 
-  const allSeriesRaw = (allSeriesData ?? []) as unknown as (Series & { games: (Game & { game_stats: GameStat[] })[] })[];
-  const allSeries = allSeriesRaw.map(({ games, ...s }) => ({ ...s, opponents: s.opponents } as Series));
-  const allPlayers = (players ?? []) as Player[];
+  const allGames = (gamesData ?? []) as { id: string; mode: string; result: string; series_id: string }[];
+  const filteredStats = (gameStatsData ?? []) as unknown as GameStat[];
+  const allPlayers = (playersData ?? []) as Player[];
+  const recentSeries = (recentSeriesData ?? []) as unknown as RecentSeriesRow[];
 
-  const allGames = allSeriesRaw.flatMap((s) =>
-    (s.games ?? []).map(({ game_stats, ...g }) => ({ ...g, series_id: s.id }) as Game)
-  );
-  const filteredStats = allSeriesRaw.flatMap((s) =>
-    (s.games ?? []).flatMap((g) => g.game_stats ?? [])
-  ) as GameStat[];
-
-  const totalGames = allGames.length;
-  let totalWins = 0;
-  let totalLosses = 0;
-  const modeCounts = { hardpoint: { total: 0, wins: 0, losses: 0 }, snd: { total: 0, wins: 0, losses: 0 }, overload: { total: 0, wins: 0, losses: 0 } };
+  // --- 集計 ---
+  let totalGames = 0, totalWins = 0, totalLosses = 0;
+  const modeCounts = {
+    hardpoint: { total: 0, wins: 0, losses: 0 },
+    snd: { total: 0, wins: 0, losses: 0 },
+    overload: { total: 0, wins: 0, losses: 0 },
+  };
   const gameIdToMode = new Map<string, string>();
 
   for (const g of allGames) {
+    totalGames++;
     if (g.result === "win") totalWins++;
     else if (g.result === "lose") totalLosses++;
     gameIdToMode.set(g.id, g.mode);
@@ -76,13 +133,16 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
 
   const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : "0";
 
+  // 直近5件の試合結果サマリー（recentSeries のネスト games から構築）
   const seriesGameSummary = new Map<string, { wins: number; draws: number; losses: number }>();
-  for (const g of allGames) {
-    const entry = seriesGameSummary.get(g.series_id) ?? { wins: 0, draws: 0, losses: 0 };
-    if (g.result === "win") entry.wins++;
-    else if (g.result === "draw") entry.draws++;
-    else entry.losses++;
-    seriesGameSummary.set(g.series_id, entry);
+  for (const s of recentSeries) {
+    const entry = { wins: 0, draws: 0, losses: 0 };
+    for (const g of s.games ?? []) {
+      if (g.result === "win") entry.wins++;
+      else if (g.result === "draw") entry.draws++;
+      else entry.losses++;
+    }
+    seriesGameSummary.set(s.id, entry);
   }
 
   const modeStats = (["hardpoint", "snd", "overload"] as const).map((mode) => {
@@ -150,8 +210,6 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
       overload: toModeStats(modes.overload),
     };
   });
-
-  const recentSeries = allSeries.slice(0, 5);
 
   return (
     <>
