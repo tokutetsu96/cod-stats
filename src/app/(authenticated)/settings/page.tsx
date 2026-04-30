@@ -11,7 +11,7 @@ export default async function SettingsPage() {
   const { profile } = await getProfile();
 
   const [{ data: maps }, { data: team }, { data: users }] = await Promise.all([
-    supabase.from("maps").select("*").order("mode").order("name"),
+    supabase.from("maps").select("*").eq("team_id", profile.team_id).order("mode").order("name"),
     supabase.from("teams").select("*").eq("id", profile.team_id).single(),
     supabase.from("profiles").select("*").eq("team_id", profile.team_id).order("created_at"),
   ]);
