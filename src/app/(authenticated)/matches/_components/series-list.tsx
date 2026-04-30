@@ -8,7 +8,7 @@ import { Select } from "@/components/ui/select";
 import { Eye, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { DeleteSeriesButton } from "./delete-series-button";
 import type { Opponent, Series } from "@/lib/types";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDate, isValidYoutubeUrl } from "@/lib/utils";
 
 const PAGE_SIZE = 20;
 const typeLabel: Record<string, string> = { scrim: "Scrim", tournament: "大会" };
@@ -171,7 +171,7 @@ export function SeriesList({ seriesList, opponents, isAdmin, currentPage, totalP
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="text-xs">
-                      {s.youtube_url ? (
+                      {s.youtube_url && isValidYoutubeUrl(s.youtube_url) ? (
                         <a href={s.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                           YouTube
                         </a>
@@ -231,7 +231,7 @@ export function SeriesList({ seriesList, opponents, isAdmin, currentPage, totalP
                       </td>
                       <td className="py-2.5 font-medium">{s.opponents?.name ?? "-"}</td>
                       <td className="py-2.5 text-xs">
-                        {s.youtube_url ? (
+                        {s.youtube_url && isValidYoutubeUrl(s.youtube_url) ? (
                           <a href={s.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                             YouTube URL
                           </a>

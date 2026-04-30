@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import type { GameStat, Player } from "@/lib/types";
 import { modeLabel } from "@/lib/constants";
-import { formatDate, calcKD } from "@/lib/utils";
+import { formatDate, calcKD, isValidYoutubeUrl } from "@/lib/utils";
 import { PlayerKDTabs, type PlayerKDData, type PlayerModeStats } from "@/components/player-kd-tabs";
 import { Eye } from "lucide-react";
 
@@ -341,7 +341,7 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
                           </Link>
                         </td>
                         <td className="py-2.5 text-xs">
-                          {s.youtube_url ? (
+                          {s.youtube_url && isValidYoutubeUrl(s.youtube_url) ? (
                             <a href={s.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                               YouTube URL
                             </a>

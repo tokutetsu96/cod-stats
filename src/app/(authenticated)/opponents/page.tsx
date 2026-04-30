@@ -12,8 +12,15 @@ export default async function OpponentsPage() {
     supabase.from("series").select("opponent_id, games(mode, result)").eq("team_id", profile.team_id).limit(200),
   ]);
 
+  const seriesByOpponent = new Map<string, NonNullable<typeof series>>();
+  for (const s of series ?? []) {
+    const arr = seriesByOpponent.get(s.opponent_id) ?? [];
+    arr.push(s);
+    seriesByOpponent.set(s.opponent_id, arr);
+  }
+
   const opponentStats = (opponents ?? []).map((opp) => {
-    const oppSeries = (series ?? []).filter((s) => s.opponent_id === opp.id);
+    const oppSeries = seriesByOpponent.get(opp.id) ?? [];
     const allGames = oppSeries.flatMap((s) => s.games ?? []);
     const wins = allGames.filter((g) => g.result === "win").length;
     const total = allGames.length;

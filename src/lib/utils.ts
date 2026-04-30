@@ -12,6 +12,20 @@ export function calcKD(kills: number, deaths: number) {
 
 const WEEKDAYS = ["\u65E5", "\u6708", "\u706B", "\u6C34", "\u6728", "\u91D1", "\u571F"];
 
+export function isValidYoutubeUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return (
+      (parsed.protocol === "https:" || parsed.protocol === "http:") &&
+      (parsed.hostname === "www.youtube.com" ||
+        parsed.hostname === "youtube.com" ||
+        parsed.hostname === "youtu.be")
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function formatDate(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
   const dow = WEEKDAYS[new Date(y, m - 1, d).getDay()];
