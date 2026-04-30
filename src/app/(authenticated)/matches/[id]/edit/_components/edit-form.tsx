@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { isValidYoutubeUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -311,6 +312,11 @@ export function EditSeriesForm({
       setError("ゲームを1つ以上追加してください");
       return;
     }
+    const trimmedUrl = youtubeUrl.trim();
+    if (trimmedUrl && !isValidYoutubeUrl(trimmedUrl)) {
+      setError("YouTube URLはhttps://youtube.com または https://youtu.be のURLを入力してください");
+      return;
+    }
     setError("");
     setLoading(true);
 
@@ -324,7 +330,7 @@ export function EditSeriesForm({
         type: seriesType,
         opponent_id: opponentId,
         memo: memo.trim() || null,
-        youtube_url: youtubeUrl.trim() || null,
+        youtube_url: trimmedUrl || null,
       })
       .eq("id", series.id);
     if (seriesErr) {

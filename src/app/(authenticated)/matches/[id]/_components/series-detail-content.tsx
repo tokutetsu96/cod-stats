@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { notFound } from "next/navigation";
 import type { Game, GameStat, OpponentGameStat } from "@/lib/types";
-import { formatDate, calcKD } from "@/lib/utils";
+import { formatDate, calcKD, isValidYoutubeUrl } from "@/lib/utils";
 import { PlayerKDTabs, type PlayerKDData, type PlayerModeStats } from "@/components/player-kd-tabs";
 import { modeLabel } from "@/lib/constants";
 const typeLabel: Record<string, string> = { scrim: "Scrim", tournament: "大会" };
@@ -98,7 +98,7 @@ export async function SeriesDetailContent({ id }: { id: string }) {
           <span className="text-loss font-medium stat-number">{losses}L</span>
           {draws > 0 && <><span> - </span><span className="text-primary font-medium stat-number">{draws}D</span></>}
         </p>
-        {series.youtube_url && (
+        {series.youtube_url && isValidYoutubeUrl(series.youtube_url) && (
           <p className="text-sm mt-1">
             <a href={series.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
               YouTube URL

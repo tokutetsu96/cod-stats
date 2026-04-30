@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Pencil, LogOut, Shield, ShieldOff, UserX } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import type { Profile, Team, UserRole } from "@/lib/types";
+import { updateTeamName, toggleUserRole, kickUser } from "../actions";
 
 interface TeamManagementProps {
   team: Team;
@@ -33,10 +34,12 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
     if (!name) return;
     setSavingTeam(true);
     setError("");
-    const supabase = createClient();
-    const { error } = await supabase.from("teams").update({ name }).eq("id", team.id);
-    if (error) setError("チーム名の変更に失敗しました");
-    else setEditingTeamName(false);
+    try {
+      await updateTeamName(team.id, name);
+      setEditingTeamName(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "チーム名の変更に失敗しました");
+    }
     setSavingTeam(false);
     router.refresh();
   };
@@ -46,12 +49,11 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
     const newRole: UserRole = currentRole === "admin" ? "member" : "admin";
     setUpdatingUserId(userId);
     setError("");
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("profiles")
-      .update({ role: newRole })
-      .eq("id", userId);
-    if (error) setError("権限の変更に失敗しました");
+    try {
+      await toggleUserRole(userId, newRole);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "権限の変更に失敗しました");
+    }
     setUpdatingUserId(null);
     router.refresh();
   };
@@ -61,9 +63,11 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
     if (!confirm(`${username} をチームから除外しますか？`)) return;
     setUpdatingUserId(userId);
     setError("");
-    const supabase = createClient();
-    const { error } = await supabase.from("profiles").delete().eq("id", userId);
-    if (error) setError("ユーザーの除外に失敗しました");
+    try {
+      await kickUser(userId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "ユーザーの除外に失敗しました");
+    }
     setUpdatingUserId(null);
     router.refresh();
   };
