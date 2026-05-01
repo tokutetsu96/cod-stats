@@ -1,7 +1,0 @@
-{
-  "tool_name": "WebFetch",
-  "tool_input_preview": "{\"url\":\"https://x.com/seito_horiguchi/status/2047976746142650721\",\"prompt\":\"このツイートの内容を全て抽出してください。画像や添付ファイルの説明も含めてください。\"}",
-  "error": "Request failed with status code 402",
-  "timestamp": "2026-04-26T06:35:30.235Z",
-  "retry_count": 1
-}
