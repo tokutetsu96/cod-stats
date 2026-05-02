@@ -56,7 +56,7 @@ export function Nav({ teamName, username, avatar, role }: NavProps) {
         <Link
           href="/"
           className="flex items-center gap-1.5 shrink-0 mr-6"
-          style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+          style={{ fontFamily: "var(--font-barlow-condensed), sans-serif" }}
         >
           <span className="text-xl font-bold tracking-widest text-primary">COD</span>
           <span className="text-sm font-medium text-muted-foreground tracking-wider">STATS</span>
