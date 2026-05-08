@@ -37,8 +37,11 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "eslint": "^10.1.0",
-    "postcss": "^8.5.8",
+    "postcss": "^8.5.10",
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2"
+  },
+  "overrides": {
+    "postcss": "^8.5.10"
   }
 }
