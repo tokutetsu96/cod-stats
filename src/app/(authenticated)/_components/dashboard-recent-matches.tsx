@@ -1,3 +1,5 @@
+import { createClient } from "@/lib/supabase/server";
+import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { Eye } from "lucide-react";
@@ -15,10 +17,23 @@ type RecentSeriesRow = {
 };
 
 export async function DashboardRecentMatches({
-  recentSeries,
+  seriesIds,
 }: {
-  recentSeries: RecentSeriesRow[];
+  seriesIds: string[] | null;
 }) {
+  const supabase = await createClient();
+  const { profile } = await getProfile();
+
+  let q = supabase
+    .from("series")
+    .select("id, series_date, type, youtube_url, memo, opponent_id, opponents(name), games(id, result)")
+    .eq("team_id", profile.team_id)
+    .order("series_date", { ascending: false })
+    .limit(5);
+  if (seriesIds !== null) q = q.in("id", seriesIds);
+  const { data } = await q;
+  const recentSeries = (data ?? []) as unknown as RecentSeriesRow[];
+
   const seriesGameSummary = new Map<string, { wins: number; draws: number; losses: number }>();
   for (const s of recentSeries) {
     const entry = { wins: 0, draws: 0, losses: 0 };

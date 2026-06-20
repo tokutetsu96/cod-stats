@@ -1,3 +1,5 @@
+import { createClient } from "@/lib/supabase/server";
+import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import type { GameStat, Player } from "@/lib/types";
 import { PlayerKDTabs, type PlayerKDData, type PlayerModeStats } from "@/components/player-kd-tabs";
@@ -51,14 +53,53 @@ function toModeStats(m: ModeAcc): PlayerModeStats {
 }
 
 export async function DashboardKDTable({
-  gameStats,
-  players,
-  games,
+  seriesIds,
 }: {
-  gameStats: GameStat[];
-  players: Player[];
-  games: { id: string; mode: string }[];
+  seriesIds: string[] | null;
 }) {
+  const supabase = await createClient();
+  const { profile } = await getProfile();
+
+  const gamesQuery = (() => {
+    let q = supabase
+      .from("games")
+      .select("id, mode, series_id")
+      .eq("team_id", profile.team_id)
+      .limit(100);
+    if (seriesIds !== null) q = q.in("series_id", seriesIds);
+    return q;
+  })();
+
+  const gameStatsQuery = (() => {
+    if (seriesIds !== null) {
+      return supabase
+        .from("game_stats")
+        .select("player_id, kills, deaths, damage, game_id, hill_time, plants, defuses, first_bloods, first_deaths, goals, games!inner(series_id)")
+        .eq("team_id", profile.team_id)
+        .in("games.series_id", seriesIds)
+        .limit(5000);
+    }
+    return supabase
+      .from("game_stats")
+      .select("player_id, kills, deaths, damage, game_id, hill_time, plants, defuses, first_bloods, first_deaths, goals")
+      .eq("team_id", profile.team_id)
+      .limit(5000);
+  })();
+
+  const [
+    { data: gamesData },
+    { data: gameStatsData },
+    { data: playersData },
+  ] = await Promise.all([
+    gamesQuery,
+    gameStatsQuery,
+    supabase.from("players").select("id, name").eq("team_id", profile.team_id),
+  ]);
+
+  const games = (gamesData ?? []) as { id: string; mode: string; series_id: string }[];
+  const gameStats = (gameStatsData ?? []) as unknown as GameStat[];
+  const players = (playersData ?? []) as Player[];
+
   const gameIdToMode = new Map<string, string>();
   for (const g of games) {
     gameIdToMode.set(g.id, g.mode);
