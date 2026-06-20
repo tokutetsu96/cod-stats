@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Pencil, Trash2, Plus, Star } from "lucide-react";
+import { Pencil, Trash2, Plus, Star, Eye, EyeOff } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import type { Player } from "@/lib/types";
 
@@ -17,6 +17,7 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [togglingActiveId, setTogglingActiveId] = useState<string | null>(null);
   const router = useRouter();
 
   const defaultPlayers = players.filter((p) => p.is_default);
@@ -46,6 +47,16 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
     if (error) setMutationError("更新に失敗しました");
     router.refresh();
     setTogglingId(null);
+  };
+
+  const handleToggleActive = async (id: string, current: boolean) => {
+    if (!isAdmin) return;
+    setTogglingActiveId(id);
+    const supabase = createClient();
+    const { error } = await supabase.from("players").update({ is_active: !current }).eq("id", id);
+    if (error) setMutationError("更新に失敗しました");
+    router.refresh();
+    setTogglingActiveId(null);
   };
 
   const handleDelete = async (id: string) => {
@@ -80,6 +91,7 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
             <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-8" />
           </td>
           <td className="py-2" />
+          <td className="py-2" />
           <td className="py-2 space-x-1">
             <Button size="sm" variant="outline" onClick={() => handleEdit(p.id)} disabled={loading}>保存</Button>
             <Button size="sm" variant="ghost" onClick={() => setEditId(null)}>取消</Button>
@@ -102,6 +114,26 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
               </button>
             ) : (
               <Star className={`h-4 w-4 ${p.is_default ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
+            )}
+          </td>
+          <td className="py-2 text-center">
+            {isAdmin ? (
+              <button
+                onClick={() => handleToggleActive(p.id, p.is_active)}
+                aria-label={p.is_active ? "ダッシュボードから非表示にする" : "ダッシュボードに表示する"}
+                disabled={togglingActiveId === p.id}
+                className="disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                {p.is_active ? (
+                  <Eye className="h-4 w-4 text-primary" />
+                ) : (
+                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                )}
+              </button>
+            ) : p.is_active ? (
+              <Eye className="h-4 w-4 text-primary" />
+            ) : (
+              <EyeOff className="h-4 w-4 text-muted-foreground" />
             )}
           </td>
           {isAdmin && (
@@ -154,6 +186,7 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
                   <tr className="border-b text-left">
                     <th className="pb-2 font-medium">名前</th>
                     <th className="pb-2 font-medium w-12 sm:w-16 text-center">デフォルト</th>
+                    <th className="pb-2 font-medium w-12 sm:w-16 text-center">表示</th>
                     {isAdmin && <th className="pb-2 font-medium w-16 sm:w-24">操作</th>}
                   </tr>
                 </thead>
@@ -173,6 +206,7 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
                   <tr className="border-b text-left">
                     <th className="pb-2 font-medium">名前</th>
                     <th className="pb-2 font-medium w-12 sm:w-16 text-center">デフォルト</th>
+                    <th className="pb-2 font-medium w-12 sm:w-16 text-center">表示</th>
                     {isAdmin && <th className="pb-2 font-medium w-16 sm:w-24">操作</th>}
                   </tr>
                 </thead>

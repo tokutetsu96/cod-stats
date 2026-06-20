@@ -93,7 +93,7 @@ export async function DashboardKDTable({
   ] = await Promise.all([
     gamesQuery,
     gameStatsQuery,
-    supabase.from("players").select("id, name").eq("team_id", profile.team_id),
+    supabase.from("players").select("id, name").eq("team_id", profile.team_id).eq("is_active", true),
   ]);
 
   const games = (gamesData ?? []) as { id: string; mode: string; series_id: string }[];

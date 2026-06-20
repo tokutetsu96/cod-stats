@@ -24,6 +24,7 @@ export interface Player {
   id: string;
   name: string;
   is_default: boolean;
+  is_active: boolean;
   team_id: string;
   created_at: string;
 }

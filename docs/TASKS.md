@@ -120,3 +120,9 @@ Severity: moderate（XSS via </style>）
 ### パフォーマンス改善（Tier1）
 
 - クエリ絞り込み・O(n²) 解消・コード整理（PR #3）
+
+### ダッシュボード表示メンバー選択
+
+- `players.is_active` カラムを追加（boolean, default true）
+- プレイヤー管理画面に表示トグル（Eye/EyeOff）を追加（admin のみ操作可）
+- ダッシュボードのメンバー別 K/D をアクティブメンバーのみ表示に変更
