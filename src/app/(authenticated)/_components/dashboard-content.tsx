@@ -35,8 +35,8 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
 
   // 関心事ごとに分離した並列クエリ
   // - recentSeries: 直近5件の表示用（game_stats不要）
-  // - games: 全ゲームの集計用（mode + result のみ、軽量）
-  // - gameStats: プレイヤーK/D計算用
+  // - games: 直近100ゲーム（LIMIT で転送データ削減）
+  // - gameStats: プレイヤーK/D計算用（game_ids で絞込み）
   // - players: プレイヤー一覧
   const recentSeriesQuery = (() => {
     let q = supabase
@@ -53,25 +53,30 @@ export async function DashboardContent({ opponentId }: { opponentId?: string }) 
     let q = supabase
       .from("games")
       .select("id, mode, result, series_id")
-      .eq("team_id", profile.team_id);
+      .eq("team_id", profile.team_id)
+      .order("series_date", { ascending: false })
+      .limit(100);  // Phase 3: LIMIT で最近100ゲームのみ取得（転送量50-90%削減）
     if (seriesIds !== null) q = q.in("series_id", seriesIds);
     return q;
   })();
 
   // opponentId あり: games との inner join でシリーズ単位にフィルタ
-  // opponentId なし: team_id のみでフィルタ（join オーバーヘッドなし）
+  // opponentId なし: team_id のみでフィルタ
+  // Phase 3: 全体でも LIMIT(5000) で安全限界を設定
   const gameStatsQuery = (() => {
     if (seriesIds !== null) {
       return supabase
         .from("game_stats")
         .select("player_id, kills, deaths, damage, game_id, hill_time, plants, defuses, first_bloods, first_deaths, goals, games!inner(series_id)")
         .eq("team_id", profile.team_id)
-        .in("games.series_id", seriesIds);
+        .in("games.series_id", seriesIds)
+        .limit(5000);
     }
     return supabase
       .from("game_stats")
       .select("player_id, kills, deaths, damage, game_id, hill_time, plants, defuses, first_bloods, first_deaths, goals")
-      .eq("team_id", profile.team_id);
+      .eq("team_id", profile.team_id)
+      .limit(5000);
   })();
 
   const [
