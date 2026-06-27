@@ -60,52 +60,31 @@ export async function DashboardKDTable({
   const supabase = await createClient();
   const { profile } = await getProfile();
 
-  const gamesQuery = (() => {
+  // game_stats に games(mode) を埋め込むことで、各 stat が自身の mode を保持する。
+  // これにより別途 games クエリ・gameIdToMode Map が不要になり、
+  // games と game_stats の limit 不整合による集計欠落バグも解消する。
+  const gameStatsQuery = (() => {
     let q = supabase
-      .from("games")
-      .select("id, mode, series_id")
+      .from("game_stats")
+      .select(
+        "player_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, games!inner(mode, series_id)",
+      )
       .eq("team_id", profile.team_id)
-      .limit(100);
-    if (seriesIds !== null) q = q.in("series_id", seriesIds);
+      .limit(5000);
+    if (seriesIds !== null) q = q.in("games.series_id", seriesIds);
     return q;
   })();
 
-  const gameStatsQuery = (() => {
-    if (seriesIds !== null) {
-      return supabase
-        .from("game_stats")
-        .select("player_id, kills, deaths, damage, game_id, hill_time, plants, defuses, first_bloods, first_deaths, goals, games!inner(series_id)")
-        .eq("team_id", profile.team_id)
-        .in("games.series_id", seriesIds)
-        .limit(5000);
-    }
-    return supabase
-      .from("game_stats")
-      .select("player_id, kills, deaths, damage, game_id, hill_time, plants, defuses, first_bloods, first_deaths, goals")
-      .eq("team_id", profile.team_id)
-      .limit(5000);
-  })();
-
-  const [
-    { data: gamesData },
-    { data: gameStatsData },
-    { data: playersData },
-  ] = await Promise.all([
-    gamesQuery,
+  const [{ data: gameStatsData }, { data: playersData }] = await Promise.all([
     gameStatsQuery,
     supabase.from("players").select("id, name").eq("team_id", profile.team_id).eq("is_active", true),
   ]);
 
-  const games = (gamesData ?? []) as { id: string; mode: string; series_id: string }[];
-  const gameStats = (gameStatsData ?? []) as unknown as GameStat[];
+  type GameStatWithGame = GameStat & { games: { mode: string; series_id: string } | null };
+  const gameStats = (gameStatsData ?? []) as unknown as GameStatWithGame[];
   const players = (playersData ?? []) as Player[];
 
-  const gameIdToMode = new Map<string, string>();
-  for (const g of games) {
-    gameIdToMode.set(g.id, g.mode);
-  }
-
-  const statsByPlayerId = new Map<string, GameStat[]>();
+  const statsByPlayerId = new Map<string, GameStatWithGame[]>();
   for (const s of gameStats) {
     const arr = statsByPlayerId.get(s.player_id) ?? [];
     arr.push(s);
@@ -126,7 +105,7 @@ export async function DashboardKDTable({
       totalKills += s.kills;
       totalDeaths += s.deaths;
       totalDamage += s.damage ?? 0;
-      const mode = gameIdToMode.get(s.game_id);
+      const mode = s.games?.mode;
       const m = mode ? modes[mode] : undefined;
       if (m) {
         m.kills += s.kills;

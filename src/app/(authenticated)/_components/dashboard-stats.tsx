@@ -31,6 +31,7 @@ export async function DashboardStats({
     .from("games")
     .select("id, mode, result, series_id")
     .eq("team_id", profile.team_id)
+    .order("created_at", { ascending: false })
     .limit(100);
   if (seriesIds !== null) q = q.in("series_id", seriesIds);
   const { data } = await q;

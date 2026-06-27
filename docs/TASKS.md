@@ -121,6 +121,14 @@ Severity: moderate（XSS via </style>）
 
 - クエリ絞り込み・O(n²) 解消・コード整理（PR #3）
 
+### ダッシュボード パフォーマンスレビュー対応
+
+- メンバー別 K/D: `game_stats` に `games(mode)` を埋め込み、各 stat が自身の mode を保持する形に変更。別途の `games` クエリと `gameIdToMode` Map を削除（往復1回削減）
+- games(limit 100) と game_stats(limit 5000) の不整合による集計欠落バグを解消
+- `dashboard-stats.tsx`: 勝率集計の `limit(100)` に `order("created_at", desc)` を追加し直近100ゲームで決定的に
+- 未使用の `game_id` を K/D クエリの select から削除
+- デッドコード `dashboard-mode-stats.tsx` を削除
+
 ### ダッシュボード表示メンバー選択
 
 - `players.is_active` カラムを追加（boolean, default true）
