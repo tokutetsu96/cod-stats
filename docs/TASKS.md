@@ -36,13 +36,12 @@
 
 #### High: ダッシュボード集計の暗黙 limit で数値が不正確
 
-- `dashboard-stats.tsx` は `games` を `limit(100)` だが「全体勝率」と表示（実態は直近100ゲーム）
+- ~~`dashboard-stats.tsx` は `games` を `limit(100)` だが「全体勝率」と表示（実態は直近100ゲーム）~~ → **対応済み（2026-06-29）**
 - ~~`dashboard-kd-table.tsx` は `game_stats` を `limit(5000)`、母数が食い違い件数超過時に無言で切り捨て~~ → **対応済み（2026-06-29, PR #17）**
 
 > 既存 ToDo「ダッシュボードの集計クエリを Supabase の集計関数に移行」と関連。
 
-- [x] Postgres 側集計（ビュー/RPC）に移行し全件取得を廃止 → **`dashboard-kd-table.tsx`（RPC `get_dashboard_kd_stats`）と `opponents/page.tsx`（RPC `get_opponent_match_stats`）は対応済み（2026-06-29）。`dashboard-stats.tsx` の勝率集計 `limit(100)` は未対応**
-- [ ] `dashboard-stats.tsx` の勝率集計も集計RPC化して全件対応、または暫定でラベルを実態に合わせる（例: 「直近100試合の勝率」）
+- [x] Postgres 側集計（ビュー/RPC）に移行し全件取得を廃止 → **完了（2026-06-29）。`dashboard-kd-table.tsx`（RPC `get_dashboard_kd_stats`）/ `opponents/page.tsx`（RPC `get_opponent_match_stats`）/ `dashboard-stats.tsx`（RPC `get_team_game_stats`）の全てを集計RPC化。「全体勝率」は全件で算出されるようになった**
 
 #### Medium: hill_times 後方互換の正規化ロジックが3箇所重複
 

@@ -110,4 +110,4 @@ series
 
 - **リージョン整合**: Vercel関数（`vercel.json` で `hnd1` 固定）と Supabase（`ap-northeast-1` 東京）を同一地域に配置する。両者が離れると認証・DBの往復がリクエストごとに越境し、全ページの表示が著しく遅くなる。
 - **認証**: セッション検証は `getClaims()`（非対称ES256署名キーによるローカルJWT検証）を用い、Authサーバーへの往復を最小化する。
-- **集計**: ダッシュボードのメンバー別K/D・対戦相手別成績はDB側の集計RPC（`get_dashboard_kd_stats` / `get_opponent_match_stats`、いずれも SECURITY INVOKER で RLS により `team_id` 自動スコープ）で算出し、全行転送を行わない。
+- **集計**: ダッシュボードの全体/モード別成績・メンバー別K/D・対戦相手別成績はDB側の集計RPC（`get_team_game_stats` / `get_dashboard_kd_stats` / `get_opponent_match_stats`、いずれも SECURITY INVOKER で RLS により `team_id` 自動スコープ）で算出し、全行転送を行わない。「全体勝率」は全試合を母数に算出する（直近N件への暗黙の制限は持たない）。
