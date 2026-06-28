@@ -21,5 +21,32 @@
       "Bash(node *)",
       "Bash(npx *)"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/check-team-id.mjs\"",
+            "statusMessage": "team_id ガードを確認中"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/typecheck.mjs\"",
+            "statusMessage": "型チェック中 (tsc)",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
   }
 }
