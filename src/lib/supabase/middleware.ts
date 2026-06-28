@@ -29,12 +29,12 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() は非対称JWT署名キーが有効な場合、ネットワーク往復なしで
+  // ローカルにトークンを検証する（getUser() は毎回Authサーバーへ往復する）。
+  const { data } = await supabase.auth.getClaims();
 
   if (
-    !user &&
+    !data?.claims &&
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/auth")
   ) {

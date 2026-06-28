@@ -5,15 +5,16 @@ import type { Profile } from "@/lib/types";
 
 export const getProfile = cache(async () => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  // getClaims() は非対称JWT署名キーが有効なためローカル検証され、
+  // Authサーバーへのネットワーク往復を伴わない（getUser() は毎回往復する）。
+  const { data } = await supabase.auth.getClaims();
+  const userId = data?.claims?.sub;
+  if (!userId) redirect("/login");
 
   const { data: profileData } = await supabase
     .from("profiles")
     .select("*, teams(name)")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
   if (!profileData) redirect("/login");
