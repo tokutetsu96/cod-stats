@@ -25,37 +25,43 @@ export async function DashboardStats({
   seriesIds: string[] | null;
 }) {
   const supabase = await createClient();
-  const { profile } = await getProfile();
+  await getProfile();
 
-  let q = supabase
-    .from("games")
-    .select("id, mode, result, series_id")
-    .eq("team_id", profile.team_id)
-    .order("created_at", { ascending: false })
-    .limit(100);
-  if (seriesIds !== null) q = q.in("series_id", seriesIds);
-  const { data } = await q;
-  const games = (data ?? []) as { id: string; mode: string; result: string; series_id: string }[];
-
-  const totalGames = games.length;
-  const totalWins = games.filter((g) => g.result === "win").length;
-  const totalLosses = games.filter((g) => g.result === "lose").length;
-  const winRate =
-    totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : "0";
+  // 集計は get_team_game_stats RPC でDB側に実施する。
+  // mode ごとの total/wins/losses のみを返すため、games 全行を転送していた
+  // 従来方式（limit 100 で「全体勝率」が直近100試合に限定されるバグ）を排除する。
+  // RPC は SECURITY INVOKER で RLS により呼び出し元チームへ自動スコープされる。
+  const { data } = await supabase.rpc("get_team_game_stats", {
+    p_series_ids: seriesIds,
+  });
+  const rows = (data ?? []) as {
+    mode: string;
+    total: number;
+    wins: number;
+    losses: number;
+  }[];
 
   const modeCounts = {
     hardpoint: { total: 0, wins: 0, losses: 0 },
     snd: { total: 0, wins: 0, losses: 0 },
     overload: { total: 0, wins: 0, losses: 0 },
   };
-  for (const g of games) {
-    const mc = modeCounts[g.mode as keyof typeof modeCounts];
+  let totalGames = 0,
+    totalWins = 0,
+    totalLosses = 0;
+  for (const r of rows) {
+    totalGames += r.total;
+    totalWins += r.wins;
+    totalLosses += r.losses;
+    const mc = modeCounts[r.mode as keyof typeof modeCounts];
     if (mc) {
-      mc.total++;
-      if (g.result === "win") mc.wins++;
-      else if (g.result === "lose") mc.losses++;
+      mc.total += r.total;
+      mc.wins += r.wins;
+      mc.losses += r.losses;
     }
   }
+  const winRate =
+    totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : "0";
   const modeStats = (["hardpoint", "snd", "overload"] as const).map((mode) => {
     const mc = modeCounts[mode];
     const rate = mc.total > 0 ? ((mc.wins / mc.total) * 100).toFixed(1) : "0";
