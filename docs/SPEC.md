@@ -104,4 +104,10 @@ series
 | スタイリング | Tailwind CSS v4 + shadcn/ui（ダークモード固定） |
 | フォント | Barlow Condensed / Noto Sans JP |
 | ドラッグ&ドロップ | dnd-kit |
-| デプロイ | Vercel |
+| デプロイ | Vercel（関数リージョン: `hnd1` 東京） |
+
+### 非機能要件（パフォーマンス）
+
+- **リージョン整合**: Vercel関数（`vercel.json` で `hnd1` 固定）と Supabase（`ap-northeast-1` 東京）を同一地域に配置する。両者が離れると認証・DBの往復がリクエストごとに越境し、全ページの表示が著しく遅くなる。
+- **認証**: セッション検証は `getClaims()`（非対称ES256署名キーによるローカルJWT検証）を用い、Authサーバーへの往復を最小化する。
+- **集計**: ダッシュボードのメンバー別K/D・対戦相手別成績はDB側の集計RPC（`get_dashboard_kd_stats` / `get_opponent_match_stats`、いずれも SECURITY INVOKER で RLS により `team_id` 自動スコープ）で算出し、全行転送を行わない。

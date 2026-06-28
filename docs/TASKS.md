@@ -37,12 +37,12 @@
 #### High: ダッシュボード集計の暗黙 limit で数値が不正確
 
 - `dashboard-stats.tsx` は `games` を `limit(100)` だが「全体勝率」と表示（実態は直近100ゲーム）
-- `dashboard-kd-table.tsx` は `game_stats` を `limit(5000)`、母数が食い違い件数超過時に無言で切り捨て
+- ~~`dashboard-kd-table.tsx` は `game_stats` を `limit(5000)`、母数が食い違い件数超過時に無言で切り捨て~~ → **対応済み（2026-06-29, PR #17）**
 
 > 既存 ToDo「ダッシュボードの集計クエリを Supabase の集計関数に移行」と関連。
 
-- [ ] Postgres 側集計（ビュー/RPC）に移行し全件取得を廃止
-- [ ] 暫定でラベルを実態に合わせる（例: 「直近100試合の勝率」）
+- [x] Postgres 側集計（ビュー/RPC）に移行し全件取得を廃止 → **`dashboard-kd-table.tsx`（RPC `get_dashboard_kd_stats`）と `opponents/page.tsx`（RPC `get_opponent_match_stats`）は対応済み（2026-06-29）。`dashboard-stats.tsx` の勝率集計 `limit(100)` は未対応**
+- [ ] `dashboard-stats.tsx` の勝率集計も集計RPC化して全件対応、または暫定でラベルを実態に合わせる（例: 「直近100試合の勝率」）
 
 #### Medium: hill_times 後方互換の正規化ロジックが3箇所重複
 
@@ -148,6 +148,15 @@
 ---
 
 ## Done
+
+### ページ表示パフォーマンス改善（リージョン整合・認証往復削減・集計RPC化）（2026-06-29, PR #17）
+
+本番（Vercel）で全ページが遅い主因を特定し対応。主因は **Vercel関数がデフォルトの iad1（米国東部）実行で、Supabase DB（東京/ap-northeast-1）への認証往復・DBクエリが毎リクエスト太平洋を横断**していたこと。
+
+- `vercel.json` 新規追加: 関数リージョンを `hnd1`（東京）に固定しDBと同一地域化（最大効果）。`.gitignore` の `*.json` 包括除外に `!vercel.json` 例外を追加
+- 認証往復削減: `middleware.ts` / `auth.ts` の `getUser()` を `getClaims()` に変更（非対称ES256署名キー有効を確認済み、ローカルJWT検証でAuthサーバー往復を削減）
+- ダッシュボード集計をDB側へ: 集計RPC `get_dashboard_kd_stats` / `get_opponent_match_stats` を追加（SECURITY INVOKER、RLSで team_id 自動スコープ）。`dashboard-kd-table.tsx`（旧 `limit(5000)`）と `opponents/page.tsx`（旧 `limit(200)`）の全行転送を廃止
+- セキュリティアドバイザーで新規警告ゼロ、lint/build/typecheck パス、本番デプロイ READY（hnd1）を確認
 
 ### 依存パッケージの脆弱性対応（2026-06-28）
 
