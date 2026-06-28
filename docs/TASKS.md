@@ -6,16 +6,66 @@
 
 ## ToDo
 
-### 重要
+### コードレビュー指摘（2026-06-28）
 
-#### PostCSS 脆弱性（`npm audit fix --force` 不可）
+#### Critical: 試合の作成・編集がトランザクション非対応
 
-```bash
-postcss <8.5.10
-Severity: moderate（XSS via </style>）
-```
+`series-form.tsx` / `edit-form.tsx` はクライアントから複数の insert/delete を逐次実行しており、途中失敗で中途半端なデータが残る。特に `edit-form.tsx` は全 games を delete した後に再 insert するため、再 insert 失敗時に**試合データが完全消失**する（ロールバック不可）。
 
-`next@16.x` が内部で PostCSS に依存しており、修正には Next.js を v9.3.3 にダウングレードする破壊的変更が必要なため `--force` 実行不可。Next.js のアップデートで解消される予定。
+- [ ] 作成・編集処理を `"use server"` の Server Action に集約
+- [ ] Postgres 関数（RPC）でトランザクション化し原子的に処理
+- [ ] 編集は「全削除→再作成」をやめる、または RPC 内で原子化
+
+#### Critical: クライアント直接 insert の team_id 検証は RLS 依存
+
+クライアントは props の `teamId` を信頼して insert しているため、悪意あるクライアントは任意の `team_id` を送れる。マルチテナンシーの安全性が RLS の `WITH CHECK` に完全依存している。
+
+- [x] `games` / `game_stats` / `opponent_game_stats` の INSERT/UPDATE で `WITH CHECK (team_id = ...)` が効いているか検証 → **検証済み（2026-06-28）。全テーブルに `WITH CHECK ((team_id = get_my_team_id()) AND get_my_role()='admin')` が設定済みでクロステナント書き込みは不可。脆弱性なし**
+- [ ] サインアップのチーム作成＋プロフィール作成も RPC で原子化（部分失敗で孤立チームが残る）
+
+#### Medium: Supabase security advisor 指摘（DB側ハードニング）
+
+`get_advisors`（security）の結果。
+
+- [x] `function_search_path_mutable`: `get_my_role` / `get_my_team_id` / `auto_confirm_user` を `SET search_path = ''` で固定（権限昇格対策）→ **対応済み（2026-06-28, migration: harden_security_definer_functions）**
+- [x] `auto_confirm_user()` の anon/authenticated 直接 RPC 実行を `REVOKE EXECUTE` → **対応済み（同上）**
+- [ ] `teams` の INSERT ポリシーが `WITH CHECK (true)`（誰でもチーム作成可）→ サインアップ要件と両立する範囲で制限を検討
+- [ ] avatars バケットの SELECT ポリシーが広く一覧可能 → オブジェクトURL閲覧に限定
+- [ ] 漏洩パスワード保護（HaveIBeenPwned）が無効 → Supabase ダッシュボードで有効化
+- 受容: `get_my_role` / `get_my_team_id` の authenticated EXECUTE は RLS ポリシーで必須のため維持（返すのは呼び出し元自身の role/team_id のみで情報漏洩リスクなし）
+
+#### High: ダッシュボード集計の暗黙 limit で数値が不正確
+
+- `dashboard-stats.tsx` は `games` を `limit(100)` だが「全体勝率」と表示（実態は直近100ゲーム）
+- `dashboard-kd-table.tsx` は `game_stats` を `limit(5000)`、母数が食い違い件数超過時に無言で切り捨て
+
+> 既存 ToDo「ダッシュボードの集計クエリを Supabase の集計関数に移行」と関連。
+
+- [ ] Postgres 側集計（ビュー/RPC）に移行し全件取得を廃止
+- [ ] 暫定でラベルを実態に合わせる（例: 「直近100試合の勝率」）
+
+#### Medium: hill_times 後方互換の正規化ロジックが3箇所重複
+
+`series-detail-content.tsx` / `edit-form.tsx` / game-card 表示側で旧データ形式変換が個別実装。仕様変更時に乖離リスク。
+
+- [ ] `lib/utils.ts` に `normalizeHillTimes()` として抽出・共通化
+
+#### Medium: 集計ヘルパーの重複
+
+`avg` / `emptyModeAcc` / `toModeStats` / `ModeAcc` 型が `dashboard-kd-table.tsx` と `series-detail-content.tsx` でほぼ同一にコピー。
+
+- [ ] `PlayerKDData` 生成ロジックごと共有モジュールへ切り出し
+
+#### Medium: ProfileProvider / useProfile がデッドコード
+
+`layout.tsx` が全体を `ProfileProvider` でラップしているが `useProfile` の利用箇所ゼロ。
+
+- [ ] 未使用なら `ProfileProvider` / `useProfile` を削除
+
+#### Low: その他
+
+- [ ] Supabase 生成型を導入し `as unknown as` キャストを削減（`supabase gen types`）
+- [ ] 脱退・kick でチーム唯一の管理者を消せる → 最低1名の admin を残すガードを追加
 
 ---
 
@@ -98,6 +148,15 @@ Severity: moderate（XSS via </style>）
 ---
 
 ## Done
+
+### 依存パッケージの脆弱性対応（2026-06-28）
+
+- `npm audit fix` を実行し **0 vulnerabilities** に解消
+- Next.js を 16.2.5 → **16.2.9** に更新。HIGH 深刻度の **Middleware/Proxy bypass（認証バイパス）**、Cache poisoning、XSS、SSRF、DoS 等を解消
+- `ws`（メモリ開示/DoS）、`brace-expansion`（ReDoS）、`postcss` も併せて解消
+- 旧記載「PostCSS は `--force` 不可で修正できない」は誤り（プレーンな `npm audit fix` で解消）として削除
+- typecheck / lint / build 全てパスを確認
+- RLS の `WITH CHECK` を実DBで検証し、クロステナント書き込み脆弱性がないことを確認（DB側の追加ハードニングは ToDo に記載）
 
 ### モバイルUI対応（全件完了）
 
