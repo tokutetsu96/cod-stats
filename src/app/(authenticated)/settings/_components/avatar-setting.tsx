@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -87,9 +88,9 @@ export function AvatarSetting({ profileId, currentAvatar, username }: { profileI
     <div className="space-y-4">
       {/* アバター */}
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-primary/15 overflow-hidden flex items-center justify-center shrink-0">
+        <div className="relative w-16 h-16 rounded-full bg-primary/15 overflow-hidden flex items-center justify-center shrink-0">
           {preview ? (
-            <img src={preview} alt="avatar" className="w-full h-full object-cover" />
+            <Image src={preview} alt="avatar" fill sizes="64px" className="object-cover" />
           ) : (
             <span className="text-xl font-medium">{nameValue[0]?.toUpperCase() ?? "?"}</span>
           )}

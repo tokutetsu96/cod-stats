@@ -107,7 +107,7 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
               <button
                 onClick={() => handleToggleDefault(p.id, p.is_default)}
                 aria-label={p.is_default ? "デフォルトから外す" : "デフォルトに設定"}
-                disabled={!p.is_default && defaultPlayers.length >= 4}
+                disabled={togglingId === p.id || (!p.is_default && defaultPlayers.length >= 4)}
                 className="disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <Star className={`h-4 w-4 ${p.is_default ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />

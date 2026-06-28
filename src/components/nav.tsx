@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -104,9 +105,9 @@ export function Nav({ teamName, username, avatar, role }: NavProps) {
             )}
             aria-label="メニューを開く"
           >
-            <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-xs font-medium overflow-hidden shrink-0">
+            <div className="relative flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-xs font-medium overflow-hidden shrink-0">
               {isUrl ? (
-                <img src={avatar!} alt="avatar" className="w-full h-full object-cover" />
+                <Image src={avatar!} alt="avatar" fill sizes="24px" className="object-cover" />
               ) : (
                 <span className="text-primary">{fallback}</span>
               )}

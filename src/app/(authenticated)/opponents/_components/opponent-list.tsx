@@ -34,7 +34,6 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
   const [editName, setEditName] = useState("");
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [addingPlayerId, setAddingPlayerId] = useState<string | null>(null);
   const [deletingPlayerId, setDeletingPlayerId] = useState<string | null>(null);
   const [togglingPlayerId, setTogglingPlayerId] = useState<string | null>(null);
@@ -207,7 +206,7 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
                         <button
                           onClick={() => handleTogglePlayerDefault(p.id, p.is_default, opp.opponent_players)}
                           aria-label={p.is_default ? "デフォルトから外す" : "デフォルトに設定"}
-                          disabled={!p.is_default && defaultP.length >= 4}
+                          disabled={togglingPlayerId === p.id || (!p.is_default && defaultP.length >= 4)}
                           className="disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           <Star className={`h-4 w-4 ${p.is_default ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />

@@ -9,8 +9,6 @@ interface NumericInputProps {
 }
 
 export function NumericInput({ value, onChange, className }: NumericInputProps) {
-  const num = value === "" ? 0 : parseInt(value) || 0;
-
   const moveFocus = (el: HTMLElement, direction: "next" | "prev" | "up" | "down") => {
     if (direction === "next" || direction === "prev") {
       const row = el.closest("tr");
