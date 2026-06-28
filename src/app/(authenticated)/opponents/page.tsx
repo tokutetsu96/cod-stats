@@ -3,31 +3,42 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { OpponentList } from "./_components/opponent-list";
 
+// get_opponent_match_stats RPC が返す行（(opponent_id, mode) ごとの集計済み成績）
+type OpponentMatchStatRow = {
+  opponent_id: string;
+  mode: string;
+  wins: number;
+  total: number;
+};
+
 export default async function OpponentsPage() {
   const supabase = await createClient();
 
   const { profile } = await getProfile();
-  const [{ data: opponents }, { data: series }] = await Promise.all([
+  // 成績集計は get_opponent_match_stats RPC でDB側に実施する。
+  // (opponent_id, mode) ごとの勝利数・総数のみを返すため、series/games の
+  // 全行を転送していた従来方式（limit 200 による集計欠落リスク）を排除する。
+  // RPC は SECURITY INVOKER で RLS により呼び出し元チームへ自動スコープされる。
+  const [{ data: opponents }, { data: matchStats }] = await Promise.all([
     supabase.from("opponents").select("id, name, opponent_players(id, name, is_default, created_at, opponent_id, team_id)").eq("team_id", profile.team_id).order("name"),
-    supabase.from("series").select("opponent_id, games(mode, result)").eq("team_id", profile.team_id).limit(200),
+    supabase.rpc("get_opponent_match_stats"),
   ]);
 
-  const seriesByOpponent = new Map<string, NonNullable<typeof series>>();
-  for (const s of series ?? []) {
-    const arr = seriesByOpponent.get(s.opponent_id) ?? [];
-    arr.push(s);
-    seriesByOpponent.set(s.opponent_id, arr);
+  const statRows = (matchStats ?? []) as OpponentMatchStatRow[];
+  const statsByOpponent = new Map<string, OpponentMatchStatRow[]>();
+  for (const r of statRows) {
+    const arr = statsByOpponent.get(r.opponent_id) ?? [];
+    arr.push(r);
+    statsByOpponent.set(r.opponent_id, arr);
   }
 
   const opponentStats = (opponents ?? []).map((opp) => {
-    const oppSeries = seriesByOpponent.get(opp.id) ?? [];
-    const allGames = oppSeries.flatMap((s) => s.games ?? []);
-    const wins = allGames.filter((g) => g.result === "win").length;
-    const total = allGames.length;
+    const oppRows = statsByOpponent.get(opp.id) ?? [];
+    const wins = oppRows.reduce((sum, r) => sum + r.wins, 0);
+    const total = oppRows.reduce((sum, r) => sum + r.total, 0);
     const modeStats = (["hardpoint", "snd", "overload"] as const).map((mode) => {
-      const mg = allGames.filter((g) => g.mode === mode);
-      const mw = mg.filter((g) => g.result === "win").length;
-      return { mode, wins: mw, total: mg.length };
+      const mr = oppRows.find((r) => r.mode === mode);
+      return { mode, wins: mr?.wins ?? 0, total: mr?.total ?? 0 };
     });
     return {
       ...opp,
