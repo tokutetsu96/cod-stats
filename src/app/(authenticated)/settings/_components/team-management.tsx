@@ -78,7 +78,12 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
     setError("");
     const supabase = createClient();
     const { error: profileError } = await supabase.from("profiles").delete().eq("id", currentProfile.id);
-    if (profileError) { setError("脱退処理に失敗しました"); setLeavingTeam(false); return; }
+    if (profileError) {
+      // 最終adminガード（DBトリガー）等の理由をそのまま表示する
+      setError(profileError.message || "脱退処理に失敗しました");
+      setLeavingTeam(false);
+      return;
+    }
     await supabase.auth.signOut();
     router.push("/login");
   };

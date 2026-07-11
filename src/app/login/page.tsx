@@ -43,33 +43,19 @@ export default function LoginPage() {
         }
       }
 
-      let resolvedTeamId: string;
-
-      if (joinExisting && teamId.trim()) {
-        resolvedTeamId = teamId.trim();
-      } else {
-        const { data: teamData, error: teamError } = await supabase
-          .from("teams")
-          .insert({ name: teamName.trim() })
-          .select("id")
-          .single();
-        if (teamError) {
-          setError("チーム作成に失敗しました: " + teamError.message);
-          setLoading(false);
-          return;
-        }
-        resolvedTeamId = teamData.id;
-      }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      const { error: profileError } = await supabase.from("profiles").insert({
-        id: user!.id,
-        username: username.trim(),
-        team_id: resolvedTeamId,
-        role: joinExisting ? "member" : "admin",
-      });
-      if (profileError) {
-        setError("プロフィール作成に失敗しました: " + profileError.message);
+      // チーム作成+プロフィール作成はRPCが1トランザクションで原子的に処理する
+      // （部分失敗で孤立チームが残らない）。roleはサーバー側で決定される。
+      const { error: signupError } = joinExisting && teamId.trim()
+        ? await supabase.rpc("signup_join_team", {
+            p_username: username.trim(),
+            p_team_id: teamId.trim(),
+          })
+        : await supabase.rpc("signup_create_team_with_profile", {
+            p_username: username.trim(),
+            p_team_name: teamName.trim(),
+          });
+      if (signupError) {
+        setError("アカウント設定に失敗しました: " + signupError.message);
         setLoading(false);
         return;
       }

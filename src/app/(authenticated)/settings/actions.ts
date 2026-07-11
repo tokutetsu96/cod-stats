@@ -28,7 +28,8 @@ export async function toggleUserRole(targetUserId: string, newRole: UserRole) {
     .single();
   if (!target || target.team_id !== admin.team_id) throw new Error("権限がありません");
   const { error } = await supabase.from("profiles").update({ role: newRole }).eq("id", targetUserId);
-  if (error) throw new Error("権限の変更に失敗しました");
+  // 最終adminガード（DBトリガー）等の理由をそのまま表示する
+  if (error) throw new Error(error.message || "権限の変更に失敗しました");
 }
 
 export async function kickUser(targetUserId: string) {
@@ -41,5 +42,5 @@ export async function kickUser(targetUserId: string) {
     .single();
   if (!target || target.team_id !== admin.team_id) throw new Error("権限がありません");
   const { error } = await supabase.from("profiles").delete().eq("id", targetUserId);
-  if (error) throw new Error("ユーザーの除外に失敗しました");
+  if (error) throw new Error(error.message || "ユーザーの除外に失敗しました");
 }
