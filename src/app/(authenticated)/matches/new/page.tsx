@@ -26,7 +26,6 @@ export default async function NewSeriesPage() {
           opponents={opponents ?? []}
           players={players ?? []}
           maps={maps ?? []}
-          teamId={profile.team_id}
         />
       </main>
     </>

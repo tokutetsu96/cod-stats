@@ -37,7 +37,6 @@ export default async function EditSeriesPage({ params }: { params: Promise<{ id:
           opponents={opponents ?? []}
           players={players ?? []}
           maps={maps ?? []}
-          teamId={profile.team_id}
         />
       </main>
     </>
