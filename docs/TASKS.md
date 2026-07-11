@@ -34,15 +34,6 @@
 - [ ] 漏洩パスワード保護（HaveIBeenPwned）が無効 → Supabase ダッシュボードで有効化
 - 受容: `get_my_role` / `get_my_team_id` の authenticated EXECUTE は RLS ポリシーで必須のため維持（返すのは呼び出し元自身の role/team_id のみで情報漏洩リスクなし）
 
-#### High: ダッシュボード集計の暗黙 limit で数値が不正確
-
-- ~~`dashboard-stats.tsx` は `games` を `limit(100)` だが「全体勝率」と表示（実態は直近100ゲーム）~~ → **対応済み（2026-06-29）**
-- ~~`dashboard-kd-table.tsx` は `game_stats` を `limit(5000)`、母数が食い違い件数超過時に無言で切り捨て~~ → **対応済み（2026-06-29, PR #17）**
-
-> 既存 ToDo「ダッシュボードの集計クエリを Supabase の集計関数に移行」と関連。
-
-- [x] Postgres 側集計（ビュー/RPC）に移行し全件取得を廃止 → **完了（2026-06-29）。`dashboard-kd-table.tsx`（RPC `get_dashboard_kd_stats`）/ `opponents/page.tsx`（RPC `get_opponent_match_stats`）/ `dashboard-stats.tsx`（RPC `get_team_game_stats`）の全てを集計RPC化。「全体勝率」は全件で算出されるようになった**
-
 #### Medium: hill_times 後方互換の正規化ロジックが3箇所重複
 
 `series-detail-content.tsx` / `edit-form.tsx` / game-card 表示側で旧データ形式変換が個別実装。仕様変更時に乖離リスク。
@@ -54,12 +45,6 @@
 `avg` / `emptyModeAcc` / `toModeStats` / `ModeAcc` 型が `dashboard-kd-table.tsx` と `series-detail-content.tsx` でほぼ同一にコピー。
 
 - [ ] `PlayerKDData` 生成ロジックごと共有モジュールへ切り出し
-
-#### Medium: ProfileProvider / useProfile がデッドコード
-
-`layout.tsx` が全体を `ProfileProvider` でラップしているが `useProfile` の利用箇所ゼロ。
-
-- [ ] 未使用なら `ProfileProvider` / `useProfile` を削除
 
 #### Low: その他
 
@@ -75,7 +60,7 @@
 対戦一覧・スタッツ取得で `limit(100)` が固定されており、データが増えるとパフォーマンスが低下する。
 
 - 対戦一覧にカーソルベースページネーション（または無限スクロール）を導入
-- ダッシュボードの集計クエリを Supabase の集計関数に移行し、全件取得を廃止
+- ~~ダッシュボードの集計クエリを Supabase の集計関数に移行し、全件取得を廃止~~ → **完了（2026-06-29, PR #17/#19）**
 
 #### 日付範囲フィルタ
 
@@ -147,6 +132,16 @@
 ---
 
 ## Done
+
+### High: ダッシュボード集計の暗黙 limit で数値が不正確（2026-06-29 完了）
+
+- `dashboard-stats.tsx` の `games` limit(100)（「全体勝率」が実態は直近100ゲーム）→ RPC `get_team_game_stats` で全件集計に移行（PR #19）
+- `dashboard-kd-table.tsx` の `game_stats` limit(5000) 無言切り捨て → RPC `get_dashboard_kd_stats` に移行（PR #17）
+- `opponents/page.tsx` も RPC `get_opponent_match_stats` に移行（PR #17）。Postgres 側集計への移行・全件取得の廃止が完了
+
+### Medium: ProfileProvider / useProfile がデッドコード（2026-06-29 完了）
+
+- `useProfile` の利用箇所ゼロを確認し、`ProfileProvider` / `profile-context.tsx` を削除（commit 6042f1d）
 
 ### ページ表示パフォーマンス改善（リージョン整合・認証往復削減・集計RPC化）（2026-06-29, PR #17）
 
