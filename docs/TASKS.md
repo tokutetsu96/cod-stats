@@ -6,50 +6,13 @@
 
 ## ToDo
 
-### コードレビュー指摘（2026-06-28）
+### コードレビュー指摘（2026-06-28）の残タスク
 
-#### Critical: 試合の作成・編集がトランザクション非対応
-
-`series-form.tsx` / `edit-form.tsx` はクライアントから複数の insert/delete を逐次実行しており、途中失敗で中途半端なデータが残る。特に `edit-form.tsx` は全 games を delete した後に再 insert するため、再 insert 失敗時に**試合データが完全消失**する（ロールバック不可）。
-
-- [ ] 作成・編集処理を `"use server"` の Server Action に集約
-- [ ] Postgres 関数（RPC）でトランザクション化し原子的に処理
-- [ ] 編集は「全削除→再作成」をやめる、または RPC 内で原子化
-
-#### Critical: クライアント直接 insert の team_id 検証は RLS 依存
-
-クライアントは props の `teamId` を信頼して insert しているため、悪意あるクライアントは任意の `team_id` を送れる。マルチテナンシーの安全性が RLS の `WITH CHECK` に完全依存している。
-
-- [x] `games` / `game_stats` / `opponent_game_stats` の INSERT/UPDATE で `WITH CHECK (team_id = ...)` が効いているか検証 → **検証済み（2026-06-28）。全テーブルに `WITH CHECK ((team_id = get_my_team_id()) AND get_my_role()='admin')` が設定済みでクロステナント書き込みは不可。脆弱性なし**
-- [ ] サインアップのチーム作成＋プロフィール作成も RPC で原子化（部分失敗で孤立チームが残る）
-
-#### Medium: Supabase security advisor 指摘（DB側ハードニング）
-
-`get_advisors`（security）の結果。
-
-- [x] `function_search_path_mutable`: `get_my_role` / `get_my_team_id` / `auto_confirm_user` を `SET search_path = ''` で固定（権限昇格対策）→ **対応済み（2026-06-28, migration: harden_security_definer_functions）**
-- [x] `auto_confirm_user()` の anon/authenticated 直接 RPC 実行を `REVOKE EXECUTE` → **対応済み（同上）**
-- [ ] `teams` の INSERT ポリシーが `WITH CHECK (true)`（誰でもチーム作成可）→ サインアップ要件と両立する範囲で制限を検討
-- [ ] avatars バケットの SELECT ポリシーが広く一覧可能 → オブジェクトURL閲覧に限定
-- [ ] 漏洩パスワード保護（HaveIBeenPwned）が無効 → Supabase ダッシュボードで有効化
-- 受容: `get_my_role` / `get_my_team_id` の authenticated EXECUTE は RLS ポリシーで必須のため維持（返すのは呼び出し元自身の role/team_id のみで情報漏洩リスクなし）
-
-#### Medium: hill_times 後方互換の正規化ロジックが3箇所重複
-
-`series-detail-content.tsx` / `edit-form.tsx` / game-card 表示側で旧データ形式変換が個別実装。仕様変更時に乖離リスク。
-
-- [ ] `lib/utils.ts` に `normalizeHillTimes()` として抽出・共通化
-
-#### Medium: 集計ヘルパーの重複
-
-`avg` / `emptyModeAcc` / `toModeStats` / `ModeAcc` 型が `dashboard-kd-table.tsx` と `series-detail-content.tsx` でほぼ同一にコピー。
-
-- [ ] `PlayerKDData` 生成ロジックごと共有モジュールへ切り出し
-
-#### Low: その他
-
+- [ ] 漏洩パスワード保護（HaveIBeenPwned）が無効 → **Supabase ダッシュボードでの手動有効化が必要**（Authentication → Sign In / Providers → Password → Leaked password protection。MCP/CLI からは設定不可のため未対応で残置）
 - [ ] Supabase 生成型を導入し `as unknown as` キャストを削減（`supabase gen types`）
-- [ ] 脱退・kick でチーム唯一の管理者を消せる → 最低1名の admin を残すガードを追加
+- 受容: `get_my_role` / `get_my_team_id` の anon/authenticated EXECUTE は RLS ポリシーで必須のため維持（返すのは呼び出し元自身の role/team_id のみで情報漏洩リスクなし）
+- 受容: `signup_create_team_with_profile` / `signup_join_team` の authenticated EXECUTE はサインアップに必須（SECURITY DEFINER だが関数内でプロフィール未保有チェック・role強制を実施）
+- メモ: avatars バケットは public のため公開URL閲覧自体は RLS を経由しない。本人以外の閲覧も遮断したい場合はバケット非公開化 + signed URL への移行が必要（別タスク）
 
 ---
 
@@ -132,6 +95,39 @@
 ---
 
 ## Done
+
+### Critical: 試合の作成・編集をServer Action + RPCで原子化（2026-07-11, PR #20）
+
+- `save_series_with_games` RPC（SECURITY INVOKER, `set search_path=''`）を追加し、シリーズ+ゲーム+スタッツの作成・編集を1トランザクション化。編集の「全削除→再insert」はRPC内で原子化され、途中失敗時は全てロールバック（試合データ完全消失バグの根治）
+- 作成・編集処理を `"use server"` の Server Action（`matches/actions.ts` の `saveSeries`）に集約。Server Action内で認証+adminロールを検証
+- `team_id` / `result` / `game_number` はDB側で導出し、クライアントの `teamId` propを信頼しない。opponent / player / opponent_player / map のチーム所属もRPC内で明示検証
+- supabase-rls-reviewer エージェントによるレビュー実施。指摘事項（`p_series_id` の所有チーム検証・search_path固定・EXECUTE最小化）は全て実装済みであることを実DBで確認
+- 実DBでトランザクションシミュレーション検証（作成/編集/途中失敗ロールバック/非admin拒否/クロステナント拒否）
+
+### Critical: サインアップのチーム+プロフィール作成をRPCで原子化（2026-07-11, PR #20）
+
+- `signup_create_team_with_profile` / `signup_join_team` RPC（SECURITY DEFINER, `set search_path=''`, authenticated のみ EXECUTE 可）で原子化。部分失敗による孤立チームが残らない
+- **権限昇格経路の遮断**: 旧実装はクライアントが `role` を直接insertしており、任意の team_id へ `role='admin'` で自己登録可能だった。RPC移行で既存チーム参加は必ず `member` になる
+- 新コードのデプロイ確認後、`teams` の `WITH CHECK (true)` INSERT ポリシーと `profiles` の直接 INSERT ポリシーを削除（migration: tighten_signup_insert_policies）。直接INSERT拒否とRPC経由サインアップ成功を実DBで検証
+
+### Medium: DB側ハードニング（2026-07-11）
+
+- `teams` INSERT ポリシー（`WITH CHECK (true)`）削除 → サインアップはRPC経由に一本化（上記）
+- avatars バケットの SELECT ポリシーを本人フォルダ（`auth.uid() = foldername[1]`）に限定。バケットは public のため公開URLでの画像表示は影響なし、API経由の全オブジェクト一覧を防止
+- 漏洩パスワード保護のみ残（ダッシュボード手動操作が必要、ToDo参照）
+
+### Medium: hill_times 正規化ロジックの共通化（2026-07-11, PR #21）
+
+- `lib/utils.ts` に `normalizeHillTimes()` を追加し、`edit-form.tsx` / `series-detail-content.tsx` の旧データ形式変換（フラット配列・1次元オブジェクト→2次元）を一本化
+
+### Medium: 集計ヘルパーの共通化（2026-07-11, PR #21）
+
+- `lib/kd-stats.ts` を新設。`ModeAcc` / `avg` / `toModeStats` / `PlayerKDData` 生成を `addStat` / `toPlayerKDData` として共通化し、`dashboard-kd-table.tsx`（RPC集計行）と `series-detail-content.tsx`（生スタッツ行）の重複を解消
+
+### Low: チーム最後の管理者を消せないガードを追加（2026-07-11, PR #20）
+
+- `profiles` への BEFORE DELETE/UPDATE トリガー `prevent_last_admin_removal`（SECURITY DEFINER, `set search_path=''`, 直接EXECUTE不可）を追加。他メンバーが残るチームで最後のadminの脱退・kick・降格をDBレベルで拒否
+- 設定画面（脱退・kick・ロール変更）でガード理由がそのまま表示されるようエラーハンドリングを改善
 
 ### High: ダッシュボード集計の暗黙 limit で数値が不正確（2026-06-29 完了）
 
