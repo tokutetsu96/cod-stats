@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveSeries } from "@/app/(authenticated)/matches/actions";
-import { isValidYoutubeUrl } from "@/lib/utils";
+import { isValidYoutubeUrl, normalizeHillTimes } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -110,35 +110,12 @@ export function EditSeriesForm({
         score_team: String(g.score_team),
         score_opponent: String(g.score_opponent),
         hill_times: (() => {
-          const ht = g.hill_times;
-          if (!ht) return { team: [[]], opponent: [[]], winner: [[]] };
-          if (Array.isArray(ht)) {
-            // 旧フラット配列形式
-            return {
-              team: [(ht as number[]).map(String)],
-              opponent: [[]],
-              winner: [[]],
-            };
-          }
-          if (
-            Array.isArray(ht.team) &&
-            ht.team.length > 0 &&
-            !Array.isArray(ht.team[0])
-          ) {
-            // { team: number[], opponent: number[] } 形式（1次元）
-            return {
-              team: [(ht.team as unknown as number[]).map(String)],
-              opponent: [(ht.opponent as unknown as number[]).map(String)],
-              winner: [[]],
-            };
-          }
-          // { team: number[][], opponent: number[][] } 形式（2次元）
+          // 旧データ形式の変換は normalizeHillTimes に共通化（入力欄用に文字列化）
+          const ht = normalizeHillTimes(g.hill_times);
           return {
-            team: ((ht.team as number[][]) ?? [[]]).map((r) => r.map(String)),
-            opponent: ((ht.opponent as number[][]) ?? [[]]).map((r) =>
-              r.map(String),
-            ),
-            winner: (ht.winner as ("team" | "opponent" | null)[][]) ?? [[]],
+            team: ht.team.map((r) => r.map(String)),
+            opponent: ht.opponent.map((r) => r.map(String)),
+            winner: ht.winner,
           };
         })(),
         stats: padStats((g.game_stats ?? []).map(dbStatToInput)),

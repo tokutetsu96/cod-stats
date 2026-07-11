@@ -4,8 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { notFound } from "next/navigation";
 import type { Game, GameStat, OpponentGameStat } from "@/lib/types";
-import { formatDate, calcKD, isValidYoutubeUrl } from "@/lib/utils";
-import { PlayerKDTabs, type PlayerKDData, type PlayerModeStats } from "@/components/player-kd-tabs";
+import { formatDate, calcKD, isValidYoutubeUrl, normalizeHillTimes } from "@/lib/utils";
+import { PlayerKDTabs, type PlayerKDData } from "@/components/player-kd-tabs";
+import { addStat, toPlayerKDData, type PlayerAcc } from "@/lib/kd-stats";
 import { modeLabel } from "@/lib/constants";
 const typeLabel: Record<string, string> = { scrim: "Scrim", tournament: "大会" };
 
@@ -30,60 +31,24 @@ export async function SeriesDetailContent({ id }: { id: string }) {
   const allStats = games.flatMap((g) => (g.game_stats ?? []) as GameStat[]);
   const gameIdToMode = new Map(games.map((g) => [g.id, g.mode]));
 
-  type ModeAcc = { kills: number; deaths: number; damage: number; count: number; hillTime: number; plants: number; defuses: number; firstBloods: number; firstDeaths: number; goals: number };
-  const emptyModeAcc = (): ModeAcc => ({ kills: 0, deaths: 0, damage: 0, count: 0, hillTime: 0, plants: 0, defuses: 0, firstBloods: 0, firstDeaths: 0, goals: 0 });
-
-  const playerMap = new Map<string, { id: string; name: string; kills: number; deaths: number; damage: number; count: number; modes: Record<string, ModeAcc> }>();
+  // 生スタッツ行（1行=1ゲーム分）を共有アキュムレータに合算して PlayerKDData を生成
+  const accMap = new Map<string, PlayerAcc>();
   for (const stat of allStats) {
-    const pid = stat.player_id;
-    const mode = gameIdToMode.get(stat.game_id) ?? "";
-    if (!playerMap.has(pid)) {
-      playerMap.set(pid, { id: pid, name: stat.players?.name ?? "-", kills: 0, deaths: 0, damage: 0, count: 0, modes: { hardpoint: emptyModeAcc(), snd: emptyModeAcc(), overload: emptyModeAcc() } });
-    }
-    const p = playerMap.get(pid)!;
-    p.kills += stat.kills;
-    p.deaths += stat.deaths;
-    p.damage += stat.damage;
-    p.count++;
-    const m = p.modes[mode];
-    if (m) {
-      m.kills += stat.kills;
-      m.deaths += stat.deaths;
-      m.damage += stat.damage;
-      m.count++;
-      m.hillTime += stat.hill_time ?? 0;
-      m.plants += stat.plants ?? 0;
-      m.defuses += stat.defuses ?? 0;
-      m.firstBloods += stat.first_bloods ?? 0;
-      m.firstDeaths += stat.first_deaths ?? 0;
-      m.goals += stat.goals ?? 0;
-    }
+    addStat(accMap, stat.player_id, stat.players?.name ?? "-", gameIdToMode.get(stat.game_id) ?? "", {
+      kills: stat.kills,
+      deaths: stat.deaths,
+      damage: stat.damage,
+      count: 1,
+      hillTime: stat.hill_time ?? 0,
+      plants: stat.plants ?? 0,
+      defuses: stat.defuses ?? 0,
+      firstBloods: stat.first_bloods ?? 0,
+      firstDeaths: stat.first_deaths ?? 0,
+      goals: stat.goals ?? 0,
+    });
   }
 
-  function avg(total: number, count: number) {
-    return count > 0 ? Math.round((total / count) * 10) / 10 : 0;
-  }
-
-  function toModeStats(m: ModeAcc): PlayerModeStats {
-    const c = m.count;
-    return {
-      avgKills: avg(m.kills, c), avgDeaths: avg(m.deaths, c), avgDamage: avg(m.damage, c), count: c,
-      kd: c > 0 ? calcKD(m.kills, m.deaths) : "-",
-      avgHillTime: c > 0 ? avg(m.hillTime, c) : null,
-      avgPlants: c > 0 ? avg(m.plants, c) : null, avgDefuses: c > 0 ? avg(m.defuses, c) : null,
-      avgFirstBloods: c > 0 ? avg(m.firstBloods, c) : null, avgFirstDeaths: c > 0 ? avg(m.firstDeaths, c) : null,
-      avgGoals: c > 0 ? avg(m.goals, c) : null,
-    };
-  }
-
-  const playerKDData: PlayerKDData[] = [...playerMap.values()].map((p) => ({
-    id: p.id,
-    name: p.name,
-    overall: { avgKills: avg(p.kills, p.count), avgDeaths: avg(p.deaths, p.count), avgDamage: avg(p.damage, p.count), count: p.count, kd: calcKD(p.kills, p.deaths), avgHillTime: null, avgPlants: null, avgDefuses: null, avgFirstBloods: null, avgFirstDeaths: null, avgGoals: null },
-    hardpoint: toModeStats(p.modes.hardpoint),
-    snd: toModeStats(p.modes.snd),
-    overload: toModeStats(p.modes.overload),
-  }));
+  const playerKDData: PlayerKDData[] = [...accMap.values()].map(toPlayerKDData);
 
   return (
     <>
@@ -196,16 +161,8 @@ export async function SeriesDetailContent({ id }: { id: string }) {
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">地点別 Hill Time</p>
                   <div className="overflow-x-auto">
                     {(() => {
-                      const raw = game.hill_times!;
-                      // 旧データ互換: フラット配列 → Round1扱い、1次元オブジェクト → 2次元に変換
-                      let ht: { team: number[][]; opponent: number[][]; winner?: ("team" | "opponent" | null)[][] };
-                      if (Array.isArray(raw)) {
-                        ht = { team: [raw as unknown as number[]], opponent: [[]], winner: [[]] };
-                      } else if (Array.isArray(raw.team) && raw.team.length > 0 && !Array.isArray(raw.team[0])) {
-                        ht = { team: [raw.team as unknown as number[]], opponent: [raw.opponent as unknown as number[]], winner: [[]] };
-                      } else {
-                        ht = raw as { team: number[][]; opponent: number[][]; winner?: ("team" | "opponent" | null)[][] };
-                      }
+                      // 旧データ互換の変換は normalizeHillTimes に共通化
+                      const ht = normalizeHillTimes(game.hill_times);
                       const hasData = ht.team.flat().some((v) => v > 0) || ht.opponent.flat().some((v) => v > 0);
                       if (!hasData) return null;
 
