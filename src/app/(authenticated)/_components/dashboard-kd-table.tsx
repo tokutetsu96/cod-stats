@@ -2,21 +2,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import type { Player } from "@/lib/types";
-import { PlayerKDTabs, type PlayerKDData, type PlayerModeStats } from "@/components/player-kd-tabs";
-import { calcKD } from "@/lib/utils";
-
-type ModeAcc = {
-  kills: number;
-  deaths: number;
-  damage: number;
-  count: number;
-  hillTime: number;
-  plants: number;
-  defuses: number;
-  firstBloods: number;
-  firstDeaths: number;
-  goals: number;
-};
+import { PlayerKDTabs, type PlayerKDData } from "@/components/player-kd-tabs";
+import {
+  addStat,
+  emptyPlayerAcc,
+  toPlayerKDData,
+  type PlayerAcc,
+} from "@/lib/kd-stats";
 
 // get_dashboard_kd_stats RPC が返す行（(player_id, mode) ごとの集計済み合計）
 type KDStatRow = {
@@ -33,40 +25,6 @@ type KDStatRow = {
   first_deaths: number;
   goals: number;
 };
-
-const emptyModeAcc = (): ModeAcc => ({
-  kills: 0,
-  deaths: 0,
-  damage: 0,
-  count: 0,
-  hillTime: 0,
-  plants: 0,
-  defuses: 0,
-  firstBloods: 0,
-  firstDeaths: 0,
-  goals: 0,
-});
-
-function avg(total: number, count: number) {
-  return count > 0 ? Math.round((total / count) * 10) / 10 : 0;
-}
-
-function toModeStats(m: ModeAcc): PlayerModeStats {
-  const c = m.count;
-  return {
-    avgKills: avg(m.kills, c),
-    avgDeaths: avg(m.deaths, c),
-    avgDamage: avg(m.damage, c),
-    count: c,
-    kd: c > 0 ? calcKD(m.kills, m.deaths) : "-",
-    avgHillTime: c > 0 ? avg(m.hillTime, c) : null,
-    avgPlants: c > 0 ? avg(m.plants, c) : null,
-    avgDefuses: c > 0 ? avg(m.defuses, c) : null,
-    avgFirstBloods: c > 0 ? avg(m.firstBloods, c) : null,
-    avgFirstDeaths: c > 0 ? avg(m.firstDeaths, c) : null,
-    avgGoals: c > 0 ? avg(m.goals, c) : null,
-  };
-}
 
 export async function DashboardKDTable({
   seriesIds,
@@ -88,65 +46,30 @@ export async function DashboardKDTable({
   const kdRows = (kdData ?? []) as KDStatRow[];
   const players = (playersData ?? []) as Player[];
 
-  const rowsByPlayerId = new Map<string, KDStatRow[]>();
+  // (player_id, mode) ごとの集計行を共有アキュムレータに合算して PlayerKDData を生成。
+  // 表示対象はアクティブプレイヤー全員（スタッツ0件でも表示する）
+  const accMap = new Map<string, PlayerAcc>();
+  const nameById = new Map(players.map((p) => [p.id, p.name]));
   for (const r of kdRows) {
-    const arr = rowsByPlayerId.get(r.player_id) ?? [];
-    arr.push(r);
-    rowsByPlayerId.set(r.player_id, arr);
+    const name = nameById.get(r.player_id);
+    if (name === undefined) continue; // 非アクティブ等、表示対象外
+    addStat(accMap, r.player_id, name, r.mode, {
+      kills: r.kills,
+      deaths: r.deaths,
+      damage: r.damage,
+      count: r.games_count,
+      hillTime: r.hill_time,
+      plants: r.plants,
+      defuses: r.defuses,
+      firstBloods: r.first_bloods,
+      firstDeaths: r.first_deaths,
+      goals: r.goals,
+    });
   }
 
-  const playerKDData: PlayerKDData[] = players.map((player) => {
-    const pRows = rowsByPlayerId.get(player.id) ?? [];
-    let totalKills = 0,
-      totalDeaths = 0,
-      totalDamage = 0,
-      totalCount = 0;
-    const modes: Record<string, ModeAcc> = {
-      hardpoint: emptyModeAcc(),
-      snd: emptyModeAcc(),
-      overload: emptyModeAcc(),
-    };
-    for (const r of pRows) {
-      totalKills += r.kills;
-      totalDeaths += r.deaths;
-      totalDamage += r.damage;
-      totalCount += r.games_count;
-      const m = modes[r.mode];
-      if (m) {
-        m.kills += r.kills;
-        m.deaths += r.deaths;
-        m.damage += r.damage;
-        m.count += r.games_count;
-        m.hillTime += r.hill_time;
-        m.plants += r.plants;
-        m.defuses += r.defuses;
-        m.firstBloods += r.first_bloods;
-        m.firstDeaths += r.first_deaths;
-        m.goals += r.goals;
-      }
-    }
-    const c = totalCount;
-    return {
-      id: player.id,
-      name: player.name,
-      overall: {
-        avgKills: avg(totalKills, c),
-        avgDeaths: avg(totalDeaths, c),
-        avgDamage: avg(totalDamage, c),
-        count: c,
-        kd: c > 0 ? calcKD(totalKills, totalDeaths) : "-",
-        avgHillTime: null,
-        avgPlants: null,
-        avgDefuses: null,
-        avgFirstBloods: null,
-        avgFirstDeaths: null,
-        avgGoals: null,
-      },
-      hardpoint: toModeStats(modes.hardpoint),
-      snd: toModeStats(modes.snd),
-      overload: toModeStats(modes.overload),
-    };
-  });
+  const playerKDData: PlayerKDData[] = players.map((player) =>
+    toPlayerKDData(accMap.get(player.id) ?? emptyPlayerAcc(player.id, player.name)),
+  );
 
   return (
     <Card>
