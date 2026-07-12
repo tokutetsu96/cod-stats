@@ -13,23 +13,32 @@ type RecentSeriesRow = {
   memo: string | null;
   opponent_id: string;
   opponents: { name: string } | null;
-  games: { id: string; result: string }[];
+  games: { id: string; result: string; mode: string }[];
 };
 
 export async function DashboardRecentMatches({
   seriesIds,
+  mode,
 }: {
   seriesIds: string[] | null;
+  mode?: string;
 }) {
   const supabase = await createClient();
   const { profile } = await getProfile();
 
+  // モードフィルタ選択時は !inner + games.mode で「該当モードのゲームを含む series」に絞り、
+  // 埋め込み games も該当モードのみ返す（戦績カウントがモード内のW/Lになる）
   let q = supabase
     .from("series")
-    .select("id, series_date, type, youtube_url, memo, opponent_id, opponents(name), games(id, result)")
+    .select(
+      mode
+        ? "id, series_date, type, youtube_url, memo, opponent_id, opponents(name), games!inner(id, result, mode)"
+        : "id, series_date, type, youtube_url, memo, opponent_id, opponents(name), games(id, result, mode)",
+    )
     .eq("team_id", profile.team_id)
     .order("series_date", { ascending: false })
     .limit(5);
+  if (mode) q = q.eq("games.mode", mode);
   if (seriesIds !== null) q = q.in("id", seriesIds);
   const { data } = await q;
   const recentSeries = (data ?? []) as unknown as RecentSeriesRow[];
