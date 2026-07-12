@@ -13,6 +13,16 @@
 - 受容: `signup_create_team_with_profile` / `signup_join_team` の authenticated EXECUTE はサインアップに必須（SECURITY DEFINER だが関数内でプロフィール未保有チェック・role強制を実施）
 - メモ: avatars バケットは public のため公開URL閲覧自体は RLS を経由しない。本人以外の閲覧も遮断したい場合はバケット非公開化 + signed URL への移行が必要（別タスク）
 
+### 技術スタック調査（2026-07-01）の残タスク
+
+現行スタック（Next.js 16 / React 19 / TypeScript 6 / Supabase / Tailwind v4 + shadcn/ui / dnd-kit / Vercel）は主流構成と一致しており、大きな入れ替えは不要。以下は改善候補。
+
+- [ ] `@supabase/ssr` を `^0.9.0` → 最新系（0.12.x）へ更新し、Cookie 処理（`getAll` / `setAll`）まわりの破壊的変更有無を確認する
+- [ ] Next.js 16 の Cache Components（`cacheComponents` + `"use cache"`）導入を検討 — ダッシュボード集計RPC・マップ一覧など読み取り頻度の高いクエリのキャッシュに有効。現状は全ページが request time 実行
+- [ ] React Compiler の有効化を検討（Next.js 16 でサポート）。`memo` / `useMemo` / `useCallback` の手動最適化を削減できる
+- [ ] `tsconfig.json` の `target` が `ES2017` のまま — TypeScript 6 のデフォルト（ES2025）へ引き上げを検討
+- 受容: dnd-kit / Tailwind v4 + shadcn/ui は引き続きデファクトのため現状維持
+
 ---
 
 ### 優先度: 中
