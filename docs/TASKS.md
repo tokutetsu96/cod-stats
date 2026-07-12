@@ -8,7 +8,6 @@
 
 ### コードレビュー指摘（2026-06-28）の残タスク
 
-- [ ] 漏洩パスワード保護（HaveIBeenPwned）が無効 → **Supabase ダッシュボードでの手動有効化が必要**（Authentication → Sign In / Providers → Password → Leaked password protection。MCP/CLI からは設定不可のため未対応で残置）
 - [ ] Supabase 生成型を導入し `as unknown as` キャストを削減（`supabase gen types`）
 - 受容: `get_my_role` / `get_my_team_id` の anon/authenticated EXECUTE は RLS ポリシーで必須のため維持（返すのは呼び出し元自身の role/team_id のみで情報漏洩リスクなし）
 - 受容: `signup_create_team_with_profile` / `signup_join_team` の authenticated EXECUTE はサインアップに必須（SECURITY DEFINER だが関数内でプロフィール未保有チェック・role強制を実施）
@@ -114,7 +113,7 @@
 
 - `teams` INSERT ポリシー（`WITH CHECK (true)`）削除 → サインアップはRPC経由に一本化（上記）
 - avatars バケットの SELECT ポリシーを本人フォルダ（`auth.uid() = foldername[1]`）に限定。バケットは public のため公開URLでの画像表示は影響なし、API経由の全オブジェクト一覧を防止
-- 漏洩パスワード保護のみ残（ダッシュボード手動操作が必要、ToDo参照）
+- 漏洩パスワード保護（HaveIBeenPwned）をSupabaseダッシュボードで有効化（2026-07-11、手動対応）
 
 ### Medium: hill_times 正規化ロジックの共通化（2026-07-11, PR #21）
 
