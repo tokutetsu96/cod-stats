@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import type { Player } from "@/lib/types";
+import type { GameMode, Player } from "@/lib/types";
 import { PlayerKDTabs, type PlayerKDData } from "@/components/player-kd-tabs";
 import {
   addStat,
@@ -28,8 +28,10 @@ type KDStatRow = {
 
 export async function DashboardKDTable({
   seriesIds,
+  mode,
 }: {
   seriesIds: string[] | null;
+  mode?: GameMode;
 }) {
   const supabase = await createClient();
   const { profile } = await getProfile();
@@ -43,7 +45,9 @@ export async function DashboardKDTable({
     supabase.from("players").select("id, name").eq("team_id", profile.team_id).eq("is_active", true),
   ]);
 
-  const kdRows = (kdData ?? []) as KDStatRow[];
+  const allKdRows = (kdData ?? []) as KDStatRow[];
+  // モードフィルタ選択時は該当モードの行のみ集計（総合タブ＝該当モードの成績になる）
+  const kdRows = mode ? allKdRows.filter((r) => r.mode === mode) : allKdRows;
   const players = (playersData ?? []) as Player[];
 
   // (player_id, mode) ごとの集計行を共有アキュムレータに合算して PlayerKDData を生成。

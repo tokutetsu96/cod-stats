@@ -5,6 +5,7 @@ import type { Opponent } from "@/lib/types";
 import { DashboardFilter } from "./_components/dashboard-filter";
 import { DashboardContent } from "./_components/dashboard-content";
 import { DashboardSkeleton } from "./_components/dashboard-skeleton";
+import type { DashboardSearchParams } from "./_components/dashboard-filters";
 
 async function DashboardFilterServer() {
   const supabase = await createClient();
@@ -20,21 +21,22 @@ async function DashboardFilterServer() {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ opponent?: string }>;
+  searchParams: Promise<DashboardSearchParams>;
 }) {
-  const { opponent: opponentId } = await searchParams;
+  const params = await searchParams;
+  const contentKey = [params.opponent, params.period, params.from, params.to, params.mode]
+    .map((v) => v ?? "")
+    .join("|");
 
   return (
     <main className="mx-auto max-w-6xl p-4 space-y-6 pt-6">
       {/* Filter */}
-      <div className="flex justify-end">
-        <Suspense fallback={<div className="h-9 w-48 bg-muted rounded animate-pulse" />}>
-          <DashboardFilterServer />
-        </Suspense>
-      </div>
+      <Suspense fallback={<div className="h-9 w-full bg-muted rounded animate-pulse" />}>
+        <DashboardFilterServer />
+      </Suspense>
 
-      <Suspense key={opponentId ?? "all"} fallback={<DashboardSkeleton />}>
-        <DashboardContent opponentId={opponentId} />
+      <Suspense key={contentKey} fallback={<DashboardSkeleton />}>
+        <DashboardContent params={params} />
       </Suspense>
     </main>
   );

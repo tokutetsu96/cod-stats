@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { modeLabel } from "@/lib/constants";
+import type { GameMode } from "@/lib/types";
 
 function WinRateBar({ rate }: { rate: string }) {
   const pct = parseFloat(rate);
@@ -21,8 +22,10 @@ function WinRateBar({ rate }: { rate: string }) {
 
 export async function DashboardStats({
   seriesIds,
+  mode,
 }: {
   seriesIds: string[] | null;
+  mode?: GameMode;
 }) {
   const supabase = await createClient();
   await getProfile();
@@ -34,12 +37,14 @@ export async function DashboardStats({
   const { data } = await supabase.rpc("get_team_game_stats", {
     p_series_ids: seriesIds,
   });
-  const rows = (data ?? []) as {
+  const allRows = (data ?? []) as {
     mode: string;
     total: number;
     wins: number;
     losses: number;
   }[];
+  // モードフィルタ選択時は該当モードのみを母数にする
+  const rows = mode ? allRows.filter((r) => r.mode === mode) : allRows;
 
   const modeCounts = {
     hardpoint: { total: 0, wins: 0, losses: 0 },
@@ -92,7 +97,7 @@ export async function DashboardStats({
         >
           <CardContent className="p-4">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-              全体勝率
+              {mode ? `${modeLabel[mode]} 勝率` : "全体勝率"}
             </p>
             <p className="stat-number text-3xl sm:text-4xl">
               {winRate}
@@ -103,6 +108,8 @@ export async function DashboardStats({
         </Card>
       </div>
 
+      {/* モードフィルタ選択時は上段カードが該当モードの数値になるため、内訳は非表示 */}
+      {!mode && (
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {modeStats.map((ms) => (
           <Card key={ms.mode} className="border-l-2 border-l-border">
@@ -122,6 +129,7 @@ export async function DashboardStats({
           </Card>
         ))}
       </div>
+      )}
     </>
   );
 }
