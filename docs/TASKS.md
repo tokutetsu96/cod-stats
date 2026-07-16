@@ -72,6 +72,12 @@ CoD は毎年新作が出るため、作品が変わったら戦績は基本的�
 
 ## Done
 
+### 勝率推移グラフを削除（2026-07-16）
+
+- 画面確認の結果、勝率推移グラフは不要と判断し削除。`dashboard-winrate-chart.tsx` / `winrate-chart.tsx` を削除し `dashboard-content.tsx` から除去
+- 集計RPC `get_team_winrate_trend` をマイグレーション `drop_get_team_winrate_trend` で削除し、`database.types.ts` の型定義も除去
+- 唯一の利用箇所だった `recharts` をアンインストール。`SPEC.md` を更新
+
 ### 技術スタック調査の残タスク消化（2026-07-16）
 
 - **Supabase 生成型を導入し `as unknown as` を全廃（5→0）**: `src/lib/database.types.ts`（`supabase gen types` 相当）を追加。クライアントの全体型付けは、ドメイン型（`GameMode`/`SeriesType` 等のユニオン・非null `created_at`）とDBのtext/nullableカラムの差により RSC→フォーム境界で逆に `as unknown as` が増える構造のため見送り。代わりに読み取り箇所で `.returns<T>()` を用いて型を付与し、`as unknown as` を除去（`auth.ts` ×2 / `series-detail-content.tsx` / `opponent-detail-content.tsx` / `dashboard-recent-matches.tsx`）。`.single()` では `.returns<T[]>().single()` の順が必要。`dashboard-recent-matches` の読み取りモデルは生成 `Tables<>` から導出しスキーマ追従。

@@ -4,7 +4,6 @@ import { getProfile } from "@/lib/supabase/auth";
 import { DashboardStats } from "./dashboard-stats";
 import { DashboardKDTable } from "./dashboard-kd-table";
 import { DashboardRecentMatches } from "./dashboard-recent-matches";
-import { DashboardWinrateChart } from "./dashboard-winrate-chart";
 import {
   resolveDashboardFilters,
   type DashboardSearchParams,
@@ -52,10 +51,6 @@ export async function DashboardContent({
         }
       >
         <DashboardStats seriesIds={seriesIds} mode={mode} />
-      </Suspense>
-
-      <Suspense fallback={<div className="h-72 bg-muted animate-pulse rounded-xl" />}>
-        <DashboardWinrateChart seriesIds={seriesIds} mode={mode} />
       </Suspense>
 
       <Suspense fallback={<div className="h-64 bg-muted animate-pulse rounded-xl" />}>
