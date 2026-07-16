@@ -514,14 +514,6 @@ export type Database = {
           wins: number
         }[]
       }
-      get_team_winrate_trend: {
-        Args: { p_bucket?: string; p_mode?: string; p_series_ids?: string[] }
-        Returns: {
-          bucket_start: string
-          total: number
-          wins: number
-        }[]
-      }
       save_series_with_games: {
         Args: { p_payload: Json; p_series_id?: string }
         Returns: string
