@@ -16,6 +16,9 @@ export async function OpponentDetailContent({ id }: { id: string }) {
   const supabase = await createClient();
   const { profile } = await getProfile();
 
+  type GameRow = { id: string; mode: GameMode; result: MatchResult; score_team: number; score_opponent: number; maps: { name: string } | { name: string }[] | null };
+  type SeriesRow = { id: string; series_date: string; type: string; games: GameRow[] };
+
   const [{ data: opponent }, { data: seriesData }] = await Promise.all([
     supabase.from("opponents").select("*").eq("id", id).eq("team_id", profile.team_id).single(),
     supabase
@@ -23,15 +26,13 @@ export async function OpponentDetailContent({ id }: { id: string }) {
       .select("id, series_date, type, games(id, mode, result, score_team, score_opponent, maps(name))")
       .eq("opponent_id", id)
       .eq("team_id", profile.team_id)
-      .order("series_date", { ascending: false }),
+      .order("series_date", { ascending: false })
+      .returns<SeriesRow[]>(),
   ]);
 
   if (!opponent) notFound();
 
-  type GameRow = { id: string; mode: GameMode; result: MatchResult; score_team: number; score_opponent: number; maps: { name: string } | { name: string }[] | null };
-  type SeriesRow = { id: string; series_date: string; type: string; games: GameRow[] };
-
-  const series = (seriesData ?? []) as unknown as SeriesRow[];
+  const series = seriesData ?? [];
   const allGames = series.flatMap((s) => s.games ?? []);
 
   let wins = 0, losses = 0, draws = 0;

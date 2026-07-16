@@ -11,16 +11,17 @@ export const getProfile = cache(async () => {
   const userId = data?.claims?.sub;
   if (!userId) redirect("/login");
 
+  type ProfileWithTeam = Profile & { teams: { name: string } | null };
   const { data: profileData } = await supabase
     .from("profiles")
     .select("*, teams(name)")
     .eq("id", userId)
+    .returns<ProfileWithTeam[]>()
     .single();
 
   if (!profileData) redirect("/login");
 
-  const teamName =
-    (profileData as unknown as { teams: { name: string } | null }).teams?.name ?? null;
+  const { teams, ...profile } = profileData;
 
-  return { supabase, profile: profileData as unknown as Profile, teamName };
+  return { supabase, profile, teamName: teams?.name ?? null };
 });

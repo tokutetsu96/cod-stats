@@ -4,16 +4,15 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { Eye } from "lucide-react";
 import { formatDate, isValidYoutubeUrl } from "@/lib/utils";
+import type { Tables } from "@/lib/database.types";
 
-type RecentSeriesRow = {
-  id: string;
-  series_date: string;
-  type: string;
-  youtube_url: string | null;
-  memo: string | null;
-  opponent_id: string;
-  opponents: { name: string } | null;
-  games: { id: string; result: string; mode: string }[];
+// 生成型（Tables<>）から読み取りモデルを導出し、スキーマ変更に追従させる
+type RecentSeriesRow = Pick<
+  Tables<"series">,
+  "id" | "series_date" | "type" | "youtube_url" | "memo" | "opponent_id"
+> & {
+  opponents: Pick<Tables<"opponents">, "name"> | null;
+  games: Pick<Tables<"games">, "id" | "result" | "mode">[];
 };
 
 export async function DashboardRecentMatches({
@@ -40,8 +39,8 @@ export async function DashboardRecentMatches({
     .limit(5);
   if (mode) q = q.eq("games.mode", mode);
   if (seriesIds !== null) q = q.in("id", seriesIds);
-  const { data } = await q;
-  const recentSeries = (data ?? []) as unknown as RecentSeriesRow[];
+  const { data } = await q.returns<RecentSeriesRow[]>();
+  const recentSeries = data ?? [];
 
   const seriesGameSummary = new Map<string, { wins: number; draws: number; losses: number }>();
   for (const s of recentSeries) {
