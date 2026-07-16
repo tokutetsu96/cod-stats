@@ -6,22 +6,12 @@
 
 ## ToDo
 
-### コードレビュー指摘（2026-06-28）の残タスク
+### 受容事項（対応不要と判断済み）
 
-- [ ] Supabase 生成型を導入し `as unknown as` キャストを削減（`supabase gen types`）
 - 受容: `get_my_role` / `get_my_team_id` の anon/authenticated EXECUTE は RLS ポリシーで必須のため維持（返すのは呼び出し元自身の role/team_id のみで情報漏洩リスクなし）
 - 受容: `signup_create_team_with_profile` / `signup_join_team` の authenticated EXECUTE はサインアップに必須（SECURITY DEFINER だが関数内でプロフィール未保有チェック・role強制を実施）
-- メモ: avatars バケットは public のため公開URL閲覧自体は RLS を経由しない。本人以外の閲覧も遮断したい場合はバケット非公開化 + signed URL への移行が必要（別タスク）
-
-### 技術スタック調査（2026-07-01）の残タスク
-
-現行スタック（Next.js 16 / React 19 / TypeScript 6 / Supabase / Tailwind v4 + shadcn/ui / dnd-kit / Vercel）は主流構成と一致しており、大きな入れ替えは不要。以下は改善候補。
-
-- [ ] `@supabase/ssr` を `^0.9.0` → 最新系（0.12.x）へ更新し、Cookie 処理（`getAll` / `setAll`）まわりの破壊的変更有無を確認する
-- [ ] Next.js 16 の Cache Components（`cacheComponents` + `"use cache"`）導入を検討 — ダッシュボード集計RPC・マップ一覧など読み取り頻度の高いクエリのキャッシュに有効。現状は全ページが request time 実行
-- [ ] React Compiler の有効化を検討（Next.js 16 でサポート）。`memo` / `useMemo` / `useCallback` の手動最適化を削減できる
-- [ ] `tsconfig.json` の `target` が `ES2017` のまま — TypeScript 6 のデフォルト（ES2025）へ引き上げを検討
 - 受容: dnd-kit / Tailwind v4 + shadcn/ui は引き続きデファクトのため現状維持
+- メモ: avatars バケットは public のため公開URL閲覧自体は RLS を経由しない。本人以外の閲覧も遮断したい場合はバケット非公開化 + signed URL への移行が必要（別タスク）
 
 ---
 
@@ -81,6 +71,14 @@ CoD は毎年新作が出るため、作品が変わったら戦績は基本的�
 ---
 
 ## Done
+
+### 技術スタック調査の残タスク消化（2026-07-16）
+
+- **Supabase 生成型を導入し `as unknown as` を全廃（5→0）**: `src/lib/database.types.ts`（`supabase gen types` 相当）を追加。クライアントの全体型付けは、ドメイン型（`GameMode`/`SeriesType` 等のユニオン・非null `created_at`）とDBのtext/nullableカラムの差により RSC→フォーム境界で逆に `as unknown as` が増える構造のため見送り。代わりに読み取り箇所で `.returns<T>()` を用いて型を付与し、`as unknown as` を除去（`auth.ts` ×2 / `series-detail-content.tsx` / `opponent-detail-content.tsx` / `dashboard-recent-matches.tsx`）。`.single()` では `.returns<T[]>().single()` の順が必要。`dashboard-recent-matches` の読み取りモデルは生成 `Tables<>` から導出しスキーマ追従。
+- **`@supabase/ssr` を `^0.9.0` → `0.12.3` へ更新**: Cookie 処理（`getAll` / `setAll`）は 0.5 系以降安定で破壊的変更なし。typecheck / build パス、`npm audit` 0 件を確認
+- **`tsconfig.json` の `target` を `ES2017` → `ES2022`**: `noEmit` 環境のため target は型チェックの lib 前提に作用（ブラウザ出力は SWC/browserslist が制御）。ES2025 は最新API前提を含むため、広くサポートされ安全な ES2022 を採用
+- **Next.js 16 Cache Components 導入を評価 → 見送り**: 全ページが認証必須・チーム別（RLSベース）・mutation駆動（`router.refresh()`）。`"use cache"` は認証スコープの動的データにはキャッシュ無効化配線とクロステナント漏洩リスクを伴い、集計RPCは既にDB側・東京同居で高速なため便益が薄い。共有静的データ（マップマスタ等）が生じた場合に再検討
+- **React Compiler 有効化を評価 → 見送り**: クライアントコンポーネントが少なく手動メモ化も最小限で自動メモ化の便益が小さい。Babelプラグイン追加・Turbopack併用の複雑化に見合わない。クライアント対話性が増えた場合に低コストで再検討可能
 
 ### 優先度高: ダッシュボードのフィルタ強化と勝率推移グラフ（2026-07-12）
 

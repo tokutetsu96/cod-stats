@@ -3,7 +3,7 @@ import { getProfile } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { notFound } from "next/navigation";
-import type { Game, GameStat, OpponentGameStat } from "@/lib/types";
+import type { Game, GameStat, OpponentGameStat, Series, Opponent } from "@/lib/types";
 import { formatDate, calcKD, isValidYoutubeUrl, normalizeHillTimes } from "@/lib/utils";
 import { PlayerKDTabs, type PlayerKDData } from "@/components/player-kd-tabs";
 import { addStat, toPlayerKDData, type PlayerAcc } from "@/lib/kd-stats";
@@ -13,17 +13,20 @@ const typeLabel: Record<string, string> = { scrim: "Scrim", tournament: "大会"
 export async function SeriesDetailContent({ id }: { id: string }) {
   const supabase = await createClient();
 
+  type SeriesDetail = Series & { opponents: Opponent | null; games: Game[] };
+
   const { profile, teamName } = await getProfile();
   const { data: series } = await supabase
     .from("series")
     .select("*, opponents(*), games(id, game_number, mode, result, score_team, score_opponent, hill_times, maps(name), game_stats(id, game_id, player_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, players(name, created_at)), opponent_game_stats(id, game_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, opponent_players(name, created_at)))")
     .eq("id", id)
     .eq("team_id", profile.team_id)
+    .returns<SeriesDetail[]>()
     .single();
 
   if (!series) notFound();
 
-  const games = ((series.games ?? []) as unknown as Game[]).sort((a, b) => a.game_number - b.game_number);
+  const games = (series.games ?? []).sort((a, b) => a.game_number - b.game_number);
   const wins = games.filter((g) => g.result === "win").length;
   const draws = games.filter((g) => g.result === "draw").length;
   const losses = games.length - wins - draws;
