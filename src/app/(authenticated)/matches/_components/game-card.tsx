@@ -164,7 +164,7 @@ export function GameCard({
                   地点別 Hill Time（秒）
                 </Label>
                 <div className="flex gap-2">
-                  {game.hill_times.team.length < 3 && (
+                  {game.hill_times.team.length < 4 && (
                     <Button
                       type="button"
                       variant="outline"
