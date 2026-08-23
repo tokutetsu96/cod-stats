@@ -3,10 +3,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { Settings, LogOut, ChevronDown } from "lucide-react";
+import { switchTitle } from "@/app/(authenticated)/_actions/switch-title";
 
 const links = [
   { href: "/", label: "ダッシュボード", adminOnly: false },
@@ -16,25 +17,33 @@ const links = [
   { href: "/players", label: "プレイヤー", adminOnly: false },
 ];
 
-import type { UserRole } from "@/lib/types";
+import type { UserRole, Title } from "@/lib/types";
 
 interface NavProps {
   teamName?: string;
   username?: string;
   avatar?: string | null;
   role?: UserRole;
+  titles?: Title[];
+  currentTitleId?: string;
 }
 
-export function Nav({ teamName, username, avatar, role }: NavProps) {
+export function Nav({ teamName, username, avatar, role, titles, currentTitleId }: NavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [titleOpen, setTitleOpen] = useState(false);
+  const [isSwitching, startSwitching] = useTransition();
   const menuRef = useRef<HTMLDivElement>(null);
+  const titleMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setOpen(false);
+      }
+      if (titleMenuRef.current && !titleMenuRef.current.contains(e.target as Node)) {
+        setTitleOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -47,6 +56,16 @@ export function Nav({ teamName, username, avatar, role }: NavProps) {
     router.push("/login");
   };
 
+  const handleSwitchTitle = (titleId: string) => {
+    setTitleOpen(false);
+    if (titleId === currentTitleId) return;
+    startSwitching(async () => {
+      await switchTitle(titleId);
+      router.refresh();
+    });
+  };
+
+  const currentTitle = titles?.find((t) => t.id === currentTitleId);
   const isUrl = avatar?.startsWith("http");
   const fallback = username?.[0]?.toUpperCase() ?? "?";
 
@@ -69,6 +88,43 @@ export function Nav({ teamName, username, avatar, role }: NavProps) {
             <span className="text-sm font-semibold tracking-wide text-primary shrink-0">
               {teamName}
             </span>
+          </div>
+        )}
+
+        {/* Title (作品) switcher */}
+        {titles && titles.length > 0 && (
+          <div className="flex items-center mr-4 relative shrink-0" ref={titleMenuRef}>
+            <button
+              onClick={() => setTitleOpen(!titleOpen)}
+              disabled={isSwitching}
+              className={cn(
+                "flex items-center gap-1 h-8 px-2 rounded-md transition-colors text-xs sm:text-sm max-w-[8rem] sm:max-w-none",
+                "hover:bg-accent text-muted-foreground hover:text-foreground",
+                titleOpen && "bg-accent text-foreground"
+              )}
+              aria-label="作品を切り替える"
+            >
+              <span className="truncate">{currentTitle?.name ?? "作品未設定"}</span>
+              <ChevronDown className={cn("h-3 w-3 shrink-0 transition-transform", titleOpen && "rotate-180")} />
+            </button>
+
+            {titleOpen && (
+              <div className="absolute left-0 top-full mt-1 w-48 bg-popover border rounded-md shadow-xl z-50 py-1 overflow-hidden">
+                {titles.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => handleSwitchTitle(t.id)}
+                    className={cn(
+                      "flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-accent transition-colors text-left",
+                      t.id === currentTitleId && "text-primary font-medium"
+                    )}
+                  >
+                    <span className="truncate">{t.name}</span>
+                    {t.is_default && <span className="text-xs text-muted-foreground ml-2 shrink-0">既定</span>}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

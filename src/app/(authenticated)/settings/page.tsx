@@ -1,17 +1,26 @@
 import { getProfile } from "@/lib/supabase/auth";
+import { getCurrentTitle } from "@/lib/supabase/titles";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { MapManager } from "./_components/map-manager";
 import { TeamManagement } from "./_components/team-management";
 import { CopyTeamId } from "./_components/copy-team-id";
 import { AvatarSetting } from "./_components/avatar-setting";
+import { TitleManager } from "./_components/title-manager";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
   const { profile } = await getProfile();
+  const { titles, currentTitle } = await getCurrentTitle();
 
   const [{ data: maps }, { data: team }, { data: users }] = await Promise.all([
-    supabase.from("maps").select("*").eq("team_id", profile.team_id).order("mode").order("name"),
+    supabase
+      .from("maps")
+      .select("*")
+      .eq("team_id", profile.team_id)
+      .eq("title_id", currentTitle?.id ?? "")
+      .order("mode")
+      .order("name"),
     supabase.from("teams").select("*").eq("id", profile.team_id).single(),
     supabase.from("profiles").select("*").eq("team_id", profile.team_id).order("created_at"),
   ]);
@@ -47,12 +56,23 @@ export default async function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>マップ管理</CardTitle>
+          <CardTitle>作品管理</CardTitle>
         </CardHeader>
         <CardContent>
-          <MapManager maps={maps ?? []} teamId={profile.team_id} isAdmin={profile.role === "admin"} />
+          <TitleManager titles={titles} teamId={profile.team_id} isAdmin={profile.role === "admin"} />
         </CardContent>
       </Card>
+
+      {currentTitle && (
+        <Card>
+          <CardHeader>
+            <CardTitle>マップ管理（{currentTitle.name}）</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MapManager maps={maps ?? []} teamId={profile.team_id} titleId={currentTitle.id} isAdmin={profile.role === "admin"} />
+          </CardContent>
+        </Card>
+      )}
     </main>
   );
 }

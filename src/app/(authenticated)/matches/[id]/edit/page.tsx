@@ -14,7 +14,7 @@ export default async function EditSeriesPage({ params }: { params: Promise<{ id:
   const supabase = await createClient();
 
   const { profile } = await getProfile();
-  const [{ data: series }, { data: opponents }, { data: players }, { data: maps }] = await Promise.all([
+  const [{ data: series }, { data: opponents }, { data: players }] = await Promise.all([
     supabase
       .from("series")
       .select("*, games(*, game_stats(*), opponent_game_stats(*))")
@@ -23,10 +23,12 @@ export default async function EditSeriesPage({ params }: { params: Promise<{ id:
       .single(),
     supabase.from("opponents").select("*, opponent_players(*)").eq("team_id", profile.team_id).order("name"),
     supabase.from("players").select("*").eq("team_id", profile.team_id).order("created_at"),
-    supabase.from("maps").select("*").eq("team_id", profile.team_id).order("name"),
   ]);
 
   if (!series) notFound();
+
+  // 編集対象の対戦が属する作品のマップ一覧を出す。Navで選択中の作品とは独立に、対戦自身の title_id を使う
+  const { data: maps } = await supabase.from("maps").select("*").eq("team_id", profile.team_id).eq("title_id", series.title_id).order("name");
 
   return (
     <>

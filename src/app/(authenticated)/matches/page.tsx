@@ -1,4 +1,5 @@
 import { getProfile } from "@/lib/supabase/auth";
+import { getCurrentTitle } from "@/lib/supabase/titles";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { SeriesList } from "./_components/series-list";
@@ -13,6 +14,7 @@ export default async function MatchesPage({
 }) {
   const supabase = await createClient();
   const { profile } = await getProfile();
+  const { currentTitle } = await getCurrentTitle();
   const params = await searchParams;
 
   const currentPage = Math.max(1, parseInt(params.page ?? "1", 10));
@@ -23,6 +25,7 @@ export default async function MatchesPage({
     .from("series")
     .select("*, opponents(id, name), games(result)", { count: "exact" })
     .eq("team_id", profile.team_id)
+    .eq("title_id", currentTitle?.id ?? "")
     .order("series_date", { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1);
 

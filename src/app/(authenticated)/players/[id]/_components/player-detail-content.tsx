@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/supabase/auth";
+import { getCurrentTitle } from "@/lib/supabase/titles";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -17,6 +18,7 @@ const PAGE_SIZE = 100;
 export async function PlayerDetailContent({ id, page = 1 }: { id: string; page?: number }) {
   const supabase = await createClient();
   const { profile } = await getProfile();
+  const { currentTitle } = await getCurrentTitle();
 
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
@@ -28,6 +30,7 @@ export async function PlayerDetailContent({ id, page = 1 }: { id: string; page?:
       .select("*, games(mode, result)", { count: "exact" })
       .eq("player_id", id)
       .eq("team_id", profile.team_id)
+      .eq("title_id", currentTitle?.id ?? "")
       .range(from, to),
   ]);
 
