@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/supabase/auth";
+import { getCurrentTitle } from "@/lib/supabase/titles";
 import { DashboardStats } from "./dashboard-stats";
 import { DashboardKDTable } from "./dashboard-kd-table";
 import { DashboardRecentMatches } from "./dashboard-recent-matches";
@@ -16,22 +17,22 @@ export async function DashboardContent({
 }) {
   const { opponentId, mode, dateFrom, dateTo } = resolveDashboardFilters(params);
 
-  // 対戦相手・期間フィルタは対象 series の id 集合に落とし込み、
-  // 既存の集計RPC群（p_series_ids）にそのまま渡す
-  let seriesIds: string[] | null = null;
-  if (opponentId || dateFrom || dateTo) {
-    const supabase = await createClient();
-    const { profile } = await getProfile();
-    let q = supabase
-      .from("series")
-      .select("id")
-      .eq("team_id", profile.team_id);
-    if (opponentId) q = q.eq("opponent_id", opponentId);
-    if (dateFrom) q = q.gte("series_date", dateFrom);
-    if (dateTo) q = q.lte("series_date", dateTo);
-    const { data } = await q;
-    seriesIds = (data ?? []).map((s) => s.id);
-  }
+  // 対戦相手・期間・作品フィルタは対象 series の id 集合に落とし込み、
+  // 既存の集計RPC群（p_series_ids）にそのまま渡す。
+  // 選択中の作品によるスコープは必須のため、他のフィルタが未指定でも常にこのクエリを実行する。
+  const supabase = await createClient();
+  const { profile } = await getProfile();
+  const { currentTitle } = await getCurrentTitle();
+  let q = supabase
+    .from("series")
+    .select("id")
+    .eq("team_id", profile.team_id)
+    .eq("title_id", currentTitle?.id ?? "");
+  if (opponentId) q = q.eq("opponent_id", opponentId);
+  if (dateFrom) q = q.gte("series_date", dateFrom);
+  if (dateTo) q = q.lte("series_date", dateTo);
+  const { data } = await q;
+  const seriesIds: string[] = (data ?? []).map((s) => s.id);
 
   return (
     <>

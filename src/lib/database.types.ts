@@ -30,6 +30,7 @@ export type Database = {
           plants: number | null
           player_id: string
           team_id: string
+          title_id: string
         }
         Insert: {
           created_at?: string | null
@@ -46,6 +47,7 @@ export type Database = {
           plants?: number | null
           player_id: string
           team_id: string
+          title_id: string
         }
         Update: {
           created_at?: string | null
@@ -62,6 +64,7 @@ export type Database = {
           plants?: number | null
           player_id?: string
           team_id?: string
+          title_id?: string
         }
         Relationships: [
           {
@@ -85,6 +88,13 @@ export type Database = {
             referencedRelation: "teams"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "game_stats_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "titles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       games: {
@@ -100,6 +110,7 @@ export type Database = {
           score_team: number
           series_id: string
           team_id: string
+          title_id: string
         }
         Insert: {
           created_at?: string | null
@@ -113,6 +124,7 @@ export type Database = {
           score_team?: number
           series_id: string
           team_id: string
+          title_id: string
         }
         Update: {
           created_at?: string | null
@@ -126,6 +138,7 @@ export type Database = {
           score_team?: number
           series_id?: string
           team_id?: string
+          title_id?: string
         }
         Relationships: [
           {
@@ -149,6 +162,13 @@ export type Database = {
             referencedRelation: "teams"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "games_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "titles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       maps: {
@@ -159,6 +179,7 @@ export type Database = {
           mode: string
           name: string
           team_id: string
+          title_id: string
         }
         Insert: {
           created_at?: string | null
@@ -167,6 +188,7 @@ export type Database = {
           mode: string
           name: string
           team_id: string
+          title_id: string
         }
         Update: {
           created_at?: string | null
@@ -175,6 +197,7 @@ export type Database = {
           mode?: string
           name?: string
           team_id?: string
+          title_id?: string
         }
         Relationships: [
           {
@@ -182,6 +205,13 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maps_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "titles"
             referencedColumns: ["id"]
           },
         ]
@@ -202,6 +232,7 @@ export type Database = {
           opponent_player_id: string
           plants: number | null
           team_id: string
+          title_id: string
         }
         Insert: {
           created_at?: string
@@ -218,6 +249,7 @@ export type Database = {
           opponent_player_id: string
           plants?: number | null
           team_id: string
+          title_id: string
         }
         Update: {
           created_at?: string
@@ -234,6 +266,7 @@ export type Database = {
           opponent_player_id?: string
           plants?: number | null
           team_id?: string
+          title_id?: string
         }
         Relationships: [
           {
@@ -255,6 +288,13 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opponent_game_stats_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "titles"
             referencedColumns: ["id"]
           },
         ]
@@ -411,6 +451,7 @@ export type Database = {
           opponent_id: string
           series_date: string
           team_id: string
+          title_id: string
           type: string
           youtube_url: string | null
         }
@@ -421,6 +462,7 @@ export type Database = {
           opponent_id: string
           series_date: string
           team_id: string
+          title_id: string
           type?: string
           youtube_url?: string | null
         }
@@ -431,6 +473,7 @@ export type Database = {
           opponent_id?: string
           series_date?: string
           team_id?: string
+          title_id?: string
           type?: string
           youtube_url?: string | null
         }
@@ -447,6 +490,13 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "series_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "titles"
             referencedColumns: ["id"]
           },
         ]
@@ -471,6 +521,38 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      titles: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          team_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          team_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "titles_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -497,7 +579,7 @@ export type Database = {
       get_my_role: { Args: never; Returns: string }
       get_my_team_id: { Args: never; Returns: string }
       get_opponent_match_stats: {
-        Args: never
+        Args: { p_title_id?: string }
         Returns: {
           mode: string
           opponent_id: string
@@ -515,9 +597,10 @@ export type Database = {
         }[]
       }
       save_series_with_games: {
-        Args: { p_payload: Json; p_series_id?: string }
+        Args: { p_payload: Json; p_series_id?: string; p_title_id?: string }
         Returns: string
       }
+      set_default_title: { Args: { p_title_id: string }; Returns: undefined }
       signup_create_team_with_profile: {
         Args: { p_team_name: string; p_username: string }
         Returns: string

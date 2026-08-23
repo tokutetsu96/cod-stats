@@ -1,4 +1,5 @@
 import { getProfile } from "@/lib/supabase/auth";
+import { getCurrentTitle } from "@/lib/supabase/titles";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { OpponentList } from "./_components/opponent-list";
@@ -15,13 +16,14 @@ export default async function OpponentsPage() {
   const supabase = await createClient();
 
   const { profile } = await getProfile();
+  const { currentTitle } = await getCurrentTitle();
   // 成績集計は get_opponent_match_stats RPC でDB側に実施する。
   // (opponent_id, mode) ごとの勝利数・総数のみを返すため、series/games の
   // 全行を転送していた従来方式（limit 200 による集計欠落リスク）を排除する。
-  // RPC は SECURITY INVOKER で RLS により呼び出し元チームへ自動スコープされる。
+  // RPC は SECURITY INVOKER で RLS により呼び出し元チームへ自動スコープされる。選択中の作品でも絞り込む。
   const [{ data: opponents }, { data: matchStats }] = await Promise.all([
     supabase.from("opponents").select("id, name, opponent_players(id, name, is_default, created_at, opponent_id, team_id)").eq("team_id", profile.team_id).order("name"),
-    supabase.rpc("get_opponent_match_stats"),
+    supabase.rpc("get_opponent_match_stats", { p_title_id: currentTitle?.id }),
   ]);
 
   const statRows = (matchStats ?? []) as OpponentMatchStatRow[];

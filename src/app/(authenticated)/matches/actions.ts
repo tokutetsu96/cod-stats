@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getProfile } from "@/lib/supabase/auth";
+import { getCurrentTitle } from "@/lib/supabase/titles";
 import { isValidYoutubeUrl } from "@/lib/utils";
 import type { SeriesPayload } from "./_components/series-form-shared";
 
@@ -42,9 +43,13 @@ export async function saveSeries(
     };
   }
 
+  // 新規作成時のみ使用される（編集時はRPC側で既存シリーズの作品を維持する）
+  const { currentTitle } = await getCurrentTitle();
+
   const { data, error } = await supabase.rpc("save_series_with_games", {
     p_payload: payload,
     p_series_id: seriesId ?? null,
+    p_title_id: currentTitle?.id ?? null,
   });
   if (error) {
     return { ok: false, error: error.message };

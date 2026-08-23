@@ -47,12 +47,21 @@ export interface OpponentPlayer {
   created_at: string;
 }
 
+export interface Title {
+  id: string;
+  team_id: string;
+  name: string;
+  is_default: boolean;
+  created_at: string;
+}
+
 export interface MapEntry {
   id: string;
   name: string;
   mode: GameMode;
   hill_count: number | null;
   team_id: string;
+  title_id: string;
   created_at: string;
 }
 
@@ -62,6 +71,7 @@ export interface Series {
   type: SeriesType;
   opponent_id: string;
   team_id: string;
+  title_id: string;
   memo: string | null;
   youtube_url: string | null;
   created_at: string;
@@ -80,6 +90,7 @@ export interface Game {
   score_opponent: number;
   hill_times: { team: number[][]; opponent: number[][]; winner?: ("team" | "opponent" | null)[][] } | null;
   team_id: string;
+  title_id: string;
   created_at: string;
   maps?: MapEntry;
   game_stats?: GameStat[];
@@ -100,6 +111,7 @@ export interface OpponentGameStat {
   first_deaths: number | null;
   goals: number | null;
   team_id: string;
+  title_id: string;
   created_at: string;
   opponent_players?: OpponentPlayer;
 }
@@ -118,6 +130,7 @@ export interface GameStat {
   first_deaths: number | null;
   goals: number | null;
   team_id: string;
+  title_id: string;
   created_at: string;
   players?: Player;
 }

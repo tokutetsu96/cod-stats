@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/supabase/auth";
+import { getCurrentTitle } from "@/lib/supabase/titles";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -15,6 +16,7 @@ const resultClass: Record<string, string> = {
 export async function OpponentDetailContent({ id }: { id: string }) {
   const supabase = await createClient();
   const { profile } = await getProfile();
+  const { currentTitle } = await getCurrentTitle();
 
   type GameRow = { id: string; mode: GameMode; result: MatchResult; score_team: number; score_opponent: number; maps: { name: string } | { name: string }[] | null };
   type SeriesRow = { id: string; series_date: string; type: string; games: GameRow[] };
@@ -26,6 +28,7 @@ export async function OpponentDetailContent({ id }: { id: string }) {
       .select("id, series_date, type, games(id, mode, result, score_team, score_opponent, maps(name))")
       .eq("opponent_id", id)
       .eq("team_id", profile.team_id)
+      .eq("title_id", currentTitle?.id ?? "")
       .order("series_date", { ascending: false })
       .returns<SeriesRow[]>(),
   ]);

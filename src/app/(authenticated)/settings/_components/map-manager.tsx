@@ -12,7 +12,7 @@ import { modeLabel } from "@/lib/constants";
 
 const modes: GameMode[] = ["hardpoint", "snd", "overload"];
 
-export function MapManager({ maps, teamId, isAdmin }: { maps: MapEntry[]; teamId: string; isAdmin: boolean }) {
+export function MapManager({ maps, teamId, titleId, isAdmin }: { maps: MapEntry[]; teamId: string; titleId: string; isAdmin: boolean }) {
   const [activeMode, setActiveMode] = useState<GameMode>("hardpoint");
   const [name, setName] = useState("");
   const [hillCount, setHillCount] = useState("");
@@ -55,7 +55,7 @@ export function MapManager({ maps, teamId, isAdmin }: { maps: MapEntry[]; teamId
     setMutationError("");
     const supabase = createClient();
     const hill_count = activeMode === "hardpoint" && hillCount.trim() ? parseInt(hillCount) || null : null;
-    const { error } = await supabase.from("maps").insert({ name: name.trim(), mode: activeMode, team_id: teamId, hill_count });
+    const { error } = await supabase.from("maps").insert({ name: name.trim(), mode: activeMode, team_id: teamId, title_id: titleId, hill_count });
     if (error) { setMutationError("追加に失敗しました"); setLoading(false); return; }
     setName("");
     setHillCount("");
