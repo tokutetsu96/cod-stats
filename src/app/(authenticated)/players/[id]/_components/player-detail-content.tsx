@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { GameStat, GameMode, MatchResult } from "@/lib/types";
 import { calcKD } from "@/lib/utils";
-import { modeLabel } from "@/lib/constants";
+import { getTitleModes, modeLabel } from "@/lib/constants";
 
 function avg(arr: number[]) {
   if (arr.length === 0) return "0";
@@ -48,12 +48,16 @@ export async function PlayerDetailContent({ id, page = 1 }: { id: string; page?:
   }));
 
   let overallKills = 0, overallDeaths = 0, overallWins = 0;
-  const modeAcc = { hardpoint: { kills: 0, deaths: 0, wins: 0, count: 0, stats: [] as typeof statsWithMode }, snd: { kills: 0, deaths: 0, wins: 0, count: 0, stats: [] as typeof statsWithMode }, overload: { kills: 0, deaths: 0, wins: 0, count: 0, stats: [] as typeof statsWithMode } };
+  const modes = getTitleModes(currentTitle);
+  type ModeAcc = { kills: number; deaths: number; wins: number; count: number; stats: typeof statsWithMode };
+  const modeAcc = new Map<string, ModeAcc>(
+    modes.map((m) => [m, { kills: 0, deaths: 0, wins: 0, count: 0, stats: [] }]),
+  );
   for (const s of statsWithMode) {
     overallKills += s.kills;
     overallDeaths += s.deaths;
     if (s.result === "win") overallWins++;
-    const ma = modeAcc[s.mode as keyof typeof modeAcc];
+    const ma = modeAcc.get(s.mode);
     if (ma) {
       ma.kills += s.kills;
       ma.deaths += s.deaths;
@@ -63,8 +67,8 @@ export async function PlayerDetailContent({ id, page = 1 }: { id: string; page?:
     }
   }
 
-  const modeData = (["hardpoint", "snd", "overload"] as const).map((mode) => {
-    const { kills, deaths, wins, count, stats: modeStats } = modeAcc[mode];
+  const modeData = modes.map((mode) => {
+    const { kills, deaths, wins, count, stats: modeStats } = modeAcc.get(mode)!;
 
     const extra: { label: string; value: string }[] = [];
     if (mode === "hardpoint") {
@@ -80,6 +84,14 @@ export async function PlayerDetailContent({ id, page = 1 }: { id: string; page?:
     }
     if (mode === "overload") {
       extra.push({ label: "平均ゴール", value: avg(modeStats.map((s) => s.goals ?? 0)) });
+    }
+    if (mode === "hijack") {
+      extra.push(
+        { label: "平均アップロード完了", value: avg(modeStats.map((s) => s.uploads ?? 0)) },
+        { label: "平均設置", value: avg(modeStats.map((s) => s.plants ?? 0)) },
+        { label: "平均ダンク", value: avg(modeStats.map((s) => s.dunks ?? 0)) },
+        { label: "平均リモート設置", value: avg(modeStats.map((s) => s.remote_plants ?? 0)) }
+      );
     }
 
     return {

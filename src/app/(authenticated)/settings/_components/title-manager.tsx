@@ -7,14 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Trash2, Plus, Pencil, Check, X, Star } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
-import type { Title } from "@/lib/types";
+import { Select } from "@/components/ui/select";
+import type { ThirdMode, Title } from "@/lib/types";
+import { DEFAULT_THIRD_MODE, THIRD_MODES, modeLabel } from "@/lib/constants";
 
 export function TitleManager({ titles, teamId, isAdmin }: { titles: Title[]; teamId: string; isAdmin: boolean }) {
   const [name, setName] = useState("");
+  const [thirdMode, setThirdMode] = useState<ThirdMode>(DEFAULT_THIRD_MODE);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [editThirdMode, setEditThirdMode] = useState<ThirdMode>(DEFAULT_THIRD_MODE);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [defaultingId, setDefaultingId] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState("");
@@ -23,6 +27,7 @@ export function TitleManager({ titles, teamId, isAdmin }: { titles: Title[]; tea
   const startEdit = (t: Title) => {
     setEditingId(t.id);
     setEditName(t.name);
+    setEditThirdMode(t.third_mode);
   };
 
   const cancelEdit = () => setEditingId(null);
@@ -32,7 +37,7 @@ export function TitleManager({ titles, teamId, isAdmin }: { titles: Title[]; tea
     setSavingId(t.id);
     setMutationError("");
     const supabase = createClient();
-    const { error } = await supabase.from("titles").update({ name: editName.trim() }).eq("id", t.id).eq("team_id", teamId);
+    const { error } = await supabase.from("titles").update({ name: editName.trim(), third_mode: editThirdMode }).eq("id", t.id).eq("team_id", teamId);
     if (error) { setMutationError("更新に失敗しました"); setSavingId(null); return; }
     setSavingId(null);
     setEditingId(null);
@@ -47,9 +52,10 @@ export function TitleManager({ titles, teamId, isAdmin }: { titles: Title[]; tea
     const supabase = createClient();
     const { error } = await supabase
       .from("titles")
-      .insert({ name: name.trim(), team_id: teamId, is_default: titles.length === 0 });
+      .insert({ name: name.trim(), third_mode: thirdMode, team_id: teamId, is_default: titles.length === 0 });
     if (error) { setMutationError("追加に失敗しました"); setLoading(false); return; }
     setName("");
+    setThirdMode(DEFAULT_THIRD_MODE);
     setLoading(false);
     router.refresh();
   };
@@ -96,6 +102,16 @@ export function TitleManager({ titles, teamId, isAdmin }: { titles: Title[]; tea
               required
             />
           </div>
+          <Select
+            className="w-32"
+            value={thirdMode}
+            onChange={(e) => setThirdMode(e.target.value as ThirdMode)}
+            aria-label="第3モード"
+          >
+            {THIRD_MODES.map((m) => (
+              <option key={m} value={m}>{modeLabel[m]}</option>
+            ))}
+          </Select>
           <Button type="submit" size="sm" disabled={loading}>
             {loading ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
           </Button>
@@ -132,6 +148,16 @@ export function TitleManager({ titles, teamId, isAdmin }: { titles: Title[]; tea
                     onChange={(e) => setEditName(e.target.value)}
                     autoFocus
                   />
+                  <Select
+                    className="h-7 w-28 text-sm"
+                    value={editThirdMode}
+                    onChange={(e) => setEditThirdMode(e.target.value as ThirdMode)}
+                    aria-label="第3モード"
+                  >
+                    {THIRD_MODES.map((m) => (
+                      <option key={m} value={m}>{modeLabel[m]}</option>
+                    ))}
+                  </Select>
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleSave(t)} disabled={savingId === t.id}>
                     {savingId === t.id ? <Spinner /> : <Check className="h-4 w-4 text-green-500" />}
                   </Button>
@@ -143,6 +169,7 @@ export function TitleManager({ titles, teamId, isAdmin }: { titles: Title[]; tea
                 <>
                   <span className="text-sm flex-1">
                     {t.name}
+                    <span className="ml-2 text-xs text-muted-foreground">{modeLabel[t.third_mode]}</span>
                     {t.is_default && <span className="ml-2 text-xs text-muted-foreground">既定</span>}
                   </span>
                   {isAdmin && (

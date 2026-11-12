@@ -1,4 +1,6 @@
-export type GameMode = "hardpoint" | "snd" | "overload";
+export type GameMode = "hardpoint" | "snd" | "overload" | "hijack";
+/** 作品ごとに選ぶ第3モード（作品により Overload / Hijack のどちらか） */
+export type ThirdMode = Extract<GameMode, "overload" | "hijack">;
 export type MatchResult = "win" | "lose" | "draw";
 export type SeriesType = "scrim" | "tournament";
 
@@ -52,6 +54,7 @@ export interface Title {
   team_id: string;
   name: string;
   is_default: boolean;
+  third_mode: ThirdMode;
   created_at: string;
 }
 
@@ -110,6 +113,9 @@ export interface OpponentGameStat {
   first_bloods: number | null;
   first_deaths: number | null;
   goals: number | null;
+  uploads: number | null;
+  dunks: number | null;
+  remote_plants: number | null;
   team_id: string;
   title_id: string;
   created_at: string;
@@ -129,6 +135,9 @@ export interface GameStat {
   first_bloods: number | null;
   first_deaths: number | null;
   goals: number | null;
+  uploads: number | null;
+  dunks: number | null;
+  remote_plants: number | null;
   team_id: string;
   title_id: string;
   created_at: string;

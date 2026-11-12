@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getProfile } from "@/lib/supabase/auth";
 import { getCurrentTitle } from "@/lib/supabase/titles";
 import { isValidYoutubeUrl } from "@/lib/utils";
-import type { SeriesPayload } from "./_components/series-form-shared";
+import { validateScores, type SeriesPayload } from "./_components/series-form-shared";
 
 export type SaveSeriesResult =
   | { ok: true; seriesId: string }
@@ -31,6 +31,10 @@ export async function saveSeries(
   }
   if (payload.games.length === 0) {
     return { ok: false, error: "ゲームを1つ以上追加してください" };
+  }
+  const scoreError = validateScores(payload.games);
+  if (scoreError) {
+    return { ok: false, error: scoreError };
   }
   if (
     payload.series.youtube_url &&

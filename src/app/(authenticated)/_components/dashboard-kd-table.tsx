@@ -24,14 +24,19 @@ type KDStatRow = {
   first_bloods: number;
   first_deaths: number;
   goals: number;
+  uploads: number;
+  dunks: number;
+  remote_plants: number;
 };
 
 export async function DashboardKDTable({
   seriesIds,
   mode,
+  modes,
 }: {
   seriesIds: string[] | null;
   mode?: GameMode;
+  modes: GameMode[];
 }) {
   const supabase = await createClient();
   const { profile } = await getProfile();
@@ -68,6 +73,9 @@ export async function DashboardKDTable({
       firstBloods: r.first_bloods,
       firstDeaths: r.first_deaths,
       goals: r.goals,
+      uploads: r.uploads,
+      dunks: r.dunks,
+      remotePlants: r.remote_plants,
     });
   }
 
@@ -88,7 +96,7 @@ export async function DashboardKDTable({
             プレイヤーが登録されていません
           </p>
         ) : (
-          <PlayerKDTabs players={playerKDData} playerLinkPrefix="/players/" />
+          <PlayerKDTabs players={playerKDData} modes={modes} playerLinkPrefix="/players/" />
         )}
       </CardContent>
     </Card>

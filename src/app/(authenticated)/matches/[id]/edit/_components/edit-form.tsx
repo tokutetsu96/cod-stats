@@ -45,6 +45,9 @@ interface DbStatRow {
   first_bloods?: number | null;
   first_deaths?: number | null;
   goals?: number | null;
+  uploads?: number | null;
+  dunks?: number | null;
+  remote_plants?: number | null;
 }
 
 type GameWithStats = Game & {
@@ -74,6 +77,9 @@ function dbStatToInput(stat: DbStatRow): StatInput {
     first_bloods: String(stat.first_bloods ?? 0),
     first_deaths: String(stat.first_deaths ?? 0),
     goals: String(stat.goals ?? 0),
+    uploads: String(stat.uploads ?? 0),
+    dunks: String(stat.dunks ?? 0),
+    remote_plants: String(stat.remote_plants ?? 0),
   };
 }
 
@@ -82,6 +88,7 @@ interface EditSeriesFormProps {
   opponents: Opponent[];
   players: Player[];
   maps: MapEntry[];
+  modes: GameMode[];
 }
 
 export function EditSeriesForm({
@@ -89,6 +96,7 @@ export function EditSeriesForm({
   opponents,
   players,
   maps,
+  modes,
 }: EditSeriesFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -393,6 +401,7 @@ export function EditSeriesForm({
           game={game}
           gIdx={gIdx}
           maps={maps}
+          modes={modes}
           players={players}
           selectedOpponent={selectedOpponent}
           onToggleExpand={toggleExpand}

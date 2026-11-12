@@ -1,6 +1,7 @@
 import { getProfile } from "@/lib/supabase/auth";
 import { getCurrentTitle } from "@/lib/supabase/titles";
 import { createClient } from "@/lib/supabase/server";
+import { getTitleModes } from "@/lib/constants";
 import dynamic from "next/dynamic";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -28,6 +29,7 @@ export default async function NewSeriesPage() {
           opponents={opponents ?? []}
           players={players ?? []}
           maps={maps ?? []}
+          modes={getTitleModes(currentTitle)}
         />
       </main>
     </>

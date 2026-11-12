@@ -20,6 +20,9 @@ export type ModeAcc = {
   firstBloods: number;
   firstDeaths: number;
   goals: number;
+  uploads: number;
+  dunks: number;
+  remotePlants: number;
 };
 
 export const emptyModeAcc = (): ModeAcc => ({
@@ -33,6 +36,9 @@ export const emptyModeAcc = (): ModeAcc => ({
   firstBloods: 0,
   firstDeaths: 0,
   goals: 0,
+  uploads: 0,
+  dunks: 0,
+  remotePlants: 0,
 });
 
 export interface StatContribution {
@@ -47,6 +53,9 @@ export interface StatContribution {
   firstBloods?: number;
   firstDeaths?: number;
   goals?: number;
+  uploads?: number;
+  dunks?: number;
+  remotePlants?: number;
 }
 
 export interface PlayerAcc {
@@ -70,6 +79,7 @@ export const emptyPlayerAcc = (id: string, name: string): PlayerAcc => ({
     hardpoint: emptyModeAcc(),
     snd: emptyModeAcc(),
     overload: emptyModeAcc(),
+    hijack: emptyModeAcc(),
   },
 });
 
@@ -101,6 +111,9 @@ export function addStat(
     m.firstBloods += stat.firstBloods ?? 0;
     m.firstDeaths += stat.firstDeaths ?? 0;
     m.goals += stat.goals ?? 0;
+    m.uploads += stat.uploads ?? 0;
+    m.dunks += stat.dunks ?? 0;
+    m.remotePlants += stat.remotePlants ?? 0;
   }
 }
 
@@ -122,6 +135,9 @@ export function toModeStats(m: ModeAcc): PlayerModeStats {
     avgFirstBloods: c > 0 ? avg(m.firstBloods, c) : null,
     avgFirstDeaths: c > 0 ? avg(m.firstDeaths, c) : null,
     avgGoals: c > 0 ? avg(m.goals, c) : null,
+    avgUploads: c > 0 ? avg(m.uploads, c) : null,
+    avgDunks: c > 0 ? avg(m.dunks, c) : null,
+    avgRemotePlants: c > 0 ? avg(m.remotePlants, c) : null,
   };
 }
 
@@ -142,9 +158,13 @@ export function toPlayerKDData(p: PlayerAcc): PlayerKDData {
       avgFirstBloods: null,
       avgFirstDeaths: null,
       avgGoals: null,
+      avgUploads: null,
+      avgDunks: null,
+      avgRemotePlants: null,
     },
     hardpoint: toModeStats(p.modes.hardpoint),
     snd: toModeStats(p.modes.snd),
     overload: toModeStats(p.modes.overload),
+    hijack: toModeStats(p.modes.hijack),
   };
 }

@@ -11,11 +11,14 @@ import { StatsTable } from "@/components/stats-table";
 import type { GameMode, Opponent, Player, MapEntry } from "@/lib/types";
 import type { GameInput, StatInput } from "./series-form-shared";
 import { calcResult, resultLabel, resultColor, modeLabel } from "./series-form-shared";
+import { MODE_SCORE_MAX } from "@/lib/constants";
 
 interface GameCardProps {
   game: GameInput;
   gIdx: number;
   maps: MapEntry[];
+  /** 作品で選択可能なモード一覧 */
+  modes: GameMode[];
   players: Player[];
   selectedOpponent: Opponent | undefined;
   onToggleExpand: (gIdx: number) => void;
@@ -48,6 +51,7 @@ export function GameCard({
   game,
   gIdx,
   maps,
+  modes,
   players,
   selectedOpponent,
   onToggleExpand,
@@ -62,6 +66,7 @@ export function GameCard({
   const modeMaps = maps.filter((m) => m.mode === game.mode);
   const selectedMap = maps.find((m) => m.id === game.map_id);
   const hillCount = game.mode === "hardpoint" ? (selectedMap?.hill_count ?? 0) : 0;
+  const scoreMax = MODE_SCORE_MAX[game.mode];
 
   return (
     <Card>
@@ -115,9 +120,12 @@ export function GameCard({
                   })
                 }
               >
-                <option value="hardpoint">Hardpoint</option>
-                <option value="snd">S&D</option>
-                <option value="overload">Overload</option>
+                {/* 作品のモード一覧にない既存ゲームのモードも選択肢に残す（編集時の値消失を防ぐ） */}
+                {(modes.includes(game.mode) ? modes : [...modes, game.mode]).map((m) => (
+                  <option key={m} value={m}>
+                    {modeLabel[m]}
+                  </option>
+                ))}
               </Select>
             </div>
             <div className="space-y-2">
@@ -144,6 +152,7 @@ export function GameCard({
               <NumericInput
                 value={game.score_team}
                 onChange={(v) => onUpdateGame(gIdx, { score_team: v })}
+                max={scoreMax}
                 className="w-full"
               />
             </div>
@@ -152,6 +161,7 @@ export function GameCard({
               <NumericInput
                 value={game.score_opponent}
                 onChange={(v) => onUpdateGame(gIdx, { score_opponent: v })}
+                max={scoreMax}
                 className="w-full"
               />
             </div>

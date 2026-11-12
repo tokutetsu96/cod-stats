@@ -7,7 +7,8 @@ import type { Game, GameStat, OpponentGameStat, Series, Opponent } from "@/lib/t
 import { formatDate, calcKD, isValidYoutubeUrl, normalizeHillTimes } from "@/lib/utils";
 import { PlayerKDTabs, type PlayerKDData } from "@/components/player-kd-tabs";
 import { addStat, toPlayerKDData, type PlayerAcc } from "@/lib/kd-stats";
-import { modeLabel } from "@/lib/constants";
+import { getTitleModes, modeLabel } from "@/lib/constants";
+import { getCurrentTitle } from "@/lib/supabase/titles";
 const typeLabel: Record<string, string> = { scrim: "Scrim", tournament: "大会" };
 
 export async function SeriesDetailContent({ id }: { id: string }) {
@@ -16,13 +17,13 @@ export async function SeriesDetailContent({ id }: { id: string }) {
   type SeriesDetail = Series & { opponents: Opponent | null; games: Game[] };
 
   const { profile, teamName } = await getProfile();
-  const { data: series } = await supabase
+  const [{ data: series }, { titles }] = await Promise.all([supabase
     .from("series")
-    .select("*, opponents(*), games(id, game_number, mode, result, score_team, score_opponent, hill_times, maps(name), game_stats(id, game_id, player_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, players(name, created_at)), opponent_game_stats(id, game_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, opponent_players(name, created_at)))")
+    .select("*, opponents(*), games(id, game_number, mode, result, score_team, score_opponent, hill_times, maps(name), game_stats(id, game_id, player_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, uploads, dunks, remote_plants, players(name, created_at)), opponent_game_stats(id, game_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, uploads, dunks, remote_plants, opponent_players(name, created_at)))")
     .eq("id", id)
     .eq("team_id", profile.team_id)
     .returns<SeriesDetail[]>()
-    .single();
+    .single(), getCurrentTitle()]);
 
   if (!series) notFound();
 
@@ -48,10 +49,15 @@ export async function SeriesDetailContent({ id }: { id: string }) {
       firstBloods: stat.first_bloods ?? 0,
       firstDeaths: stat.first_deaths ?? 0,
       goals: stat.goals ?? 0,
+      uploads: stat.uploads ?? 0,
+      dunks: stat.dunks ?? 0,
+      remotePlants: stat.remote_plants ?? 0,
     });
   }
 
   const playerKDData: PlayerKDData[] = [...accMap.values()].map(toPlayerKDData);
+  // Navで選択中の作品ではなく、この対戦が属する作品のモード一覧を使う
+  const modes = getTitleModes(titles.find((t) => t.id === series.title_id));
 
   return (
     <>
@@ -82,7 +88,7 @@ export async function SeriesDetailContent({ id }: { id: string }) {
             <CardTitle className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">メンバー別 K/D</CardTitle>
           </CardHeader>
           <CardContent>
-            <PlayerKDTabs players={playerKDData} />
+            <PlayerKDTabs players={playerKDData} modes={modes} />
           </CardContent>
         </Card>
       )}
@@ -95,7 +101,7 @@ export async function SeriesDetailContent({ id }: { id: string }) {
           (a.opponent_players?.created_at ?? "").localeCompare(b.opponent_players?.created_at ?? "")
         );
 
-        type StatRow = { id: string; name: string; kills: number; deaths: number; damage: number; hill_time: number | null; plants: number | null; defuses: number | null; first_bloods: number | null; first_deaths: number | null; goals: number | null };
+        type StatRow = { id: string; name: string; kills: number; deaths: number; damage: number; hill_time: number | null; plants: number | null; defuses: number | null; first_bloods: number | null; first_deaths: number | null; goals: number | null; uploads: number | null; dunks: number | null; remote_plants: number | null };
 
         const statsTable = (rows: StatRow[]) => {
           const totalKills = rows.reduce((sum, r) => sum + r.kills, 0);
@@ -119,6 +125,7 @@ export async function SeriesDetailContent({ id }: { id: string }) {
                   {game.mode === "hardpoint" && <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Hill</th>}
                   {game.mode === "snd" && <><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">P</th><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Def</th><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">FB</th><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">FD</th></>}
                   {game.mode === "overload" && <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Goals</th>}
+                  {game.mode === "hijack" && <><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">アップロード</th><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">設置</th><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">ダンク</th><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">リモート設置</th></>}
                 </tr>
               </thead>
               <tbody>
@@ -132,6 +139,7 @@ export async function SeriesDetailContent({ id }: { id: string }) {
                     {game.mode === "hardpoint" && <td className="py-2.5 stat-number">{row.hill_time ?? 0}s</td>}
                     {game.mode === "snd" && <><td className="py-2.5 stat-number">{row.plants ?? 0}</td><td className="py-2.5 stat-number">{row.defuses ?? 0}</td><td className="py-2.5 stat-number">{row.first_bloods ?? 0}</td><td className="py-2.5 stat-number">{row.first_deaths ?? 0}</td></>}
                     {game.mode === "overload" && <td className="py-2.5 stat-number">{row.goals ?? 0}</td>}
+                    {game.mode === "hijack" && <><td className="py-2.5 stat-number">{row.uploads ?? 0}</td><td className="py-2.5 stat-number">{row.plants ?? 0}</td><td className="py-2.5 stat-number">{row.dunks ?? 0}</td><td className="py-2.5 stat-number">{row.remote_plants ?? 0}</td></>}
                   </tr>
                 ))}
               </tbody>

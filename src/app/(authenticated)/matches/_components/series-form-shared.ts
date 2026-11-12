@@ -1,4 +1,5 @@
 import type { GameMode, MatchResult, SeriesType } from "@/lib/types";
+import { MODE_SCORE_MAX, modeLabel } from "@/lib/constants";
 
 export interface StatInput {
   player_id: string;
@@ -11,6 +12,9 @@ export interface StatInput {
   first_bloods: string;
   first_deaths: string;
   goals: string;
+  uploads: string;
+  dunks: string;
+  remote_plants: string;
 }
 
 export interface GameInput {
@@ -49,6 +53,9 @@ export function emptyStats(): StatInput {
     first_bloods: "",
     first_deaths: "",
     goals: "",
+    uploads: "",
+    dunks: "",
+    remote_plants: "",
   };
 }
 
@@ -64,6 +71,9 @@ interface StatPayloadBase {
   first_bloods: number;
   first_deaths: number;
   goals: number;
+  uploads: number;
+  dunks: number;
+  remote_plants: number;
 }
 
 export interface GamePayload {
@@ -99,11 +109,15 @@ function statNumbers(s: StatInput, mode: GameMode): StatPayloadBase {
     deaths: num(s.deaths),
     damage: num(s.damage),
     hill_time: mode === "hardpoint" ? num(s.hill_time) : 0,
-    plants: mode === "snd" ? num(s.plants) : 0,
+    // plants は S&D の「プラント」と Hijack の「設置」で共用する
+    plants: mode === "snd" || mode === "hijack" ? num(s.plants) : 0,
     defuses: mode === "snd" ? num(s.defuses) : 0,
     first_bloods: mode === "snd" ? num(s.first_bloods) : 0,
     first_deaths: mode === "snd" ? num(s.first_deaths) : 0,
     goals: mode === "overload" ? num(s.goals) : 0,
+    uploads: mode === "hijack" ? num(s.uploads) : 0,
+    dunks: mode === "hijack" ? num(s.dunks) : 0,
+    remote_plants: mode === "hijack" ? num(s.remote_plants) : 0,
   };
 }
 
@@ -162,3 +176,14 @@ export const resultColor: Record<MatchResult, string> = {
 };
 
 export { modeLabel } from "@/lib/constants";
+
+/** スコア上限を超えるゲームがあればエラーメッセージを返す（クライアント・サーバー共通） */
+export function validateScores(games: Pick<GamePayload, "mode" | "score_team" | "score_opponent">[]): string | null {
+  for (const [i, g] of games.entries()) {
+    const max = MODE_SCORE_MAX[g.mode];
+    if (max !== undefined && (g.score_team > max || g.score_opponent > max)) {
+      return `Game ${i + 1}: ${modeLabel[g.mode]} のスコアは ${max} 以下で入力してください`;
+    }
+  }
+  return null;
+}

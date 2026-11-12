@@ -23,9 +23,12 @@ function WinRateBar({ rate }: { rate: string }) {
 export async function DashboardStats({
   seriesIds,
   mode,
+  modes,
 }: {
   seriesIds: string[] | null;
   mode?: GameMode;
+  /** 作品のモード一覧（内訳カードの表示対象） */
+  modes: GameMode[];
 }) {
   const supabase = await createClient();
   await getProfile();
@@ -46,11 +49,9 @@ export async function DashboardStats({
   // モードフィルタ選択時は該当モードのみを母数にする
   const rows = mode ? allRows.filter((r) => r.mode === mode) : allRows;
 
-  const modeCounts = {
-    hardpoint: { total: 0, wins: 0, losses: 0 },
-    snd: { total: 0, wins: 0, losses: 0 },
-    overload: { total: 0, wins: 0, losses: 0 },
-  };
+  const modeCounts = new Map<string, { total: number; wins: number; losses: number }>(
+    modes.map((m) => [m, { total: 0, wins: 0, losses: 0 }]),
+  );
   let totalGames = 0,
     totalWins = 0,
     totalLosses = 0;
@@ -58,7 +59,7 @@ export async function DashboardStats({
     totalGames += r.total;
     totalWins += r.wins;
     totalLosses += r.losses;
-    const mc = modeCounts[r.mode as keyof typeof modeCounts];
+    const mc = modeCounts.get(r.mode);
     if (mc) {
       mc.total += r.total;
       mc.wins += r.wins;
@@ -67,8 +68,8 @@ export async function DashboardStats({
   }
   const winRate =
     totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : "0";
-  const modeStats = (["hardpoint", "snd", "overload"] as const).map((mode) => {
-    const mc = modeCounts[mode];
+  const modeStats = modes.map((mode) => {
+    const mc = modeCounts.get(mode)!;
     const rate = mc.total > 0 ? ((mc.wins / mc.total) * 100).toFixed(1) : "0";
     return { mode, total: mc.total, wins: mc.wins, losses: mc.losses, rate };
   });

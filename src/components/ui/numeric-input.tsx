@@ -6,9 +6,11 @@ interface NumericInputProps {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  /** 入力上限。超える値は上限に丸める */
+  max?: number;
 }
 
-export function NumericInput({ value, onChange, className }: NumericInputProps) {
+export function NumericInput({ value, onChange, className, max }: NumericInputProps) {
   const moveFocus = (el: HTMLElement, direction: "next" | "prev" | "up" | "down") => {
     if (direction === "next" || direction === "prev") {
       const row = el.closest("tr");
@@ -39,13 +41,14 @@ export function NumericInput({ value, onChange, className }: NumericInputProps) 
     <input
       type="number"
       min="0"
+      max={max}
       value={value}
       placeholder="0"
       onChange={(e) => {
         const v = e.target.value;
         if (v === "") { onChange(""); return; }
         const n = parseInt(v);
-        if (!isNaN(n) && n >= 0) onChange(String(n));
+        if (!isNaN(n) && n >= 0) onChange(String(max !== undefined ? Math.min(n, max) : n));
       }}
       onFocus={(e) => e.target.select()}
       onKeyDown={(e) => {

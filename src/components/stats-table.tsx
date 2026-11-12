@@ -21,6 +21,9 @@ interface StatInput {
   first_bloods: string;
   first_deaths: string;
   goals: string;
+  uploads: string;
+  dunks: string;
+  remote_plants: string;
 }
 
 interface PlayerOption {
@@ -76,6 +79,12 @@ function SortableRow({
         <td className="py-1 px-1"><NumericInput value={stat.first_deaths} onChange={(v) => onUpdate(index, { first_deaths: v })} /></td>
       </>}
       {mode === "overload" && <td className="py-1 px-1"><NumericInput value={stat.goals} onChange={(v) => onUpdate(index, { goals: v })} /></td>}
+      {mode === "hijack" && <>
+        <td className="py-1 px-1"><NumericInput value={stat.uploads} onChange={(v) => onUpdate(index, { uploads: v })} /></td>
+        <td className="py-1 px-1"><NumericInput value={stat.plants} onChange={(v) => onUpdate(index, { plants: v })} /></td>
+        <td className="py-1 px-1"><NumericInput value={stat.dunks} onChange={(v) => onUpdate(index, { dunks: v })} /></td>
+        <td className="py-1 px-1"><NumericInput value={stat.remote_plants} onChange={(v) => onUpdate(index, { remote_plants: v })} /></td>
+      </>}
     </tr>
   );
 }
@@ -128,6 +137,12 @@ export function StatsTable({
                   <th className="pb-1 px-1 font-medium text-xs">FD</th>
                 </>}
                 {mode === "overload" && <th className="pb-1 px-1 font-medium text-xs">Goal</th>}
+                {mode === "hijack" && <>
+                  <th className="pb-1 px-1 font-medium text-xs whitespace-nowrap">アップロード</th>
+                  <th className="pb-1 px-1 font-medium text-xs">設置</th>
+                  <th className="pb-1 px-1 font-medium text-xs">ダンク</th>
+                  <th className="pb-1 px-1 font-medium text-xs whitespace-nowrap">リモート設置</th>
+                </>}
               </tr>
             </thead>
             <SortableContext items={items} strategy={verticalListSortingStrategy}>

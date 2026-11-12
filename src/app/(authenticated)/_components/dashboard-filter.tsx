@@ -9,12 +9,6 @@ import { modeLabel } from "@/lib/constants";
 
 const STORAGE_KEY = "dashboard-opponent-filter";
 
-const MODE_TABS: { key: "" | GameMode; label: string }[] = [
-  { key: "", label: "すべて" },
-  { key: "hardpoint", label: modeLabel.hardpoint },
-  { key: "snd", label: modeLabel.snd },
-  { key: "overload", label: modeLabel.overload },
-];
 
 const PERIOD_OPTIONS = [
   { value: "", label: "全期間" },
@@ -34,7 +28,11 @@ function oneMonthAgoStr(): string {
   return `${yy}-${mm}-${dd}`;
 }
 
-export function DashboardFilter({ opponents }: { opponents: Opponent[] }) {
+export function DashboardFilter({ opponents, modes }: { opponents: Opponent[]; modes: GameMode[] }) {
+  const modeTabs: { key: "" | GameMode; label: string }[] = [
+    { key: "", label: "すべて" },
+    ...modes.map((m) => ({ key: m, label: modeLabel[m] })),
+  ];
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -95,7 +93,7 @@ export function DashboardFilter({ opponents }: { opponents: Opponent[] }) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {/* モードフィルタタブ */}
         <div className="flex rounded-lg bg-muted p-1 gap-0.5 overflow-x-auto">
-          {MODE_TABS.map((t) => (
+          {modeTabs.map((t) => (
             <button
               key={t.key}
               onClick={() => navigate({ mode: t.key })}

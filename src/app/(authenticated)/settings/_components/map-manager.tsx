@@ -10,9 +10,7 @@ import { Spinner } from "@/components/ui/spinner";
 import type { GameMode, MapEntry } from "@/lib/types";
 import { modeLabel } from "@/lib/constants";
 
-const modes: GameMode[] = ["hardpoint", "snd", "overload"];
-
-export function MapManager({ maps, teamId, titleId, isAdmin }: { maps: MapEntry[]; teamId: string; titleId: string; isAdmin: boolean }) {
+export function MapManager({ maps, modes, teamId, titleId, isAdmin }: { maps: MapEntry[]; modes: GameMode[]; teamId: string; titleId: string; isAdmin: boolean }) {
   const [activeMode, setActiveMode] = useState<GameMode>("hardpoint");
   const [name, setName] = useState("");
   const [hillCount, setHillCount] = useState("");

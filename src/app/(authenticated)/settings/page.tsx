@@ -7,6 +7,7 @@ import { TeamManagement } from "./_components/team-management";
 import { CopyTeamId } from "./_components/copy-team-id";
 import { AvatarSetting } from "./_components/avatar-setting";
 import { TitleManager } from "./_components/title-manager";
+import { getTitleModes } from "@/lib/constants";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -69,7 +70,7 @@ export default async function SettingsPage() {
             <CardTitle>マップ管理（{currentTitle.name}）</CardTitle>
           </CardHeader>
           <CardContent>
-            <MapManager maps={maps ?? []} teamId={profile.team_id} titleId={currentTitle.id} isAdmin={profile.role === "admin"} />
+            <MapManager maps={maps ?? []} modes={getTitleModes(currentTitle)} teamId={profile.team_id} titleId={currentTitle.id} isAdmin={profile.role === "admin"} />
           </CardContent>
         </Card>
       )}

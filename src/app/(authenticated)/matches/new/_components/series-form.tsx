@@ -22,6 +22,7 @@ import {
   type GameInput,
 } from "@/app/(authenticated)/matches/_components/series-form-shared";
 import type {
+  GameMode,
   SeriesType,
   Opponent,
   Player,
@@ -32,12 +33,14 @@ interface SeriesFormProps {
   opponents: Opponent[];
   players: Player[];
   maps: MapEntry[];
+  modes: GameMode[];
 }
 
 export function SeriesForm({
   opponents,
   players,
   maps,
+  modes,
 }: SeriesFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -324,6 +327,7 @@ export function SeriesForm({
           game={game}
           gIdx={gIdx}
           maps={maps}
+          modes={modes}
           players={players}
           selectedOpponent={selectedOpponent}
           onToggleExpand={toggleExpand}

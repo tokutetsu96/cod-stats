@@ -1,5 +1,7 @@
 import { getProfile } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentTitle } from "@/lib/supabase/titles";
+import { getTitleModes } from "@/lib/constants";
 import { notFound } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Spinner } from "@/components/ui/spinner";
@@ -14,7 +16,7 @@ export default async function EditSeriesPage({ params }: { params: Promise<{ id:
   const supabase = await createClient();
 
   const { profile } = await getProfile();
-  const [{ data: series }, { data: opponents }, { data: players }] = await Promise.all([
+  const [{ data: series }, { data: opponents }, { data: players }, { titles }] = await Promise.all([
     supabase
       .from("series")
       .select("*, games(*, game_stats(*), opponent_game_stats(*))")
@@ -23,9 +25,13 @@ export default async function EditSeriesPage({ params }: { params: Promise<{ id:
       .single(),
     supabase.from("opponents").select("*, opponent_players(*)").eq("team_id", profile.team_id).order("name"),
     supabase.from("players").select("*").eq("team_id", profile.team_id).order("created_at"),
+    getCurrentTitle(),
   ]);
 
   if (!series) notFound();
+
+  // 編集対象の対戦が属する作品のモード一覧（Navで選択中の作品ではない）
+  const modes = getTitleModes(titles.find((t) => t.id === series.title_id));
 
   // 編集対象の対戦が属する作品のマップ一覧を出す。Navで選択中の作品とは独立に、対戦自身の title_id を使う
   const { data: maps } = await supabase.from("maps").select("*").eq("team_id", profile.team_id).eq("title_id", series.title_id).order("name");
@@ -39,6 +45,7 @@ export default async function EditSeriesPage({ params }: { params: Promise<{ id:
           opponents={opponents ?? []}
           players={players ?? []}
           maps={maps ?? []}
+          modes={modes}
         />
       </main>
     </>
