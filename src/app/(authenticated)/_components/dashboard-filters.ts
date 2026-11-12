@@ -1,4 +1,5 @@
 import type { GameMode } from "@/lib/types";
+import { ALL_MODES } from "@/lib/constants";
 
 // ダッシュボードのフィルタ（searchParams）の解釈を一箇所に集約する。
 // period: プリセット期間。custom のときのみ from / to を使う
@@ -20,7 +21,6 @@ export interface DashboardFilters {
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const MODES: GameMode[] = ["hardpoint", "snd", "overload"];
 
 /** サーバーはUTCで動くため、「今日」はユーザーのタイムゾーン（東京）基準で求める */
 function todayInTokyo(): Date {
@@ -42,7 +42,7 @@ export function resolveDashboardFilters(
   const filters: DashboardFilters = {};
 
   if (params.opponent) filters.opponentId = params.opponent;
-  if (params.mode && MODES.includes(params.mode as GameMode)) {
+  if (params.mode && ALL_MODES.includes(params.mode as GameMode)) {
     filters.mode = params.mode as GameMode;
   }
 

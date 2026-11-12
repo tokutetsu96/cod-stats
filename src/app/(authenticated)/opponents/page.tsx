@@ -3,6 +3,7 @@ import { getCurrentTitle } from "@/lib/supabase/titles";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { OpponentList } from "./_components/opponent-list";
+import { getTitleModes } from "@/lib/constants";
 
 // get_opponent_match_stats RPC が返す行（(opponent_id, mode) ごとの集計済み成績）
 type OpponentMatchStatRow = {
@@ -27,6 +28,7 @@ export default async function OpponentsPage() {
   ]);
 
   const statRows = (matchStats ?? []) as OpponentMatchStatRow[];
+  const modes = getTitleModes(currentTitle);
   const statsByOpponent = new Map<string, OpponentMatchStatRow[]>();
   for (const r of statRows) {
     const arr = statsByOpponent.get(r.opponent_id) ?? [];
@@ -38,7 +40,7 @@ export default async function OpponentsPage() {
     const oppRows = statsByOpponent.get(opp.id) ?? [];
     const wins = oppRows.reduce((sum, r) => sum + r.wins, 0);
     const total = oppRows.reduce((sum, r) => sum + r.total, 0);
-    const modeStats = (["hardpoint", "snd", "overload"] as const).map((mode) => {
+    const modeStats = modes.map((mode) => {
       const mr = oppRows.find((r) => r.mode === mode);
       return { mode, wins: mr?.wins ?? 0, total: mr?.total ?? 0 };
     });

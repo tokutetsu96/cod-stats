@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { GameMode, MatchResult } from "@/lib/types";
-import { modeLabel } from "@/lib/constants";
+import { getTitleModes, modeLabel } from "@/lib/constants";
 const resultLabel: Record<string, string> = { win: "勝", lose: "負", draw: "分" };
 const resultClass: Record<string, string> = {
   win: "text-win font-bold stat-number",
@@ -39,12 +39,15 @@ export async function OpponentDetailContent({ id }: { id: string }) {
   const allGames = series.flatMap((s) => s.games ?? []);
 
   let wins = 0, losses = 0, draws = 0;
-  const modeCounts = { hardpoint: { total: 0, wins: 0, losses: 0 }, snd: { total: 0, wins: 0, losses: 0 }, overload: { total: 0, wins: 0, losses: 0 } };
+  const modes = getTitleModes(currentTitle);
+  const modeCounts = new Map<string, { total: number; wins: number; losses: number }>(
+    modes.map((m) => [m, { total: 0, wins: 0, losses: 0 }]),
+  );
   for (const g of allGames) {
     if (g.result === "win") wins++;
     else if (g.result === "lose") losses++;
     else if (g.result === "draw") draws++;
-    const mc = modeCounts[g.mode as keyof typeof modeCounts];
+    const mc = modeCounts.get(g.mode);
     if (mc) {
       mc.total++;
       if (g.result === "win") mc.wins++;
@@ -66,8 +69,8 @@ export async function OpponentDetailContent({ id }: { id: string }) {
     return r;
   });
 
-  const modeData = (["hardpoint", "snd", "overload"] as const).map((mode) => {
-    const mc = modeCounts[mode];
+  const modeData = modes.map((mode) => {
+    const mc = modeCounts.get(mode)!;
     return {
       mode,
       total: mc.total,

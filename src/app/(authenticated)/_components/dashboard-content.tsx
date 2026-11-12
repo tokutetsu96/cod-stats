@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/supabase/auth";
 import { getCurrentTitle } from "@/lib/supabase/titles";
+import { getTitleModes } from "@/lib/constants";
 import { DashboardStats } from "./dashboard-stats";
 import { DashboardKDTable } from "./dashboard-kd-table";
 import { DashboardRecentMatches } from "./dashboard-recent-matches";
@@ -33,6 +34,7 @@ export async function DashboardContent({
   if (dateTo) q = q.lte("series_date", dateTo);
   const { data } = await q;
   const seriesIds: string[] = (data ?? []).map((s) => s.id);
+  const modes = getTitleModes(currentTitle);
 
   return (
     <>
@@ -51,11 +53,11 @@ export async function DashboardContent({
           </div>
         }
       >
-        <DashboardStats seriesIds={seriesIds} mode={mode} />
+        <DashboardStats seriesIds={seriesIds} mode={mode} modes={modes} />
       </Suspense>
 
       <Suspense fallback={<div className="h-64 bg-muted animate-pulse rounded-xl" />}>
-        <DashboardKDTable seriesIds={seriesIds} mode={mode} />
+        <DashboardKDTable seriesIds={seriesIds} mode={mode} modes={modes} />
       </Suspense>
 
       <Suspense fallback={<div className="h-64 bg-muted animate-pulse rounded-xl" />}>

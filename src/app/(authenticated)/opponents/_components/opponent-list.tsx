@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pencil, Trash2, Plus, Users, ChevronDown, ChevronUp, Star } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
-import type { OpponentPlayer } from "@/lib/types";
+import type { GameMode, OpponentPlayer } from "@/lib/types";
+import { modeShortLabel as modeLabel } from "@/lib/constants";
 
 interface ModeStat {
-  mode: string;
+  mode: GameMode;
   wins: number;
   total: number;
 }
@@ -26,7 +27,6 @@ interface OpponentWithStats {
   opponent_players: OpponentPlayer[];
 }
 
-const modeLabel: Record<string, string> = { hardpoint: "HP", snd: "S&D", overload: "OL" };
 
 export function OpponentList({ opponents, teamId, isAdmin }: { opponents: OpponentWithStats[]; teamId: string; isAdmin: boolean }) {
   const [name, setName] = useState("");

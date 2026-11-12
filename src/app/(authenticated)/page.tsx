@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { getProfile } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentTitle } from "@/lib/supabase/titles";
+import { getTitleModes } from "@/lib/constants";
 import type { Opponent } from "@/lib/types";
 import { DashboardFilter } from "./_components/dashboard-filter";
 import { DashboardContent } from "./_components/dashboard-content";
@@ -10,12 +12,20 @@ import type { DashboardSearchParams } from "./_components/dashboard-filters";
 async function DashboardFilterServer() {
   const supabase = await createClient();
   const { profile } = await getProfile();
-  const { data: opponents } = await supabase
-    .from("opponents")
-    .select("id, name")
-    .eq("team_id", profile.team_id)
-    .order("name");
-  return <DashboardFilter opponents={(opponents ?? []) as Opponent[]} />;
+  const [{ data: opponents }, { currentTitle }] = await Promise.all([
+    supabase
+      .from("opponents")
+      .select("id, name")
+      .eq("team_id", profile.team_id)
+      .order("name"),
+    getCurrentTitle(),
+  ]);
+  return (
+    <DashboardFilter
+      opponents={(opponents ?? []) as Opponent[]}
+      modes={getTitleModes(currentTitle)}
+    />
+  );
 }
 
 export default async function DashboardPage({

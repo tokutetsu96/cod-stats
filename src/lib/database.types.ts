@@ -20,6 +20,7 @@ export type Database = {
           damage: number
           deaths: number
           defuses: number | null
+          dunks: number | null
           first_bloods: number | null
           first_deaths: number | null
           game_id: string
@@ -29,14 +30,17 @@ export type Database = {
           kills: number
           plants: number | null
           player_id: string
+          remote_plants: number | null
           team_id: string
           title_id: string
+          uploads: number | null
         }
         Insert: {
           created_at?: string | null
           damage?: number
           deaths?: number
           defuses?: number | null
+          dunks?: number | null
           first_bloods?: number | null
           first_deaths?: number | null
           game_id: string
@@ -46,14 +50,17 @@ export type Database = {
           kills?: number
           plants?: number | null
           player_id: string
+          remote_plants?: number | null
           team_id: string
           title_id: string
+          uploads?: number | null
         }
         Update: {
           created_at?: string | null
           damage?: number
           deaths?: number
           defuses?: number | null
+          dunks?: number | null
           first_bloods?: number | null
           first_deaths?: number | null
           game_id?: string
@@ -63,8 +70,10 @@ export type Database = {
           kills?: number
           plants?: number | null
           player_id?: string
+          remote_plants?: number | null
           team_id?: string
           title_id?: string
+          uploads?: number | null
         }
         Relationships: [
           {
@@ -222,6 +231,7 @@ export type Database = {
           damage: number
           deaths: number
           defuses: number | null
+          dunks: number | null
           first_bloods: number | null
           first_deaths: number | null
           game_id: string
@@ -231,14 +241,17 @@ export type Database = {
           kills: number
           opponent_player_id: string
           plants: number | null
+          remote_plants: number | null
           team_id: string
           title_id: string
+          uploads: number | null
         }
         Insert: {
           created_at?: string
           damage?: number
           deaths?: number
           defuses?: number | null
+          dunks?: number | null
           first_bloods?: number | null
           first_deaths?: number | null
           game_id: string
@@ -248,14 +261,17 @@ export type Database = {
           kills?: number
           opponent_player_id: string
           plants?: number | null
+          remote_plants?: number | null
           team_id: string
           title_id: string
+          uploads?: number | null
         }
         Update: {
           created_at?: string
           damage?: number
           deaths?: number
           defuses?: number | null
+          dunks?: number | null
           first_bloods?: number | null
           first_deaths?: number | null
           game_id?: string
@@ -265,8 +281,10 @@ export type Database = {
           kills?: number
           opponent_player_id?: string
           plants?: number | null
+          remote_plants?: number | null
           team_id?: string
           title_id?: string
+          uploads?: number | null
         }
         Relationships: [
           {
@@ -529,6 +547,7 @@ export type Database = {
           is_default: boolean
           name: string
           team_id: string
+          third_mode: string
         }
         Insert: {
           created_at?: string
@@ -536,6 +555,7 @@ export type Database = {
           is_default?: boolean
           name: string
           team_id: string
+          third_mode?: string
         }
         Update: {
           created_at?: string
@@ -543,6 +563,7 @@ export type Database = {
           is_default?: boolean
           name?: string
           team_id?: string
+          third_mode?: string
         }
         Relationships: [
           {
@@ -565,6 +586,7 @@ export type Database = {
           damage: number
           deaths: number
           defuses: number
+          dunks: number
           first_bloods: number
           first_deaths: number
           games_count: number
@@ -574,6 +596,8 @@ export type Database = {
           mode: string
           plants: number
           player_id: string
+          remote_plants: number
+          uploads: number
         }[]
       }
       get_my_role: { Args: never; Returns: string }

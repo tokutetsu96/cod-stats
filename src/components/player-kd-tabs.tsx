@@ -3,6 +3,8 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { modeShortLabel } from "@/lib/constants";
+import type { GameMode } from "@/lib/types";
 
 export interface PlayerModeStats {
   avgKills: number;
@@ -16,6 +18,9 @@ export interface PlayerModeStats {
   avgFirstBloods: number | null;
   avgFirstDeaths: number | null;
   avgGoals: number | null;
+  avgUploads: number | null;
+  avgDunks: number | null;
+  avgRemotePlants: number | null;
 }
 
 export interface PlayerKDData {
@@ -25,16 +30,10 @@ export interface PlayerKDData {
   hardpoint: PlayerModeStats;
   snd: PlayerModeStats;
   overload: PlayerModeStats;
+  hijack: PlayerModeStats;
 }
 
-type ModeTab = "overall" | "hardpoint" | "snd" | "overload";
-
-const tabs: { key: ModeTab; label: string }[] = [
-  { key: "overall", label: "総合" },
-  { key: "hardpoint", label: "HP" },
-  { key: "snd", label: "S&D" },
-  { key: "overload", label: "OL" },
-];
+type ModeTab = "overall" | GameMode;
 
 function kdColor(kd: string) {
   const v = parseFloat(kd);
@@ -44,12 +43,19 @@ function kdColor(kd: string) {
 
 export function PlayerKDTabs({
   players,
+  modes,
   playerLinkPrefix,
 }: {
   players: PlayerKDData[];
+  /** 表示するモードタブ（作品のモード一覧） */
+  modes: GameMode[];
   playerLinkPrefix?: string;
 }) {
   const [activeTab, setActiveTab] = useState<ModeTab>("overall");
+  const tabs: { key: ModeTab; label: string }[] = [
+    { key: "overall", label: "総合" },
+    ...modes.map((m) => ({ key: m, label: modeShortLabel[m] })),
+  ];
 
   const sorted = useMemo(() => {
     return [...players].sort((a, b) => {
@@ -125,6 +131,12 @@ export function PlayerKDTabs({
                   {activeTab === "overload" && (
                     <span className="stat-number">{s.avgGoals ?? 0}G</span>
                   )}
+                  {activeTab === "hijack" && (
+                    <>
+                      <span className="stat-number">{s.avgUploads ?? 0}UP</span>
+                      <span className="stat-number">{s.avgPlants ?? 0}P</span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -156,6 +168,14 @@ export function PlayerKDTabs({
               {activeTab === "overload" && (
                 <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">Goals</th>
               )}
+              {activeTab === "hijack" && (
+                <>
+                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">アップロード</th>
+                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">設置</th>
+                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">ダンク</th>
+                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">リモート設置</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -186,6 +206,14 @@ export function PlayerKDTabs({
                   )}
                   {activeTab === "overload" && (
                     <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgGoals ?? 0}</td>
+                  )}
+                  {activeTab === "hijack" && (
+                    <>
+                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgUploads ?? 0}</td>
+                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgPlants ?? 0}</td>
+                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgDunks ?? 0}</td>
+                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgRemotePlants ?? 0}</td>
+                    </>
                   )}
                 </tr>
               );

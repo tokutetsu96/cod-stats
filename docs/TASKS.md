@@ -39,6 +39,12 @@
 - `opponent_game_stats` を活用した相手プレイヤー別 K/D 表示
 - 対戦相手ページに「過去対戦での相手強プレイヤー」リスト
 
+#### ゲームモードのカスタマイズ（作品ごと）
+
+- 現状 `GameMode` は `"hardpoint" | "snd" | "overload"` の固定unionで、モード別固有フィールド（`hill_time` / `plants`,`defuses`,`first_bloods`,`first_deaths` / `goals`）もハードコード実装。マップは作品（タイトル）ごとに分離済みだが、モード自体は作品間で共通固定のまま
+- CoDは作品ごとに登場するゲームモードが変わる（新モード追加・旧モード廃止）ため、モードとそのモード固有フィールドを作品単位で自由に追加・編集できるようにしたい
+- 対応にはモード定義のテーブル化・モード固有フィールドの動的スキーマ化（JSONBカラム化 or EAV的な設計）が必要になる見込み。既存の `games` / `game_stats` テーブル構造・型定義・入力フォーム・集計RPCへの影響範囲が大きいため設計から検討する
+
 ---
 
 ### 優先度: 低
@@ -61,6 +67,19 @@
 ---
 
 ## Done
+
+### 作品ごとの第3モード（Overload / Hijack）と Hijack モード追加（2026-11-12）
+
+新作で Overload が Hijack に置き換わったため、作品ごとに第3モードを選べるようにした（過去作の Overload データはそのまま閲覧可能）。
+
+- `titles.third_mode`（`'overload' | 'hijack'`）を追加。既存作品は `overload` でバックフィルし、新規作品の既定は `hijack`。設定画面の作品管理で追加・編集時に選択可能
+- 作品のモード一覧 = Hardpoint / S&D / 第3モード（`getTitleModes()`）。試合入力のモード選択・マップ管理・ダッシュボードのモードフィルタ・K/Dタブ・対戦相手/プレイヤーのモード別集計をこの一覧に追従させた。試合詳細・編集は Nav の選択中作品ではなく対戦自身の作品を参照
+- `games.mode` / `maps.mode` の CHECK 制約に `hijack` を追加
+- Hijack 固有スタッツ: `uploads`（データのアップロード完了）, `plants`（設置。S&D と共用）, `dunks`（ダンク）, `remote_plants`（リモート設置）を `game_stats` / `opponent_game_stats` に追加。`goals` は過去作の Overload 用に残置
+- Hijack のスコア上限 300: 入力欄で丸め、Server Action（`validateScores()`）と `save_series_with_games` RPC で検証
+- RPC改修: `save_series_with_games`（Hijack スタッツ保存・スコア上限検証）、`get_dashboard_kd_stats`（戻り値に Hijack 列を追加するため DROP→CREATE、EXECUTE権限が従来と同一であることを確認済み）
+- マイグレーションは MCP の apply_migration が確認ダイアログの自動キャンセルで実行できなかったため、SQL Editor から手動適用
+- 「ゲームモードのカスタマイズ（作品ごと）」タスクのうち、第3モードの切り替えまでを実施。モード・固有フィールドの完全な動的定義は引き続き ToDo
 
 ### 作品（タイトル）別のデータ分離（2026-08-23）
 
