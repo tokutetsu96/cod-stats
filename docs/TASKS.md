@@ -62,6 +62,12 @@
 
 ## Done
 
+### 依存パッケージの脆弱性対応（2026-11-12）
+
+- `npm audit` で critical 1件・high 8件・moderate 9件を検出。next / eslint-config-next を 16.4.6 に更新し、`npm audit fix` で postcss / sharp / zod 等の推移的依存を更新。tsc・lint・本番ビルド・起動確認済み
+- 残: typescript-eslint 経由の minimatch（moderate × 7件、lint 時のみ使用）。typescript-eslint 最新版（8.72.2）でも未修正のため据え置き
+- Supabase セキュリティアドバイザ: SECURITY DEFINER 関数の EXECUTE 指摘は既存の受容事項どおり。漏洩パスワード保護が「無効」と再検出されたため要確認（2026-07-11 に有効化済みの記録あり）
+
 ### 作品（タイトル）別のデータ分離（2026-08-23）
 
 CoD は毎年新作が出るため、チーム内で複数の作品（タイトル）を切り替えて扱えるようにした。Navの作品切り替えドロップダウンで行き来でき、チームごとに1つ「既定の作品」を設定して初期表示に使う。
