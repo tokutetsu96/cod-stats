@@ -10,6 +10,7 @@
 
 - 受容: `get_my_role` / `get_my_team_id` の anon/authenticated EXECUTE は RLS ポリシーで必須のため維持（返すのは呼び出し元自身の role/team_id のみで情報漏洩リスクなし）
 - 受容: `signup_create_team_with_profile` / `signup_join_team` の authenticated EXECUTE はサインアップに必須（SECURITY DEFINER だが関数内でプロフィール未保有チェック・role強制を実施）
+- 受容: 漏洩パスワード保護（HaveIBeenPwned）は Pro プラン以上の機能のため、Free プランでは無効のまま運用（2026-11-12 判断）。Supabase セキュリティアドバイザの `auth_leaked_password_protection` 警告は対応不要。Pro プランへ移行した場合は有効化する
 - 受容: dnd-kit / Tailwind v4 + shadcn/ui は引き続きデファクトのため現状維持
 - メモ: avatars バケットは public のため公開URL閲覧自体は RLS を経由しない。本人以外の閲覧も遮断したい場合はバケット非公開化 + signed URL への移行が必要（別タスク）
 
@@ -85,7 +86,7 @@
 
 - `npm audit` で critical 1件・high 8件・moderate 9件を検出。next / eslint-config-next を 16.4.6 に更新し、`npm audit fix` で postcss / sharp / zod 等の推移的依存を更新。tsc・lint・本番ビルド・起動確認済み
 - 残: typescript-eslint 経由の minimatch（moderate × 7件、lint 時のみ使用）。typescript-eslint 最新版（8.72.2）でも未修正のため据え置き
-- Supabase セキュリティアドバイザ: SECURITY DEFINER 関数の EXECUTE 指摘は既存の受容事項どおり。漏洩パスワード保護が「無効」と再検出されたため要確認（2026-07-11 に有効化済みの記録あり）
+- Supabase セキュリティアドバイザ: SECURITY DEFINER 関数の EXECUTE 指摘は既存の受容事項どおり。漏洩パスワード保護が「無効」と再検出。Free プランでは利用不可のため受容事項に移した
 
 ### 作品（タイトル）別のデータ分離（2026-08-23）
 
