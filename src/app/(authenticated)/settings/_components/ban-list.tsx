@@ -18,12 +18,9 @@ export function BanList({ bans }: { bans: TeamBan[] }) {
     setError("");
     setPendingId(ban.user_id);
     startTransition(async () => {
-      try {
-        await liftBan(ban.user_id);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "除外の解除に失敗しました");
-      }
+      const result = await liftBan(ban.user_id);
+      if (result.ok) router.refresh();
+      else setError(result.error);
       setPendingId(null);
     });
   };

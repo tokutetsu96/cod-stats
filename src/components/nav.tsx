@@ -11,7 +11,7 @@ import { switchTitle } from "@/app/(authenticated)/_actions/switch-title";
 import { switchTeam } from "@/app/_actions/team";
 import { HeaderSwitcher } from "@/components/header-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
-import type { UserRole, Title, TeamMembership } from "@/lib/types";
+import type { ActionResult, UserRole, Title, TeamMembership } from "@/lib/types";
 
 const links = [
   { href: "/", label: "ダッシュボード", adminOnly: false },
@@ -56,24 +56,26 @@ export function Nav({ teams, currentTeamId, username, avatar, role, titles, curr
     router.push("/login");
   };
 
-  const runSwitch = (action: () => Promise<void>) => {
+  const runSwitch = (action: () => Promise<ActionResult>) => {
     setSwitchError("");
     startSwitching(async () => {
-      try {
-        await action();
-        router.refresh();
-      } catch (e) {
-        setSwitchError(e instanceof Error ? e.message : "切り替えに失敗しました");
+      const result = await action();
+      if (!result.ok) {
+        setSwitchError(result.error);
+        return;
       }
+      router.refresh();
     });
   };
 
   // チームごとにデータが異なるため、詳細ページ（/matches/[id] 等）にいる場合は一覧に戻す
   const handleSwitchTeam = (teamId: string) =>
     runSwitch(async () => {
-      await switchTeam(teamId);
+      const result = await switchTeam(teamId);
+      if (!result.ok) return result;
       const section = pathname.split("/")[1];
       if (pathname.split("/").length > 2) router.push(section ? `/${section}` : "/");
+      return result;
     });
 
   const handleSwitchTitle = (titleId: string) => runSwitch(() => switchTitle(titleId));

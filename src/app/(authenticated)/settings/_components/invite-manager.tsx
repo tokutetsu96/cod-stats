@@ -47,12 +47,9 @@ export function InviteManager({ invites }: { invites: TeamInvite[] }) {
   const handleCreate = () => {
     setError("");
     startTransition(async () => {
-      try {
-        await createInvite(expiresInDays, maxUses ? Number(maxUses) : null);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "招待コードの発行に失敗しました");
-      }
+      const result = await createInvite(expiresInDays, maxUses ? Number(maxUses) : null);
+      if (result.ok) router.refresh();
+      else setError(result.error);
     });
   };
 
@@ -61,12 +58,9 @@ export function InviteManager({ invites }: { invites: TeamInvite[] }) {
     setError("");
     setPendingId(invite.id);
     startTransition(async () => {
-      try {
-        await deleteInvite(invite.id);
-        router.refresh();
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "招待コードの削除に失敗しました");
-      }
+      const result = await deleteInvite(invite.id);
+      if (result.ok) router.refresh();
+      else setError(result.error);
       setPendingId(null);
     });
   };

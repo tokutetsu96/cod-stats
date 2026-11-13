@@ -23,14 +23,14 @@ export function TeamJoinForm() {
     if (!input) return;
     setError("");
     startTransition(async () => {
-      try {
-        await (mode === "join" ? joinTeam(input) : createTeam(input));
-        setValue("");
-        router.push("/");
-        router.refresh();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "処理に失敗しました");
+      const result = await (mode === "join" ? joinTeam(input) : createTeam(input));
+      if (!result.ok) {
+        setError(result.error);
+        return;
       }
+      setValue("");
+      router.push("/");
+      router.refresh();
     });
   };
 
