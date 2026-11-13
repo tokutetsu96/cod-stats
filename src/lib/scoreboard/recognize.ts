@@ -100,7 +100,7 @@ export async function readHardpointScoreboard(blob: Blob): Promise<HardpointScor
       "スコアボードを検出できませんでした。試合終了後のスコアボード全体が写った画像を使用してください",
     );
   }
-  const cells = hardpointCells(lines);
+  const cells = hardpointCells(img, lines);
   const scale = cellScale(cells.unit);
 
   const read = async (worker: Worker, rect: Rect) => {

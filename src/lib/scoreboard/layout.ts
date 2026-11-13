@@ -49,6 +49,11 @@ const HARDPOINT_LAYOUT = {
   } satisfies Record<HardpointCellKind, Span>,
   /** 上部スコア（A 区切り線からの相対位置） */
   score: {
+    /**
+     * 縦位置は画面の縦横比で変わる（16:10 と 16:9 で表との間隔が違う）ため、
+     * この範囲内で数字の行を探す。y は検出できなかったときの既定値
+     */
+    searchY: { from: -0.25, to: -0.04 },
     y: { from: -0.135, to: -0.094 },
     teamA: { from: 0.35, to: 0.43 },
     teamB: { from: 0.51, to: 0.584 },
@@ -134,7 +139,63 @@ export interface HardpointCells {
   unit: number;
 }
 
-export function hardpointCells(lines: [TeamLine, TeamLine]): HardpointCells {
+/** スコアの数字とみなす明るさ（暗いボックスに白文字） */
+const SCORE_TEXT_LUMINANCE = 170;
+
+/**
+ * A 区切り線より上で、スコア列に明るい文字が並ぶ行のまとまりを探し、最も背の高いもの
+ * （= スコアの数字。下の「CDLハードポイント」ラベルより大きい）の縦範囲を返す。
+ */
+function locateScoreBand(
+  img: RawImage,
+  line: TeamLine,
+  unit: number,
+): { top: number; bottom: number } | null {
+  const S = HARDPOINT_LAYOUT.score;
+  const yFrom = Math.max(0, Math.round(line.y + S.searchY.from * unit));
+  const yTo = Math.min(img.height - 1, Math.round(line.y + S.searchY.to * unit));
+  const xRanges = [S.teamA, S.teamB].map((span) => [
+    Math.max(0, Math.round(line.x0 + span.from * unit)),
+    Math.min(img.width - 1, Math.round(line.x0 + span.to * unit)),
+  ]);
+  // 1px 程度のノイズで行が繋がらないよう、最低限の画素数を要求する
+  const minPixels = Math.max(2, Math.round(unit * 0.002));
+  const maxGap = Math.max(1, Math.round(unit * 0.002));
+
+  let best: { top: number; bottom: number } | null = null;
+  let runTop = -1;
+  let runBottom = -1;
+  const flush = () => {
+    if (runTop >= 0 && (!best || runBottom - runTop > best.bottom - best.top)) {
+      best = { top: runTop, bottom: runBottom };
+    }
+    runTop = -1;
+  };
+
+  for (let y = yFrom; y <= yTo; y++) {
+    let count = 0;
+    for (const [x0, x1] of xRanges) {
+      for (let x = x0; x <= x1; x++) {
+        const i = (y * img.width + x) * 4;
+        const lum = 0.299 * img.data[i] + 0.587 * img.data[i + 1] + 0.114 * img.data[i + 2];
+        if (lum > SCORE_TEXT_LUMINANCE) count++;
+      }
+    }
+    if (count >= minPixels) {
+      if (runTop >= 0 && y - runBottom > maxGap + 1) flush();
+      if (runTop < 0) runTop = y;
+      runBottom = y;
+    }
+  }
+  flush();
+
+  // 数字として小さすぎる（ラベルや記号のみ）場合は見つからなかった扱い
+  const found = best as { top: number; bottom: number } | null;
+  if (!found || found.bottom - found.top < unit * 0.012) return null;
+  return found;
+}
+
+export function hardpointCells(img: RawImage, lines: [TeamLine, TeamLine]): HardpointCells {
   const L = HARDPOINT_LAYOUT;
   const unit = lines[0].x1 - lines[0].x0;
   const halfH = L.rowHalfHeight * unit;
@@ -150,8 +211,14 @@ export function hardpointCells(lines: [TeamLine, TeamLine]): HardpointCells {
       };
     });
 
-  const scoreCy = lines[0].y + ((L.score.y.from + L.score.y.to) / 2) * unit;
-  const scoreHalfH = ((L.score.y.to - L.score.y.from) / 2) * unit;
+  const band = locateScoreBand(img, lines[0], unit);
+  const scoreCy = band
+    ? (band.top + band.bottom) / 2
+    : lines[0].y + ((L.score.y.from + L.score.y.to) / 2) * unit;
+  // 数字の上下に余白を足して切り出す（Tesseract は文字が枠に接すると誤読しやすい）
+  const scoreHalfH = band
+    ? ((band.bottom - band.top) / 2) * 1.5
+    : ((L.score.y.to - L.score.y.from) / 2) * unit;
 
   return {
     teams: [teamRows(lines[0]), teamRows(lines[1])],
