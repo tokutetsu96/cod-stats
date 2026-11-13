@@ -12,6 +12,7 @@ import type { GameMode, Opponent, Player, MapEntry } from "@/lib/types";
 import type { GameInput, StatInput } from "./series-form-shared";
 import { calcResult, resultLabel, resultColor, modeLabel } from "./series-form-shared";
 import { MODE_SCORE_MAX } from "@/lib/constants";
+import { ScoreboardImport } from "./scoreboard-import";
 
 interface GameCardProps {
   game: GameInput;
@@ -324,6 +325,15 @@ export function GameCard({
               </div>
             </div>
           )}
+
+          {game.mode === "hardpoint" ? (
+            <ScoreboardImport
+              game={game}
+              players={players}
+              opponentPlayers={selectedOpponent?.opponent_players ?? []}
+              onApply={(updates) => onUpdateGame(gIdx, updates)}
+            />
+          ) : null}
 
           <StatsTable
             label="自チームスタッツ"
