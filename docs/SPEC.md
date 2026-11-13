@@ -128,7 +128,7 @@ series
 | フレームワーク | Next.js 16 (App Router) + React 19 + TypeScript 6 |
 | データベース | Supabase (PostgreSQL + RLS) |
 | 認証 | Supabase Auth (email/password) |
-| スタイリング | Tailwind CSS v4 + shadcn/ui（ダークモード固定） |
+| スタイリング | Tailwind CSS v4 + shadcn/ui（ライト/ダーク/システム追従のテーマ切替、既定はダーク） |
 | フォント | Barlow Condensed / Noto Sans JP |
 | ドラッグ&ドロップ | dnd-kit |
 | デプロイ | Vercel（関数リージョン: `hnd1` 東京） |

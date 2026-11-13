@@ -10,6 +10,7 @@ import { Settings, LogOut, ChevronDown } from "lucide-react";
 import { switchTitle } from "@/app/(authenticated)/_actions/switch-title";
 import { switchTeam } from "@/app/_actions/team";
 import { HeaderSwitcher } from "@/components/header-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 import type { UserRole, Title, TeamMembership } from "@/lib/types";
 
 const links = [
@@ -166,7 +167,7 @@ export function Nav({ teams, currentTeamId, username, avatar, role, titles, curr
           </button>
 
           {open && (
-            <div className="absolute right-0 top-full mt-1 w-44 bg-popover border rounded-md shadow-xl z-50 py-1 overflow-hidden">
+            <div className="absolute right-0 top-full mt-1 w-48 bg-popover border rounded-md shadow-xl z-50 py-1 overflow-hidden">
               {username && (
                 <div className="px-3 py-2 border-b mb-1">
                   <p className="text-xs font-medium truncate text-muted-foreground">{username}</p>
@@ -180,6 +181,9 @@ export function Nav({ teams, currentTeamId, username, avatar, role, titles, curr
                 <Settings className="h-3.5 w-3.5 text-muted-foreground" />
                 設定
               </Link>
+              <div className="border-y my-1">
+                <ThemeToggle />
+              </div>
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors w-full text-left text-destructive-foreground hover:text-destructive"

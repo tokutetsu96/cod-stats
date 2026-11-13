@@ -16,7 +16,7 @@ npm run lint         # ESLint
 
 - **Next.js 16** (App Router, Server Components) + **React 19** + **TypeScript 6**
 - **Supabase** — PostgreSQL + RLS + Auth（email/password）
-- **Tailwind CSS v4** + **shadcn/ui** — ダークモード固定、フォント: Barlow Condensed / Noto Sans JP
+- **Tailwind CSS v4** + **shadcn/ui** — ライト/ダークテーマ対応（`.dark` クラス切替・既定ダーク）、フォント: Barlow Condensed / Noto Sans JP
 - **dnd-kit** — ドラッグ&ドロップによるプレイヤー並び替え
 - **Vercel** にデプロイ
 
@@ -110,4 +110,5 @@ src/
 - Supabaseクエリには必ず `team_id` フィルタを含める（マルチテナンシー）
 - shadcn/ui コンポーネント（`src/components/ui/`）は既存のものを再利用する
 - パスエイリアス: `@/*` → `./src/*`
+- 色は `globals.css` のテーマトークン（`bg-card`, `text-muted-foreground`, `text-win` 等）を使い、`yellow-400` などの固定色を直書きしない（ライト/ダーク両対応のため）
 - `cn()` ユーティリティ（clsx + tailwind-merge）でクラス名を結合する
