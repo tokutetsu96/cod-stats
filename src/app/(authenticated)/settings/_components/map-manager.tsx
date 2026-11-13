@@ -144,7 +144,7 @@ export function MapManager({ maps, modes, teamId, titleId, isAdmin }: { maps: Ma
                     />
                   )}
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleSave(m)} disabled={savingId === m.id}>
-                    {savingId === m.id ? <Spinner /> : <Check className="h-4 w-4 text-green-500" />}
+                    {savingId === m.id ? <Spinner /> : <Check className="h-4 w-4 text-win" />}
                   </Button>
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={cancelEdit}>
                     <X className="h-4 w-4" />

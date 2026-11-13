@@ -136,7 +136,7 @@ export function TitleManager({ titles, teamId, isAdmin }: { titles: Title[]; tea
                   {defaultingId === t.id ? (
                     <Spinner />
                   ) : (
-                    <Star className={`h-4 w-4 ${t.is_default ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
+                    <Star className={`h-4 w-4 ${t.is_default ? "fill-star text-star" : "text-muted-foreground"}`} />
                   )}
                 </Button>
               )}
@@ -159,7 +159,7 @@ export function TitleManager({ titles, teamId, isAdmin }: { titles: Title[]; tea
                     ))}
                   </Select>
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleSave(t)} disabled={savingId === t.id}>
-                    {savingId === t.id ? <Spinner /> : <Check className="h-4 w-4 text-green-500" />}
+                    {savingId === t.id ? <Spinner /> : <Check className="h-4 w-4 text-win" />}
                   </Button>
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={cancelEdit}>
                     <X className="h-4 w-4" />

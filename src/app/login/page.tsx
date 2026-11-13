@@ -13,7 +13,7 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [username, setUsername] = useState("");
   const [teamName, setTeamName] = useState("");
-  const [teamId, setTeamId] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [joinExisting, setJoinExisting] = useState<boolean | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -45,10 +45,10 @@ export default function LoginPage() {
 
       // チーム作成+プロフィール作成はRPCが1トランザクションで原子的に処理する
       // （部分失敗で孤立チームが残らない）。roleはサーバー側で決定される。
-      const { error: signupError } = joinExisting && teamId.trim()
-        ? await supabase.rpc("signup_join_team", {
+      const { error: signupError } = joinExisting && inviteCode.trim()
+        ? await supabase.rpc("signup_join_team_with_invite", {
             p_username: username.trim(),
-            p_team_id: teamId.trim(),
+            p_code: inviteCode.trim(),
           })
         : await supabase.rpc("signup_create_team_with_profile", {
             p_username: username.trim(),
@@ -156,10 +156,12 @@ export default function LoginPage() {
                   </div>
                   {joinExisting === true && (
                     <Input
-                      id="teamId"
-                      value={teamId}
-                      onChange={(e) => setTeamId(e.target.value)}
-                      placeholder="チームID"
+                      id="inviteCode"
+                      value={inviteCode}
+                      onChange={(e) => setInviteCode(e.target.value)}
+                      placeholder="招待コード"
+                      autoCapitalize="characters"
+                      autoComplete="off"
                       required
                     />
                   )}

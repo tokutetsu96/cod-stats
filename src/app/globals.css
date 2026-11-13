@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -22,6 +24,7 @@
   --color-ring: var(--ring);
   --color-win: var(--win);
   --color-loss: var(--loss);
+  --color-star: var(--star);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -30,31 +33,35 @@
 }
 
 :root {
+  color-scheme: light;
   --radius: 0.5rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: oklch(0.975 0.003 255);
+  --foreground: oklch(0.2 0.015 255);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.2 0.015 255);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --win: oklch(0.64 0.18 142);
-  --loss: oklch(0.58 0.20 25);
+  --popover-foreground: oklch(0.2 0.015 255);
+  --primary: oklch(0.64 0.15 65);
+  --primary-foreground: oklch(0.16 0.01 255);
+  --secondary: oklch(0.95 0.005 255);
+  --secondary-foreground: oklch(0.2 0.015 255);
+  --muted: oklch(0.95 0.005 255);
+  --muted-foreground: oklch(0.48 0.015 255);
+  --accent: oklch(0.93 0.006 255);
+  --accent-foreground: oklch(0.2 0.015 255);
+  --destructive: oklch(0.55 0.21 25);
+  --destructive-foreground: oklch(0.2 0.015 255);
+  --border: oklch(0.89 0.006 255);
+  --input: oklch(0.86 0.008 255);
+  --ring: oklch(0.64 0.15 65);
+  --win: oklch(0.55 0.16 145);
+  --loss: oklch(0.55 0.2 25);
+  --star: oklch(0.75 0.17 75);
+  --popup-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.12);
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(0.11 0.012 255);
   --foreground: oklch(0.93 0 0);
   --card: oklch(0.16 0.01 255);
@@ -76,6 +83,8 @@
   --ring: oklch(0.76 0.17 78);
   --win: oklch(0.64 0.18 142);
   --loss: oklch(0.58 0.20 25);
+  --star: oklch(0.85 0.17 90);
+  --popup-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
 }
 
 @layer base {
@@ -120,7 +129,7 @@
   font-size: 0.875rem;
   border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+  box-shadow: var(--popup-shadow);
 }
 
 .react-datepicker__triangle {

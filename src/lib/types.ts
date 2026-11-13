@@ -30,6 +30,23 @@ export interface TeamMembership {
   role: UserRole;
 }
 
+/** チーム招待コード（管理者のみ閲覧可） */
+export interface TeamInvite {
+  id: string;
+  code: string;
+  expires_at: string;
+  max_uses: number | null;
+  use_count: number;
+  created_at: string;
+}
+
+/** 除外済みユーザー（招待コードがあっても再参加不可） */
+export interface TeamBan {
+  user_id: string;
+  username: string;
+  created_at: string;
+}
+
 /** チーム管理画面のメンバー一覧行 */
 export interface TeamMember {
   user_id: string;

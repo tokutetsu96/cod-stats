@@ -25,9 +25,9 @@ export async function createTeam(teamName: string) {
   await resetTitleCookie();
 }
 
-export async function joinTeam(teamId: string) {
+export async function joinTeam(inviteCode: string) {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("join_team", { p_team_id: teamId.trim() });
+  const { error } = await supabase.rpc("join_team_with_invite", { p_code: inviteCode.trim() });
   if (error) throw new Error(error.message || "チームへの参加に失敗しました");
   await resetTitleCookie();
 }

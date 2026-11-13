@@ -209,10 +209,10 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
                           disabled={togglingPlayerId === p.id || (!p.is_default && defaultP.length >= 4)}
                           className="disabled:opacity-30 disabled:cursor-not-allowed"
                         >
-                          <Star className={`h-4 w-4 ${p.is_default ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
+                          <Star className={`h-4 w-4 ${p.is_default ? "fill-star text-star" : "text-muted-foreground"}`} />
                         </button>
                       ) : (
-                        <Star className={`h-4 w-4 ${p.is_default ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`} />
+                        <Star className={`h-4 w-4 ${p.is_default ? "fill-star text-star" : "text-muted-foreground"}`} />
                       )}
                     </td>
                     {isAdmin && (
@@ -242,9 +242,9 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
                         {/* デフォルトセクション */}
                         <div>
                           <div className="flex items-center gap-2 mb-1.5">
-                            <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                            <Star className="h-3.5 w-3.5 fill-star text-star" />
                             <span className="text-xs font-medium">デフォルト</span>
-                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${defaultP.length >= 4 ? "bg-yellow-400/20 text-yellow-600" : "bg-muted text-muted-foreground"}`}>
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${defaultP.length >= 4 ? "bg-star/20 text-primary" : "bg-muted text-muted-foreground"}`}>
                               {defaultP.length} / 4
                             </span>
                           </div>
