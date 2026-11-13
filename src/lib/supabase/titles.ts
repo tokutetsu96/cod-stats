@@ -14,7 +14,7 @@ export const getCurrentTitle = cache(async () => {
     .from("titles")
     .select("*")
     .eq("team_id", profile.team_id)
-    .order("created_at")
+    .order("sort_order")
     .returns<Title[]>();
 
   const titles = data ?? [];

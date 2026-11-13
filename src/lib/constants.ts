@@ -15,7 +15,6 @@ export const modeShortLabel: Record<GameMode, string> = {
 };
 
 export const ALL_MODES: GameMode[] = ["hardpoint", "snd", "overload", "hijack"];
-export const THIRD_MODES: ThirdMode[] = ["hijack", "overload"];
 export const DEFAULT_THIRD_MODE: ThirdMode = "hijack";
 
 /** 作品で使うモード一覧。第3モードは作品ごとに Overload / Hijack を切り替える */
