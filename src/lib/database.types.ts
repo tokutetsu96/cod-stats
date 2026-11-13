@@ -516,6 +516,100 @@ export type Database = {
           },
         ]
       }
+      team_bans: {
+        Row: {
+          banned_by: string | null
+          created_at: string
+          team_id: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          banned_by?: string | null
+          created_at?: string
+          team_id: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          banned_by?: string | null
+          created_at?: string
+          team_id?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_bans_banned_by_fkey"
+            columns: ["banned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_bans_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_bans_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_invites: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          max_uses: number | null
+          team_id: string
+          use_count: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          max_uses?: number | null
+          team_id: string
+          use_count?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          max_uses?: number | null
+          team_id?: string
+          use_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_invites_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_invites_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           created_at: string
@@ -614,6 +708,10 @@ export type Database = {
     }
     Functions: {
       create_team: { Args: { p_team_name: string }; Returns: string }
+      create_team_invite: {
+        Args: { p_expires_in_days: number; p_max_uses?: number }
+        Returns: string
+      }
       get_dashboard_kd_stats: {
         Args: { p_series_ids?: string[] }
         Returns: {
@@ -654,7 +752,8 @@ export type Database = {
           wins: number
         }[]
       }
-      join_team: { Args: { p_team_id: string }; Returns: string }
+      join_team_with_invite: { Args: { p_code: string }; Returns: string }
+      remove_team_member: { Args: { p_user_id: string }; Returns: undefined }
       save_series_with_games: {
         Args: { p_payload: Json; p_series_id?: string; p_title_id?: string }
         Returns: string
@@ -664,9 +763,9 @@ export type Database = {
         Args: { p_team_name: string; p_username: string }
         Returns: string
       }
-      signup_join_team: {
-        Args: { p_team_id: string; p_username: string }
-        Returns: undefined
+      signup_join_team_with_invite: {
+        Args: { p_code: string; p_username: string }
+        Returns: string
       }
       switch_team: { Args: { p_team_id: string }; Returns: undefined }
     }

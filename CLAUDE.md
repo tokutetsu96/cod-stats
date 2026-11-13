@@ -65,6 +65,8 @@ src/
 | `teams` | チーム情報 |
 | `profiles` | ユーザープロフィール（`team_id` = 選択中チーム） |
 | `team_members` | ユーザーとチームの所属（多対多、role: admin/member をチームごとに保持） |
+| `team_invites` | チーム招待コード（管理者が発行、有効期限・使用回数上限つき） |
+| `team_bans` | 除外したユーザー（招待コードでの再参加を拒否） |
 | `players` | 自チームプレイヤー |
 | `opponents` | 対戦チーム |
 | `opponent_players` | 対戦チームのプレイヤー |

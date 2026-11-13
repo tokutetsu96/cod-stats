@@ -59,7 +59,7 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
 
   const handleKickUser = async (userId: string, username: string) => {
     if (!isAdmin) return;
-    if (!confirm(`${username} をチームから除外しますか？`)) return;
+    if (!confirm(`${username} をチームから除外しますか？除外したユーザーは、解除するまで招待コードでも再参加できません。`)) return;
     setUpdatingUserId(userId);
     setError("");
     try {

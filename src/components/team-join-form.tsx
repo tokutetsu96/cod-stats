@@ -61,16 +61,18 @@ export function TeamJoinForm() {
         <Input
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder={mode === "join" ? "チームID" : "チーム名"}
+          placeholder={mode === "join" ? "招待コード" : "チーム名"}
+          autoCapitalize={mode === "join" ? "characters" : undefined}
+          autoComplete="off"
           className="h-9 w-full sm:max-w-xs"
-          aria-label={mode === "join" ? "チームID" : "チーム名"}
+          aria-label={mode === "join" ? "招待コード" : "チーム名"}
         />
         <Button type="submit" size="sm" className="h-9" disabled={isPending || !value.trim()}>
           {isPending ? "処理中..." : mode === "join" ? "参加する" : "作成する"}
         </Button>
       </div>
       {mode === "join" && (
-        <p className="text-xs text-muted-foreground">チームIDは参加先チームの管理者に設定画面から共有してもらってください。</p>
+        <p className="text-xs text-muted-foreground">招待コードは参加先チームの管理者に設定画面から発行してもらってください。</p>
       )}
       {error && <p className="text-sm text-destructive">{error}</p>}
     </form>

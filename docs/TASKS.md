@@ -9,8 +9,8 @@
 ### 受容事項（対応不要と判断済み）
 
 - 受容: `get_my_role` / `get_my_team_id` の anon/authenticated EXECUTE は RLS ポリシーで必須のため維持（返すのは呼び出し元自身の role/team_id のみで情報漏洩リスクなし）
-- 受容: `signup_create_team_with_profile` / `signup_join_team` の authenticated EXECUTE はサインアップに必須（SECURITY DEFINER だが関数内でプロフィール未保有チェック・role強制を実施）
-- 受容: `create_team` / `join_team` / `switch_team` の authenticated EXECUTE は複数チーム所属機能に必須（SECURITY DEFINER だが関数内で `auth.uid()` 検証・所属チェックを実施し、anon からは REVOKE 済み）
+- 受容: `signup_create_team_with_profile` / `signup_join_team_with_invite` の authenticated EXECUTE はサインアップに必須（SECURITY DEFINER だが関数内でプロフィール未保有チェック・role強制を実施）
+- 受容: `create_team` / `join_team_with_invite` / `switch_team` / `create_team_invite` / `remove_team_member` の authenticated EXECUTE は複数チーム所属・招待機能に必須（SECURITY DEFINER だが関数内で `auth.uid()` 検証・所属/管理者チェックを実施し、anon からは REVOKE 済み）
 - 受容: 漏洩パスワード保護（HaveIBeenPwned）は Pro プラン以上の機能のため、Free プランでは無効のまま運用（2026-11-12 判断）。Supabase セキュリティアドバイザの `auth_leaked_password_protection` 警告は対応不要。Pro プランへ移行した場合は有効化する
 - 受容: dnd-kit / Tailwind v4 + shadcn/ui は引き続きデファクトのため現状維持
 - メモ: avatars バケットは public のため公開URL閲覧自体は RLS を経由しない。本人以外の閲覧も遮断したい場合はバケット非公開化 + signed URL への移行が必要（別タスク）
@@ -18,11 +18,6 @@
 ---
 
 ### 優先度: 中
-
-#### チーム参加の招待コード化（除外したユーザーの再参加防止）
-
-- 現状はチームIDがそのまま参加キーで、IDを知っていれば誰でも `join_team` / `signup_join_team` で参加できる。除外（kick）されたユーザーも同じIDで即再参加できる（複数チーム対応前もプロフィール削除後に `signup_join_team` で再参加可能だった既存の問題）
-- 対応案: 管理者が発行・失効・再発行できる招待コード（有効期限付き）に置き換え、チームIDでの参加は廃止。必要に応じて除外ユーザーの記録（`team_bans`）で再参加を拒否
 
 #### マップ別成績分析
 
@@ -81,6 +76,15 @@
 - ユーザーメニューにテーマ切替（ライト / ダーク / システム）を追加。設定は localStorage に保存、未設定時はダーク
 - `<head>` のインラインスクリプトで hydration 前にテーマを適用しちらつきを防止。「システム」選択時は OS 設定変更に追従
 - 固定色（`yellow-400` / `green-500` / `red-500`）をテーマトークン（`star` / `win` / `loss` / `primary`）に置換
+
+### チーム参加の招待コード化と除外ユーザーの再参加防止（2026-11-13）
+
+チームIDを知っていれば誰でも参加でき、除外したユーザーも同じIDで即再参加できた問題を解消した。
+
+- `team_invites`（有効期限・使用回数上限つき、12桁コード）と `team_bans`（除外記録、表示用に除外時点のユーザー名を保持）を新設
+- チームIDでの参加RPC（`join_team` / `signup_join_team`）を廃止し、`join_team_with_invite` / `signup_join_team_with_invite` に置き換え。コード検証は行ロックで上限超過の競合を防ぐ
+- 除外は `remove_team_member` RPC に一本化（所属削除 + 除外記録を1トランザクション）。`team_members` の直接DELETEは本人の脱退のみに制限
+- 設定画面: チームIDコピー欄を廃止し、管理者向けに招待コードの発行・コピー・削除と除外ユーザーの解除を追加
 
 ### 複数チーム所属とヘッダーのチーム切り替え（2026-11-13）
 

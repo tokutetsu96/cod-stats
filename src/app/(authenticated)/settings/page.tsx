@@ -4,19 +4,24 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { MapManager } from "./_components/map-manager";
 import { TeamManagement } from "./_components/team-management";
-import { CopyTeamId } from "./_components/copy-team-id";
+import { InviteManager } from "./_components/invite-manager";
+import { BanList } from "./_components/ban-list";
 import { AvatarSetting } from "./_components/avatar-setting";
 import { TitleManager } from "./_components/title-manager";
 import { getTitleModes } from "@/lib/constants";
 import { TeamJoinForm } from "@/components/team-join-form";
-import type { TeamMember, UserRole } from "@/lib/types";
+import type { TeamBan, TeamInvite, TeamMember, UserRole } from "@/lib/types";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
   const { profile } = await getProfile();
   const { titles, currentTitle } = await getCurrentTitle();
 
-  const [{ data: maps }, { data: team }, { data: users }] = await Promise.all([
+  const isAdmin = profile.role === "admin";
+  // 招待コード・除外記録は管理者のみ取得（RLSでも管理者以外は0件になる）
+  const empty = Promise.resolve({ data: null });
+
+  const [{ data: maps }, { data: team }, { data: users }, { data: invites }, { data: bans }] = await Promise.all([
     supabase
       .from("maps")
       .select("*")
@@ -31,7 +36,27 @@ export default async function SettingsPage() {
       .eq("team_id", profile.team_id)
       .order("created_at")
       .returns<{ user_id: string; role: string; profiles: { username: string } | null }[]>(),
+    isAdmin
+      ? supabase
+          .from("team_invites")
+          .select("id, code, expires_at, max_uses, use_count, created_at")
+          .eq("team_id", profile.team_id)
+          .gt("expires_at", new Date().toISOString())
+          .order("created_at", { ascending: false })
+          .returns<TeamInvite[]>()
+      : empty,
+    isAdmin
+      ? supabase
+          .from("team_bans")
+          .select("user_id, username, created_at")
+          .eq("team_id", profile.team_id)
+          .order("created_at", { ascending: false })
+          .returns<TeamBan[]>()
+      : empty,
   ]);
+
+  // 使用回数の上限に達したコードは参加に使えないため一覧から外す
+  const activeInvites = (invites ?? []).filter((i) => i.max_uses === null || i.use_count < i.max_uses);
 
   const members: TeamMember[] = (users ?? []).map((m) => ({
     user_id: m.user_id,
@@ -62,9 +87,22 @@ export default async function SettingsPage() {
             users={members}
             currentProfile={profile}
           />
-          <div className="pt-4 border-t border-border">
-            <CopyTeamId teamId={profile.team_id} />
-          </div>
+          {isAdmin ? (
+            <>
+              <div className="pt-4 border-t border-border space-y-2">
+                <h3 className="text-sm text-muted-foreground">招待コード</h3>
+                <InviteManager invites={activeInvites} />
+              </div>
+              <div className="pt-4 border-t border-border space-y-2">
+                <h3 className="text-sm text-muted-foreground">除外したユーザー</h3>
+                <BanList bans={bans ?? []} />
+              </div>
+            </>
+          ) : (
+            <p className="pt-4 border-t border-border text-xs text-muted-foreground">
+              メンバーを招待するには、管理者に招待コードを発行してもらってください。
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -82,7 +120,7 @@ export default async function SettingsPage() {
           <CardTitle>作品管理</CardTitle>
         </CardHeader>
         <CardContent>
-          <TitleManager titles={titles} teamId={profile.team_id} isAdmin={profile.role === "admin"} />
+          <TitleManager titles={titles} teamId={profile.team_id} isAdmin={isAdmin} />
         </CardContent>
       </Card>
 
@@ -92,7 +130,7 @@ export default async function SettingsPage() {
             <CardTitle>マップ管理（{currentTitle.name}）</CardTitle>
           </CardHeader>
           <CardContent>
-            <MapManager maps={maps ?? []} modes={getTitleModes(currentTitle)} teamId={profile.team_id} titleId={currentTitle.id} isAdmin={profile.role === "admin"} />
+            <MapManager maps={maps ?? []} modes={getTitleModes(currentTitle)} teamId={profile.team_id} titleId={currentTitle.id} isAdmin={isAdmin} />
           </CardContent>
         </Card>
       )}
