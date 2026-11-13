@@ -76,6 +76,13 @@
 
 ## Done
 
+### 作品を固定プリセット化（2026-11-13）
+
+- 作品をユーザー定義から運営側の固定プリセットに変更。`title_presets` に BO7（Overload）/ MW4（Hijack）を登録
+- 既存データを移行: "bo7" / "作品1" → BO7、"MW4" → MW4（FUHEN の MW4 は試合 0 件のため Overload → Hijack に修正）。不足していたプリセットを全チームに補完
+- チーム作成時（`seed_team_titles`）・プリセット追加時（`distribute_title_preset`）にトリガーで自動配布。`create_team` / `signup_create_team_with_profile` の「作品1」作成を削除
+- `titles` への INSERT / DELETE / 列更新をクライアントから禁止（`is_default` の更新のみ許可）。設定画面の作品管理は一覧＋既定切り替えのみに縮小
+
 ### スコアボード画像からのスタッツ自動入力: Hardpoint（2026-11-13）
 
 - 外部 AI は使わず、ブラウザ内 OCR（`tesseract.js`、動的 import）のみで実装

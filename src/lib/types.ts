@@ -81,10 +81,14 @@ export interface OpponentPlayer {
   created_at: string;
 }
 
+/** 作品。運営側の固定プリセット（title_presets）を各チームに配布したもので、ユーザーは追加・改名・削除できない */
 export interface Title {
   id: string;
   team_id: string;
+  /** プリセットコード（例: "bo7", "mw4"） */
+  code: string;
   name: string;
+  sort_order: number;
   is_default: boolean;
   third_mode: ThirdMode;
   created_at: string;

@@ -667,32 +667,66 @@ export type Database = {
         }
         Relationships: []
       }
+      title_presets: {
+        Row: {
+          code: string
+          name: string
+          sort_order: number
+          third_mode: string
+        }
+        Insert: {
+          code: string
+          name: string
+          sort_order: number
+          third_mode: string
+        }
+        Update: {
+          code?: string
+          name?: string
+          sort_order?: number
+          third_mode?: string
+        }
+        Relationships: []
+      }
       titles: {
         Row: {
+          code: string
           created_at: string
           id: string
           is_default: boolean
           name: string
+          sort_order: number
           team_id: string
           third_mode: string
         }
         Insert: {
+          code: string
           created_at?: string
           id?: string
           is_default?: boolean
           name: string
+          sort_order: number
           team_id: string
           third_mode?: string
         }
         Update: {
+          code?: string
           created_at?: string
           id?: string
           is_default?: boolean
           name?: string
+          sort_order?: number
           team_id?: string
           third_mode?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "titles_code_fkey"
+            columns: ["code"]
+            isOneToOne: false
+            referencedRelation: "title_presets"
+            referencedColumns: ["code"]
+          },
           {
             foreignKeyName: "titles_team_id_fkey"
             columns: ["team_id"]

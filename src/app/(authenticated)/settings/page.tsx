@@ -120,7 +120,7 @@ export default async function SettingsPage() {
           <CardTitle>作品管理</CardTitle>
         </CardHeader>
         <CardContent>
-          <TitleManager titles={titles} teamId={profile.team_id} isAdmin={isAdmin} />
+          <TitleManager titles={titles} isAdmin={isAdmin} />
         </CardContent>
       </Card>
 
