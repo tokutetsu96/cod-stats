@@ -63,7 +63,8 @@ src/
 | テーブル | 説明 |
 |---------|------|
 | `teams` | チーム情報 |
-| `profiles` | ユーザープロフィール（role: admin/member） |
+| `profiles` | ユーザープロフィール（`team_id` = 選択中チーム） |
+| `team_members` | ユーザーとチームの所属（多対多、role: admin/member をチームごとに保持） |
 | `players` | 自チームプレイヤー |
 | `opponents` | 対戦チーム |
 | `opponent_players` | 対戦チームのプレイヤー |
@@ -87,6 +88,7 @@ src/
 - `src/proxy.ts` がミドルウェアとして全リクエストで `updateSession()` を実行
 - 未認証ユーザーは `/login` にリダイレクト（`/login`, `/auth` を除く）
 - ロールベースアクセス制御: `role === "admin"` でUI表示を切替（試合作成・削除等）
+- 複数チーム所属: `getProfile()` は選択中チームの `team_id` / `role` を `profile` に解決して返し、所属一覧を `teams` で返す。選択中チームが無効なら `/join-team` へリダイレクト
 
 ## タスク管理ルール
 

@@ -13,6 +13,7 @@ export interface Team {
 
 export type UserRole = "admin" | "member";
 
+/** ログイン中ユーザーのプロフィール。team_id / role は「選択中チーム」での値 */
 export interface Profile {
   id: string;
   username: string;
@@ -20,6 +21,20 @@ export interface Profile {
   team_id: string;
   role: UserRole;
   created_at: string;
+}
+
+/** ログイン中ユーザーの所属チーム（ヘッダーのチーム切り替え用） */
+export interface TeamMembership {
+  team_id: string;
+  team_name: string;
+  role: UserRole;
+}
+
+/** チーム管理画面のメンバー一覧行 */
+export interface TeamMember {
+  user_id: string;
+  username: string;
+  role: UserRole;
 }
 
 export interface Player {

@@ -10,6 +10,7 @@
 
 - 受容: `get_my_role` / `get_my_team_id` の anon/authenticated EXECUTE は RLS ポリシーで必須のため維持（返すのは呼び出し元自身の role/team_id のみで情報漏洩リスクなし）
 - 受容: `signup_create_team_with_profile` / `signup_join_team` の authenticated EXECUTE はサインアップに必須（SECURITY DEFINER だが関数内でプロフィール未保有チェック・role強制を実施）
+- 受容: `create_team` / `join_team` / `switch_team` の authenticated EXECUTE は複数チーム所属機能に必須（SECURITY DEFINER だが関数内で `auth.uid()` 検証・所属チェックを実施し、anon からは REVOKE 済み）
 - 受容: 漏洩パスワード保護（HaveIBeenPwned）は Pro プラン以上の機能のため、Free プランでは無効のまま運用（2026-11-12 判断）。Supabase セキュリティアドバイザの `auth_leaked_password_protection` 警告は対応不要。Pro プランへ移行した場合は有効化する
 - 受容: dnd-kit / Tailwind v4 + shadcn/ui は引き続きデファクトのため現状維持
 - メモ: avatars バケットは public のため公開URL閲覧自体は RLS を経由しない。本人以外の閲覧も遮断したい場合はバケット非公開化 + signed URL への移行が必要（別タスク）
@@ -17,6 +18,11 @@
 ---
 
 ### 優先度: 中
+
+#### チーム参加の招待コード化（除外したユーザーの再参加防止）
+
+- 現状はチームIDがそのまま参加キーで、IDを知っていれば誰でも `join_team` / `signup_join_team` で参加できる。除外（kick）されたユーザーも同じIDで即再参加できる（複数チーム対応前もプロフィール削除後に `signup_join_team` で再参加可能だった既存の問題）
+- 対応案: 管理者が発行・失効・再発行できる招待コード（有効期限付き）に置き換え、チームIDでの参加は廃止。必要に応じて除外ユーザーの記録（`team_bans`）で再参加を拒否
 
 #### マップ別成績分析
 
@@ -68,6 +74,15 @@
 ---
 
 ## Done
+
+### 複数チーム所属とヘッダーのチーム切り替え（2026-11-13）
+
+1ユーザーが複数チームに所属し、ヘッダーで作品と同様にチームを切り替えられるようにした。
+
+- `team_members`（user_id, team_id, role）を新設し、`profiles.role` を移行・削除。`profiles.team_id` は選択中チームとして残し、既存RLSポリシーは変更せずに `get_my_team_id()` / `get_my_role()` を所属ベースに差し替え
+- RPC `switch_team` / `create_team` / `join_team` を追加。最終adminガードを `team_members` へ移設し、所属削除時に選択中チームを付け替えるトリガー `reassign_current_team` を追加
+- 既存脆弱性の修正: `profiles` を本人が全列UPDATEでき、`role` の自己昇格や `team_id` の他チームへの書き換えが可能だった。UPDATE権限を `username` / `avatar` に限定
+- ヘッダーの作品切り替えを `HeaderSwitcher` に共通化し、チーム切り替えを追加。設定画面に「チームの追加」、未所属ユーザー向けに `/join-team` を追加。脱退はログアウトせず別チームへ切り替わるように変更
 
 ### 作品ごとの第3モード（Overload / Hijack）と Hijack モード追加（2026-11-12）
 

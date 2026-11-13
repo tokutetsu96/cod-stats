@@ -431,24 +431,21 @@ export type Database = {
           avatar: string | null
           created_at: string | null
           id: string
-          role: string
-          team_id: string
+          team_id: string | null
           username: string
         }
         Insert: {
           avatar?: string | null
           created_at?: string | null
           id: string
-          role?: string
-          team_id: string
+          team_id?: string | null
           username: string
         }
         Update: {
           avatar?: string | null
           created_at?: string | null
           id?: string
-          role?: string
-          team_id?: string
+          team_id?: string | null
           username?: string
         }
         Relationships: [
@@ -519,6 +516,42 @@ export type Database = {
           },
         ]
       }
+      team_members: {
+        Row: {
+          created_at: string
+          role: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          role?: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          role?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           created_at: string | null
@@ -580,6 +613,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_team: { Args: { p_team_name: string }; Returns: string }
       get_dashboard_kd_stats: {
         Args: { p_series_ids?: string[] }
         Returns: {
@@ -620,6 +654,7 @@ export type Database = {
           wins: number
         }[]
       }
+      join_team: { Args: { p_team_id: string }; Returns: string }
       save_series_with_games: {
         Args: { p_payload: Json; p_series_id?: string; p_title_id?: string }
         Returns: string
@@ -633,6 +668,7 @@ export type Database = {
         Args: { p_team_id: string; p_username: string }
         Returns: undefined
       }
+      switch_team: { Args: { p_team_id: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
