@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
@@ -105,6 +106,9 @@ export function StatsTable({
   onReorder: (oldIndex: number, newIndex: number) => void;
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  // dnd-kit は内部のグローバルカウンタで aria-describedby の ID を採番するため、
+  // SSR とクライアントで値がずれて hydration 警告になる。useId で安定した ID を渡す
+  const dndId = useId();
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -120,7 +124,7 @@ export function StatsTable({
     <div className="space-y-2">
       <Label className="text-sm font-medium">{label}</Label>
       <div className="overflow-x-auto">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
+        <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd} modifiers={[restrictToVerticalAxis]}>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left">
