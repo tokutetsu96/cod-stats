@@ -13,7 +13,7 @@
 - 受容: `create_team` / `join_team_with_invite` / `switch_team` / `create_team_invite` / `remove_team_member` の authenticated EXECUTE は複数チーム所属・招待機能に必須（SECURITY DEFINER だが関数内で `auth.uid()` 検証・所属/管理者チェックを実施し、anon からは REVOKE 済み）
 - 受容: 漏洩パスワード保護（HaveIBeenPwned）は Pro プラン以上の機能のため、Free プランでは無効のまま運用（2026-11-12 判断）。Supabase セキュリティアドバイザの `auth_leaked_password_protection` 警告は対応不要。Pro プランへ移行した場合は有効化する
 - 受容: dnd-kit / Tailwind v4 + shadcn/ui は引き続きデファクトのため現状維持
-- メモ: avatars バケットは public のため公開URL閲覧自体は RLS を経由しない。本人以外の閲覧も遮断したい場合はバケット非公開化 + signed URL への移行が必要（別タスク）
+- 受容: avatars バケットは public のまま運用（2026-11-14 判断）。公開URL閲覧は RLS を経由しないが、アバターは機密情報ではなく、現状の表示箇所は本人のみ（ヘッダー・設定画面）。signed URL 化すると layout で毎リクエスト Storage 往復が増え、`next/image` の最適化キャッシュも効かなくなるため費用対効果が低い。他メンバーのアバターを表示する機能を追加する際に再検討する
 
 ---
 
@@ -72,9 +72,27 @@
 - 新しい対戦登録時にチームメンバーへ通知
 - 実装候補: Web Push 通知 / メール通知
 
+#### アバターの Storage 孤児ファイル対策
+
+- 「削除」ボタンは `profiles.avatar` を `null` にするだけで Storage のファイルを消さない
+- 拡張子を変えて再アップロードすると旧ファイル（例: `avatar.png` → `avatar.jpg` の `avatar.png`）が残る
+- 対応案: 削除時に `storage.remove()`、アップロード時に同フォルダの旧ファイルを削除。または保存パスを拡張子なしの固定名にする
+
+#### `profiles.avatar` の値を制限
+
+- 本人が `avatar` 列を任意の文字列（外部URL等）で更新できる。`next/image` の `remotePatterns` で弾かれ表示エラーになるだけで、表示は本人のみのため実害は小さい
+- 対応案: CHECK 制約で自プロジェクトの `avatars/{本人のuid}/` 配下の URL（またはパス）に限定
+
 ---
 
 ## Done
+
+### avatars バケットにサイズ・MIME タイプ制限を追加（2026-11-14）
+
+- `file_size_limit` / `allowed_mime_types` が未設定で、2MB・画像のみのチェックがクライアント（`avatar-setting.tsx`）にしかなかった。API 直叩きで大容量ファイルや SVG / HTML を public バケットへ配置できた
+- `storage.buckets` を更新し、`file_size_limit = 2097152`（2MB）、`allowed_mime_types = image/jpeg, image/png, image/gif, image/webp` を設定（SQL で直接適用、適用後の値を確認済み）
+- 既存オブジェクト（2 件）は影響なし。設定画面の案内文「JPG・PNG・GIF・WebP、2MB以下」と一致
+- 設定画面（`avatar-setting.tsx`）のファイル選択 `accept` とクライアント側の型チェックも同じ 4 形式に限定し、HEIC / AVIF 等を選んだ場合に Supabase の英語エラーではなく日本語メッセージを表示するようにした
 
 ### 作品を固定プリセット化（2026-11-13）
 

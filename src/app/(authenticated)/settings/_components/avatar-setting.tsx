@@ -10,6 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Upload, Trash2, Pencil } from "lucide-react";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+// avatars バケットの allowed_mime_types と揃える
+const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+const ALLOWED_AVATAR_ACCEPT = ALLOWED_AVATAR_TYPES.join(",");
 
 export function AvatarSetting({ profileId, currentAvatar, username }: { profileId: string; currentAvatar: string | null; username: string }) {
   const router = useRouter();
@@ -27,8 +30,8 @@ export function AvatarSetting({ profileId, currentAvatar, username }: { profileI
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      setAvatarError("画像ファイルを選択してください");
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      setAvatarError("JPG・PNG・GIF・WebP の画像を選択してください");
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
@@ -111,7 +114,7 @@ export function AvatarSetting({ profileId, currentAvatar, username }: { profileI
           <p className="text-xs text-muted-foreground">JPG・PNG・GIF・WebP、2MB以下</p>
           {avatarError && <p className="text-xs text-destructive">{avatarError}</p>}
         </div>
-        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+        <input ref={inputRef} type="file" accept={ALLOWED_AVATAR_ACCEPT} className="hidden" onChange={handleFileChange} />
       </div>
 
       {/* ユーザー名 */}
