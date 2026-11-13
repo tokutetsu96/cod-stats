@@ -3,13 +3,16 @@ import { getCurrentTitle } from "@/lib/supabase/titles";
 import { Nav } from "@/components/nav";
 
 export default async function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
-  const { profile, teamName } = await getProfile();
-  const { titles, currentTitle } = await getCurrentTitle();
+  const [{ profile, teams }, { titles, currentTitle }] = await Promise.all([
+    getProfile(),
+    getCurrentTitle(),
+  ]);
 
   return (
     <>
       <Nav
-        teamName={teamName ?? undefined}
+        teams={teams}
+        currentTeamId={profile.team_id}
         username={profile.username}
         avatar={profile.avatar}
         role={profile.role}

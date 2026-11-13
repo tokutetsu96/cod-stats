@@ -8,6 +8,9 @@ import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { Settings, LogOut, ChevronDown } from "lucide-react";
 import { switchTitle } from "@/app/(authenticated)/_actions/switch-title";
+import { switchTeam } from "@/app/_actions/team";
+import { HeaderSwitcher } from "@/components/header-switcher";
+import type { UserRole, Title, TeamMembership } from "@/lib/types";
 
 const links = [
   { href: "/", label: "ダッシュボード", adminOnly: false },
@@ -17,10 +20,9 @@ const links = [
   { href: "/players", label: "プレイヤー", adminOnly: false },
 ];
 
-import type { UserRole, Title } from "@/lib/types";
-
 interface NavProps {
-  teamName?: string;
+  teams?: TeamMembership[];
+  currentTeamId?: string;
   username?: string;
   avatar?: string | null;
   role?: UserRole;
@@ -28,27 +30,24 @@ interface NavProps {
   currentTitleId?: string;
 }
 
-export function Nav({ teamName, username, avatar, role, titles, currentTitleId }: NavProps) {
+export function Nav({ teams, currentTeamId, username, avatar, role, titles, currentTitleId }: NavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [titleOpen, setTitleOpen] = useState(false);
   const [isSwitching, startSwitching] = useTransition();
+  const [switchError, setSwitchError] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
-  const titleMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!open) return;
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
-      if (titleMenuRef.current && !titleMenuRef.current.contains(e.target as Node)) {
-        setTitleOpen(false);
-      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [open]);
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -56,16 +55,27 @@ export function Nav({ teamName, username, avatar, role, titles, currentTitleId }
     router.push("/login");
   };
 
-  const handleSwitchTitle = (titleId: string) => {
-    setTitleOpen(false);
-    if (titleId === currentTitleId) return;
+  const runSwitch = (action: () => Promise<void>) => {
+    setSwitchError("");
     startSwitching(async () => {
-      await switchTitle(titleId);
-      router.refresh();
+      try {
+        await action();
+        router.refresh();
+      } catch (e) {
+        setSwitchError(e instanceof Error ? e.message : "切り替えに失敗しました");
+      }
     });
   };
 
-  const currentTitle = titles?.find((t) => t.id === currentTitleId);
+  // チームごとにデータが異なるため、詳細ページ（/matches/[id] 等）にいる場合は一覧に戻す
+  const handleSwitchTeam = (teamId: string) =>
+    runSwitch(async () => {
+      await switchTeam(teamId);
+      const section = pathname.split("/")[1];
+      if (pathname.split("/").length > 2) router.push(section ? `/${section}` : "/");
+    });
+
+  const handleSwitchTitle = (titleId: string) => runSwitch(() => switchTitle(titleId));
   const isUrl = avatar?.startsWith("http");
   const fallback = username?.[0]?.toUpperCase() ?? "?";
 
@@ -82,50 +92,31 @@ export function Nav({ teamName, username, avatar, role, titles, currentTitleId }
           <span className="text-sm font-medium text-muted-foreground tracking-wider">STATS</span>
         </Link>
 
-        {/* Team badge */}
-        {teamName && (
-          <div className="hidden md:flex items-center mr-4">
-            <span className="text-sm font-semibold tracking-wide text-primary shrink-0">
-              {teamName}
-            </span>
-          </div>
+        {/* Team switcher */}
+        {teams && teams.length > 0 && (
+          <HeaderSwitcher
+            className="mr-2"
+            items={teams.map((t) => ({ id: t.team_id, label: t.team_name, badge: t.role === "admin" ? "管理者" : undefined }))}
+            currentId={currentTeamId}
+            placeholder="チーム未選択"
+            ariaLabel="チームを切り替える"
+            disabled={isSwitching}
+            onSelect={handleSwitchTeam}
+            footerLink={{ href: "/settings#team-join", label: "チームを追加" }}
+          />
         )}
 
         {/* Title (作品) switcher */}
         {titles && titles.length > 0 && (
-          <div className="flex items-center mr-4 relative shrink-0" ref={titleMenuRef}>
-            <button
-              onClick={() => setTitleOpen(!titleOpen)}
-              disabled={isSwitching}
-              className={cn(
-                "flex items-center gap-1 h-8 px-2 rounded-md transition-colors text-xs sm:text-sm max-w-[8rem] sm:max-w-none",
-                "hover:bg-accent text-muted-foreground hover:text-foreground",
-                titleOpen && "bg-accent text-foreground"
-              )}
-              aria-label="作品を切り替える"
-            >
-              <span className="truncate">{currentTitle?.name ?? "作品未設定"}</span>
-              <ChevronDown className={cn("h-3 w-3 shrink-0 transition-transform", titleOpen && "rotate-180")} />
-            </button>
-
-            {titleOpen && (
-              <div className="absolute left-0 top-full mt-1 w-48 bg-popover border rounded-md shadow-xl z-50 py-1 overflow-hidden">
-                {titles.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => handleSwitchTitle(t.id)}
-                    className={cn(
-                      "flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-accent transition-colors text-left",
-                      t.id === currentTitleId && "text-primary font-medium"
-                    )}
-                  >
-                    <span className="truncate">{t.name}</span>
-                    {t.is_default && <span className="text-xs text-muted-foreground ml-2 shrink-0">既定</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <HeaderSwitcher
+            className="mr-4"
+            items={titles.map((t) => ({ id: t.id, label: t.name, badge: t.is_default ? "既定" : undefined }))}
+            currentId={currentTitleId}
+            placeholder="作品未設定"
+            ariaLabel="作品を切り替える"
+            disabled={isSwitching}
+            onSelect={handleSwitchTitle}
+          />
         )}
 
         {/* Nav links */}
@@ -200,6 +191,9 @@ export function Nav({ teamName, username, avatar, role, titles, currentTitleId }
           )}
         </div>
       </div>
+      {switchError && (
+        <p role="alert" className="mx-auto max-w-6xl px-4 pb-2 text-xs text-destructive">{switchError}</p>
+      )}
     </nav>
   );
 }

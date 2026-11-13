@@ -2,18 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Pencil, LogOut, Shield, ShieldOff, UserX } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
-import type { Profile, Team, UserRole } from "@/lib/types";
-import { updateTeamName, toggleUserRole, kickUser } from "../actions";
+import type { Profile, Team, TeamMember, UserRole } from "@/lib/types";
+import { updateTeamName, toggleUserRole, kickUser, leaveCurrentTeam } from "../actions";
 
 interface TeamManagementProps {
   team: Team;
-  users: Profile[];
+  users: TeamMember[];
   currentProfile: Profile;
 }
 
@@ -73,19 +72,20 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
   };
 
   const handleLeaveTeam = async () => {
-    if (!confirm("チームから脱退しますか？この操作は取り消せません。")) return;
+    if (!confirm(`${team.name} から脱退しますか？この操作は取り消せません。`)) return;
     setLeavingTeam(true);
     setError("");
-    const supabase = createClient();
-    const { error: profileError } = await supabase.from("profiles").delete().eq("id", currentProfile.id);
-    if (profileError) {
+    try {
+      await leaveCurrentTeam();
+    } catch (e) {
       // 最終adminガード（DBトリガー）等の理由をそのまま表示する
-      setError(profileError.message || "脱退処理に失敗しました");
+      setError(e instanceof Error ? e.message : "脱退処理に失敗しました");
       setLeavingTeam(false);
       return;
     }
-    await supabase.auth.signOut();
-    router.push("/login");
+    // 他の所属チームがあればそちらへ自動で切り替わり、無ければチーム参加ページへ遷移する
+    router.push("/");
+    router.refresh();
   };
 
   return (
@@ -133,10 +133,10 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
         ) : (
           <div className="rounded-md border border-border divide-y divide-border">
             {users.map((user) => {
-              const isCurrentUser = user.id === currentProfile.id;
-              const isUpdating = updatingUserId === user.id;
+              const isCurrentUser = user.user_id === currentProfile.id;
+              const isUpdating = updatingUserId === user.user_id;
               return (
-                <div key={user.id} className="flex items-center justify-between px-3 py-2">
+                <div key={user.user_id} className="flex items-center justify-between px-3 py-2">
                   <div className="flex items-center gap-2">
                     <span className="text-sm">
                       {user.username}
@@ -149,7 +149,7 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
                   {isAdmin && !isCurrentUser && (
                     <div className="flex items-center gap-2 sm:gap-1">
                       <button
-                        onClick={() => handleToggleRole(user.id, user.role)}
+                        onClick={() => handleToggleRole(user.user_id, user.role)}
                         className="text-muted-foreground hover:text-foreground transition-colors p-1"
                         aria-label={user.role === "admin" ? "メンバーに変更" : "管理者に変更"}
                         title={user.role === "admin" ? "メンバーに変更" : "管理者に変更"}
@@ -164,7 +164,7 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
                         )}
                       </button>
                       <button
-                        onClick={() => handleKickUser(user.id, user.username)}
+                        onClick={() => handleKickUser(user.user_id, user.username)}
                         className="text-muted-foreground hover:text-destructive transition-colors p-1"
                         aria-label={`${user.username}を除外`}
                         title="チームから除外"

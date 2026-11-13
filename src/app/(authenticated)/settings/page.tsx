@@ -8,6 +8,8 @@ import { CopyTeamId } from "./_components/copy-team-id";
 import { AvatarSetting } from "./_components/avatar-setting";
 import { TitleManager } from "./_components/title-manager";
 import { getTitleModes } from "@/lib/constants";
+import { TeamJoinForm } from "@/components/team-join-form";
+import type { TeamMember, UserRole } from "@/lib/types";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -23,8 +25,19 @@ export default async function SettingsPage() {
       .order("mode")
       .order("name"),
     supabase.from("teams").select("*").eq("id", profile.team_id).single(),
-    supabase.from("profiles").select("*").eq("team_id", profile.team_id).order("created_at"),
+    supabase
+      .from("team_members")
+      .select("user_id, role, profiles(username)")
+      .eq("team_id", profile.team_id)
+      .order("created_at")
+      .returns<{ user_id: string; role: string; profiles: { username: string } | null }[]>(),
   ]);
+
+  const members: TeamMember[] = (users ?? []).map((m) => ({
+    user_id: m.user_id,
+    username: m.profiles?.username ?? "",
+    role: m.role as UserRole,
+  }));
 
   return (
     <main className="mx-auto max-w-6xl p-4 space-y-6">
@@ -46,12 +59,21 @@ export default async function SettingsPage() {
         <CardContent className="space-y-5">
           <TeamManagement
             team={team!}
-            users={users ?? []}
+            users={members}
             currentProfile={profile}
           />
           <div className="pt-4 border-t border-border">
             <CopyTeamId teamId={profile.team_id} />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card id="team-join" className="scroll-mt-20">
+        <CardHeader>
+          <CardTitle>チームの追加</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <TeamJoinForm />
         </CardContent>
       </Card>
 
