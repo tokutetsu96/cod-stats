@@ -87,6 +87,14 @@
 
 ## Done
 
+### 招待コード発行で "Minified React error #441" が出る不具合を修正（2026-11-14）
+
+招待コード制（2026-11-13）のDB変更が本番Supabaseに未適用で、発行・参加・除外がすべて失敗していた。本番ではServer Actionのthrowがメッセージを伏せた #441 になり、原因が画面に出なかった。
+
+- マイグレーション `add_team_invites_and_bans` を適用（`team_invites` / `team_bans` + RLS、`create_team_invite` / `join_team_with_invite` / `signup_join_team_with_invite` / `remove_team_member`、旧 `join_team` / `signup_join_team` を削除）
+- マイグレーション `restrict_team_members_delete_to_self` を適用（`team_members` の直接DELETEを本人の脱退のみに制限）
+- Server Action（settings / team / switch-title）を throw から `ActionResult`（`{ ok, error }`）を返す形に統一し、本番でもエラー文言を表示
+
 ### avatars バケットにサイズ・MIME タイプ制限を追加（2026-11-14）
 
 - `file_size_limit` / `allowed_mime_types` が未設定で、2MB・画像のみのチェックがクライアント（`avatar-setting.tsx`）にしかなかった。API 直叩きで大容量ファイルや SVG / HTML を public バケットへ配置できた

@@ -33,12 +33,9 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
     if (!name) return;
     setSavingTeam(true);
     setError("");
-    try {
-      await updateTeamName(team.id, name);
-      setEditingTeamName(false);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "チーム名の変更に失敗しました");
-    }
+    const result = await updateTeamName(team.id, name);
+    if (result.ok) setEditingTeamName(false);
+    else setError(result.error);
     setSavingTeam(false);
     router.refresh();
   };
@@ -48,11 +45,8 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
     const newRole: UserRole = currentRole === "admin" ? "member" : "admin";
     setUpdatingUserId(userId);
     setError("");
-    try {
-      await toggleUserRole(userId, newRole);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "権限の変更に失敗しました");
-    }
+    const result = await toggleUserRole(userId, newRole);
+    if (!result.ok) setError(result.error);
     setUpdatingUserId(null);
     router.refresh();
   };
@@ -62,11 +56,8 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
     if (!confirm(`${username} をチームから除外しますか？除外したユーザーは、解除するまで招待コードでも再参加できません。`)) return;
     setUpdatingUserId(userId);
     setError("");
-    try {
-      await kickUser(userId);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "ユーザーの除外に失敗しました");
-    }
+    const result = await kickUser(userId);
+    if (!result.ok) setError(result.error);
     setUpdatingUserId(null);
     router.refresh();
   };
@@ -75,11 +66,10 @@ export function TeamManagement({ team, users, currentProfile }: TeamManagementPr
     if (!confirm(`${team.name} から脱退しますか？この操作は取り消せません。`)) return;
     setLeavingTeam(true);
     setError("");
-    try {
-      await leaveCurrentTeam();
-    } catch (e) {
+    const result = await leaveCurrentTeam();
+    if (!result.ok) {
       // 最終adminガード（DBトリガー）等の理由をそのまま表示する
-      setError(e instanceof Error ? e.message : "脱退処理に失敗しました");
+      setError(result.error);
       setLeavingTeam(false);
       return;
     }

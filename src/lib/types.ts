@@ -4,6 +4,14 @@ export type ThirdMode = Extract<GameMode, "overload" | "hijack">;
 export type MatchResult = "win" | "lose" | "draw";
 export type SeriesType = "scrim" | "tournament";
 
+/**
+ * Server Action の戻り値。本番ビルドでは throw した Error の message がクライアントに届かない
+ * （"Minified React error #441" に置き換わる）ため、ユーザー向けのエラーは値として返す。
+ */
+export type ActionResult<T = void> =
+  | (T extends void ? { ok: true } : { ok: true; data: T })
+  | { ok: false; error: string };
+
 export interface Team {
   id: string;
   name: string;
