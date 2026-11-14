@@ -3,9 +3,11 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 export function SeriesDetailSkeleton() {
   return (
     <>
-      <div className="space-y-2">
-        <div className="h-7 w-48 bg-muted rounded animate-pulse" />
-        <div className="h-4 w-64 bg-muted rounded animate-pulse" />
+      <div className="flex flex-col items-center gap-4 pt-2">
+        <div className="h-5 w-40 bg-muted rounded animate-pulse" />
+        <div className="h-16 w-64 bg-muted rounded animate-pulse" />
+        <div className="h-7 w-14 bg-muted rounded animate-pulse" />
+        <div className="h-8 w-72 max-w-full bg-muted rounded animate-pulse" />
       </div>
       <Card>
         <CardHeader className="pb-3">

@@ -29,7 +29,7 @@ export async function DashboardRecentComments({ titleId }: { titleId: string }) 
   return (
     <Card>
       <CardHeader className="pb-3 px-5 pt-5">
-        <CardTitle className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">
+        <CardTitle className="text-sm font-semibold text-muted-foreground">
           最近のメモ
         </CardTitle>
       </CardHeader>

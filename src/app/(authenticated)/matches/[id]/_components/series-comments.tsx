@@ -46,7 +46,7 @@ export async function SeriesComments({ seriesId }: { seriesId: string }) {
   return (
     <Card id="comments" className="scroll-mt-20">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">
+        <CardTitle className="text-sm font-semibold text-muted-foreground">
           メモ{total > 0 ? `（${total}）` : ""}
         </CardTitle>
       </CardHeader>

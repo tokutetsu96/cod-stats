@@ -87,7 +87,7 @@ export async function DashboardKDTable({
   return (
     <Card>
       <CardHeader className="pb-3 px-5 pt-5">
-        <CardTitle className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">
+        <CardTitle className="text-sm font-semibold text-muted-foreground">
           メンバー別 K/D
         </CardTitle>
       </CardHeader>

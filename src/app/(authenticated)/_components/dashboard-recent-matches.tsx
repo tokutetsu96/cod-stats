@@ -7,6 +7,7 @@ import { countResults, formatDate, isValidYoutubeUrl } from "@/lib/utils";
 import { SeriesResultSummary, SeriesTypeBadge } from "@/components/series-badges";
 import type { Tables } from "@/lib/database.types";
 import type { DashboardFilters } from "./dashboard-filters";
+import { Table, Th, Td } from "@/components/ui/table";
 
 // 生成型（Tables<>）から読み取りモデルを導出し、スキーマ変更に追従させる
 type RecentSeriesRow = Pick<
@@ -52,7 +53,7 @@ export async function DashboardRecentMatches({
   return (
     <Card>
       <CardHeader className="pb-3 px-5 pt-5">
-        <CardTitle className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">
+        <CardTitle className="text-sm font-semibold text-muted-foreground">
           直近の対戦
         </CardTitle>
       </CardHeader>
@@ -92,75 +93,75 @@ export async function DashboardRecentMatches({
 
             {/* Desktop table layout */}
             <div className="overflow-x-auto hidden sm:block">
-              <table className="w-full text-sm data-table">
+              <Table>
                 <thead>
                   <tr className="border-b text-left">
-                    <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                    <Th>
                       日付
-                    </th>
-                    <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                    </Th>
+                    <Th>
                       タイプ
-                    </th>
-                    <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                    </Th>
+                    <Th>
                       対戦相手
-                    </th>
-                    <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                    </Th>
+                    <Th>
                       YouTube
-                    </th>
-                    <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                    </Th>
+                    <Th>
                       戦績
-                    </th>
-                    <th className="pb-2.5 w-10"></th>
+                    </Th>
+                    <Th className="w-10"></Th>
                   </tr>
                 </thead>
                 <tbody>
                   {recentSeries.map((s) => {
                     return (
                       <tr key={s.id} className="border-b border-border/50">
-                        <td className="py-2.5 text-muted-foreground text-xs">
+                        <Td className="text-muted-foreground text-xs">
                           {formatDate(s.series_date)}
-                        </td>
-                        <td className="py-2.5">
+                        </Td>
+                        <Td>
                           <SeriesTypeBadge type={s.type} />
-                        </td>
-                        <td className="py-2.5">
+                        </Td>
+                        <Td>
                           <Link
                             href={`/matches/${s.id}`}
-                            className="hover:underline font-medium"
+                            className="link font-medium"
                           >
                             {s.opponents?.name ?? "-"}
                           </Link>
-                        </td>
-                        <td className="py-2.5 text-xs">
+                        </Td>
+                        <Td className="text-xs">
                           {s.youtube_url && isValidYoutubeUrl(s.youtube_url) ? (
                             <a
                               href={s.youtube_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-primary hover:underline"
+                              className="link"
                             >
                               YouTube URL
                             </a>
                           ) : (
                             <span className="text-muted-foreground">-</span>
                           )}
-                        </td>
-                        <td className="py-2.5">
+                        </Td>
+                        <Td>
                           <SeriesResultSummary {...s.record} />
-                        </td>
-                        <td className="py-2.5 text-right">
+                        </Td>
+                        <Td className="text-right">
                           <Link
                             href={`/matches/${s.id}`}
                             className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                           >
                             <Eye className="h-4 w-4" />
                           </Link>
-                        </td>
+                        </Td>
                       </tr>
                     );
                   })}
                 </tbody>
-              </table>
+              </Table>
             </div>
           </>
         )}

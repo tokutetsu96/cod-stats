@@ -13,8 +13,9 @@ export function SeriesTypeBadge({ type }: { type: string }) {
   return (
     <span
       className={cn(
-        "text-xs px-1.5 py-0.5 rounded font-medium",
-        type === "tournament" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground",
+        "text-xs px-1.5 py-0.5 rounded font-medium border",
+        // 大会は枠線で区別する（アンバーは操作と自チームの色のため使わない）
+        type === "tournament" ? "border-foreground/40 text-foreground" : "border-transparent bg-muted text-muted-foreground",
       )}
     >
       {seriesTypeLabel[type as SeriesType] ?? type}
@@ -53,7 +54,7 @@ export function WinLossRecord({ wins, losses, draws, className }: ResultCounts &
       {draws > 0 ? (
         <>
           <span className="text-muted-foreground mx-1">-</span>
-          <span className="text-primary font-medium stat-number">{draws}D</span>
+          <span className="text-muted-foreground font-medium stat-number">{draws}D</span>
         </>
       ) : null}
     </span>

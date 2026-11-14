@@ -16,19 +16,7 @@ import {
 
 const cardSkeleton = <div className="h-64 bg-muted animate-pulse rounded-xl" />;
 
-const statsSkeleton = (
-  <div className="space-y-3">
-    <div className="grid grid-cols-2 gap-3">
-      <div className="h-28 bg-muted animate-pulse rounded-xl" />
-      <div className="h-28 bg-muted animate-pulse rounded-xl" />
-    </div>
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <div className="h-28 bg-muted animate-pulse rounded-xl" />
-      <div className="h-28 bg-muted animate-pulse rounded-xl" />
-      <div className="h-28 bg-muted animate-pulse rounded-xl" />
-    </div>
-  </div>
-);
+const statsSkeleton = <div className="h-60 bg-muted animate-pulse rounded-xl" />;
 
 /**
  * 勝率・K/D の集計。対戦相手・期間・作品フィルタを対象 series の id 集合に落とし込み、
@@ -59,7 +47,7 @@ async function DashboardAggregates({
   return (
     <>
       <Suspense fallback={statsSkeleton}>
-        <DashboardStats seriesIds={seriesIds} mode={filters.mode} modes={modes} />
+        <DashboardStats seriesIds={seriesIds} titleId={titleId} filters={filters} modes={modes} />
       </Suspense>
       <Suspense fallback={cardSkeleton}>
         <DashboardKDTable seriesIds={seriesIds} mode={filters.mode} modes={modes} />

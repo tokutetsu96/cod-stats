@@ -20,7 +20,7 @@ export function OpponentFilter({
     <div className="flex items-center gap-3">
       <label
         htmlFor="series-opponent-filter"
-        className="text-xs text-muted-foreground uppercase tracking-wider whitespace-nowrap"
+        className="text-xs text-muted-foreground whitespace-nowrap"
       >
         対戦チーム
       </label>

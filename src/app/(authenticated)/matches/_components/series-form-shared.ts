@@ -256,7 +256,7 @@ export const resultLabel: Record<MatchResult, string> = {
 export const resultColor: Record<MatchResult, string> = {
   win: "text-win",
   lose: "text-loss",
-  draw: "text-primary",
+  draw: "text-muted-foreground",
 };
 
 /** スコア上限を超えるゲームがあればエラーメッセージを返す（クライアント・サーバー共通） */
