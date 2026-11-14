@@ -39,5 +39,7 @@ yarn-error.log*
 next-env.d.ts
 
 .omc
-*.json
-!vercel.json
+
+# ローカル専用の設定（認証情報を含みうる）
+.mcp.json
+.claude/settings.local.json
