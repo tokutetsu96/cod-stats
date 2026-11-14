@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { GameMode, MatchResult, SeriesType } from "@/lib/types";
 import { getTitleModes, modeLabel, seriesTypeLabel } from "@/lib/constants";
+import { OpponentPlayerStats } from "./opponent-player-stats";
 const resultLabel: Record<string, string> = { win: "勝", lose: "負", draw: "分" };
 const resultClass: Record<string, string> = {
   win: "text-win font-bold stat-number",
@@ -15,13 +16,14 @@ const resultClass: Record<string, string> = {
 
 export async function OpponentDetailContent({ id }: { id: string }) {
   const supabase = await createClient();
-  const { profile } = await getProfile();
-  const { currentTitle } = await getCurrentTitle();
+  const [{ profile }, { currentTitle }] = await Promise.all([getProfile(), getCurrentTitle()]);
 
   type GameRow = { id: string; mode: GameMode; result: MatchResult; score_team: number; score_opponent: number };
   type SeriesRow = { id: string; series_date: string; type: SeriesType; games: GameRow[] };
 
-  const [{ data: opponent }, { data: seriesData }] = await Promise.all([
+  // 相手プレイヤー別スタッツは get_opponent_player_stats RPC でDB側集計する
+  // （SECURITY INVOKER。RLS により呼び出し元チームへ自動スコープされる）
+  const [{ data: opponent }, { data: seriesData }, { data: playerStatRows }] = await Promise.all([
     supabase.from("opponents").select("name").eq("id", id).eq("team_id", profile.team_id).single(),
     supabase
       .from("series")
@@ -31,6 +33,9 @@ export async function OpponentDetailContent({ id }: { id: string }) {
       .eq("title_id", currentTitle?.id ?? "")
       .order("series_date", { ascending: false })
       .overrideTypes<SeriesRow[], { merge: false }>(),
+    currentTitle
+      ? supabase.rpc("get_opponent_player_stats", { p_opponent_id: id, p_title_id: currentTitle.id })
+      : Promise.resolve({ data: null }),
   ]);
 
   if (!opponent) notFound();
@@ -147,6 +152,8 @@ export async function OpponentDetailContent({ id }: { id: string }) {
           </table>
         </CardContent>
       </Card>
+
+      <OpponentPlayerStats rows={playerStatRows ?? []} modes={modes} />
 
       <Card>
         <CardHeader><CardTitle>対戦履歴</CardTitle></CardHeader>

@@ -839,6 +839,28 @@ export type Database = {
           wins: number
         }[]
       }
+      get_opponent_player_stats: {
+        Args: { p_opponent_id: string; p_title_id: string }
+        Returns: {
+          damage: number
+          deaths: number
+          defuses: number
+          dunks: number
+          first_bloods: number
+          first_deaths: number
+          games_count: number
+          goals: number
+          hill_time: number
+          kills: number
+          mode: string
+          opponent_player_id: string
+          plants: number
+          player_name: string
+          remote_plants: number
+          team_wins: number
+          uploads: number
+        }[]
+      }
       get_player_stats: {
         Args: { p_player_id: string; p_title_id: string }
         Returns: {

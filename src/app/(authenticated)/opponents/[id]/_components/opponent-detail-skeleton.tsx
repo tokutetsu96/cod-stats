@@ -32,6 +32,18 @@ export function OpponentDetailSkeleton() {
         </CardContent>
       </Card>
       <Card>
+        <CardHeader className="pb-3 px-5 pt-5">
+          <div className="h-4 w-36 bg-muted rounded animate-pulse" />
+        </CardHeader>
+        <CardContent className="px-5 pb-5">
+          <div className="space-y-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-8 bg-muted rounded animate-pulse" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
         <CardHeader>
           <div className="h-5 w-24 bg-muted rounded animate-pulse" />
         </CardHeader>

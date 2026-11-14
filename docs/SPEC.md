@@ -60,6 +60,7 @@ Call of Duty チームの戦績を記録・分析するダッシュボード。�
 ### 対戦相手管理
 - 対戦チーム登録・編集
 - 対戦履歴・モード別勝率の確認
+- 相手プレイヤー別スタッツ（対戦相手詳細）: 選択中の作品で記録した `opponent_game_stats` を相手プレイヤー別・モード別に集計し、K/D・平均キル/デス/ダメージ・モード固有スタッツを K/D 降順で表示。総合 K/D 1.0 以上の上位3名を「要注意プレイヤー」として、出場ゲーム数・出場時の自チーム勝率とともに表示
 
 ### 作品（タイトル）管理
 - Navのドロップダウンで作品を切り替え。選択状態はブラウザCookieに保持され、選択中の作品が試合一覧・ダッシュボード・マップ管理などの対象になる
@@ -161,7 +162,7 @@ series
 
 - **リージョン整合**: Vercel関数（`vercel.json` で `hnd1` 固定）と Supabase（`ap-northeast-1` 東京）を同一地域に配置する。両者が離れると認証・DBの往復がリクエストごとに越境し、全ページの表示が著しく遅くなる。
 - **認証**: セッション検証は `getClaims()`（非対称ES256署名キーによるローカルJWT検証）を用い、Authサーバーへの往復を最小化する。
-- **集計**: ダッシュボードの全体/モード別成績・メンバー別K/D・対戦相手別成績はDB側の集計RPC（`get_team_game_stats` / `get_dashboard_kd_stats` / `get_opponent_match_stats`、いずれも SECURITY INVOKER で RLS により `team_id` 自動スコープ）で算出し、全行転送を行わない。「全体勝率」は選択中の作品の全試合を母数に算出する（直近N件への暗黙の制限は持たない）。`get_team_game_stats` / `get_dashboard_kd_stats` は呼び出し側（`title_id` で絞り込んだ `series` id集合）で作品スコープを解決し、`get_opponent_match_stats` は `p_title_id` 引数で絞り込む。
+- **集計**: ダッシュボードの全体/モード別成績・メンバー別K/D・対戦相手別成績・相手プレイヤー別スタッツはDB側の集計RPC（`get_team_game_stats` / `get_dashboard_kd_stats` / `get_opponent_match_stats` / `get_opponent_player_stats`、いずれも SECURITY INVOKER で RLS により `team_id` 自動スコープ）で算出し、全行転送を行わない。「全体勝率」は選択中の作品の全試合を母数に算出する（直近N件への暗黙の制限は持たない）。`get_team_game_stats` / `get_dashboard_kd_stats` は呼び出し側（`title_id` で絞り込んだ `series` id集合）で作品スコープを解決し、`get_opponent_match_stats` / `get_opponent_player_stats` は `p_title_id` 引数で絞り込む。
 
 ### 非機能要件（データ整合性・セキュリティ）
 
