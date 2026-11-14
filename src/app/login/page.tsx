@@ -114,7 +114,7 @@ export default function LoginPage() {
             {isSignUp && (
               <>
                 <div className="space-y-1.5">
-                  <Label htmlFor="username" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <Label htmlFor="username" className="text-xs font-medium text-muted-foreground">
                     ユーザー名
                   </Label>
                   <Input
@@ -128,7 +128,7 @@ export default function LoginPage() {
 
                 {/* Team section */}
                 <div className="space-y-2">
-                  <Label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <Label className="text-xs font-medium text-muted-foreground">
                     チーム
                   </Label>
                   <div className="flex rounded-lg bg-muted p-0.5 gap-0.5">
@@ -176,7 +176,7 @@ export default function LoginPage() {
             )}
 
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <Label htmlFor="email" className="text-xs font-medium text-muted-foreground">
                 メールアドレス
               </Label>
               <Input
@@ -190,7 +190,7 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <Label htmlFor="password" className="text-xs font-medium text-muted-foreground">
                 パスワード
               </Label>
               <Input

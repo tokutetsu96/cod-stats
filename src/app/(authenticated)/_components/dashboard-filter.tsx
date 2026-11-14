@@ -96,6 +96,8 @@ export function DashboardFilter({ opponents, modes }: { opponents: { id: string;
           {modeTabs.map((t) => (
             <button
               key={t.key}
+              type="button"
+              aria-pressed={mode === t.key}
               onClick={() => navigate({ mode: t.key })}
               disabled={isPending}
               className={`flex-1 sm:flex-none px-3 py-1.5 text-xs rounded-md font-medium whitespace-nowrap transition-all ${
@@ -112,7 +114,7 @@ export function DashboardFilter({ opponents, modes }: { opponents: { id: string;
         <div className="flex flex-col sm:flex-row gap-3">
           {/* 期間フィルタ */}
           <div className="flex items-center gap-2">
-            <label className="text-xs text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+            <label className="text-xs text-muted-foreground whitespace-nowrap">
               期間
             </label>
             <Select
@@ -131,7 +133,7 @@ export function DashboardFilter({ opponents, modes }: { opponents: { id: string;
 
           {/* 対戦チームフィルタ */}
           <div className="flex items-center gap-2">
-            <label className="text-xs text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+            <label className="text-xs text-muted-foreground whitespace-nowrap">
               対戦チーム
             </label>
             <Select

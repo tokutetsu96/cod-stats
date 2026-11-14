@@ -27,7 +27,7 @@ export default async function ScoreboardPreviewPage() {
                 href={`/dev/scoreboard/sample?name=${encodeURIComponent(name)}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-primary underline"
+                className="link"
               >
                 {name}
               </a>

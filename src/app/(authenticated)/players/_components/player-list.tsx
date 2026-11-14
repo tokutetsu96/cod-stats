@@ -62,7 +62,7 @@ export function PlayerList({ players, isAdmin }: { players: Player[]; isAdmin: b
       ) : (
         <>
           <td className="py-2 font-medium">
-            <Link href={`/players/${p.id}`} className="text-primary hover:underline">{p.name}</Link>
+            <Link href={`/players/${p.id}`} className="link">{p.name}</Link>
           </td>
           <td className="py-2 text-center">
             {isAdmin ? (

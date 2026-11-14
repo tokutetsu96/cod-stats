@@ -36,7 +36,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
       locale="ja"
       className={cn(
         "flex h-10 sm:h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base sm:text-sm shadow-xs transition-colors",
-        "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+        "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className
       )}
     />

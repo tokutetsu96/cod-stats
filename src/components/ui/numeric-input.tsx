@@ -63,7 +63,7 @@ export function NumericInput({ value, onChange, className, max }: NumericInputPr
       }}
       className={cn(
         "h-9 w-16 sm:h-7 sm:w-14 rounded border border-input text-sm sm:text-xs text-center bg-transparent px-1",
-        "focus:outline-none focus:ring-1 focus:ring-ring",
+        "focus:outline-none focus:ring-2 focus:ring-ring",
         "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
         "placeholder:text-muted-foreground",
         className

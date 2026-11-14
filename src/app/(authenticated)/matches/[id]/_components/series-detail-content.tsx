@@ -4,13 +4,15 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { notFound } from "next/navigation";
 import type { Game, GameStat, OpponentGameStat, Series, Opponent } from "@/lib/types";
-import { countResults, formatDate, calcKD, isValidYoutubeUrl, normalizeHillTimes } from "@/lib/utils";
+import { cn, countResults, formatDate, calcKD, isValidYoutubeUrl, normalizeHillTimes } from "@/lib/utils";
 import { PlayerKDTabs } from "@/components/player-kd-tabs";
-import { WinLossRecord } from "@/components/series-badges";
+import { SeriesTypeBadge } from "@/components/series-badges";
+import { ResultBadge, Scoreline, ScoreBar, SideMarker } from "@/components/scoreline";
 import { addStat, toPlayerKDData, type PlayerAcc, type PlayerKDData } from "@/lib/kd-stats";
-import { getTitleModes, modeLabel, seriesTypeLabel } from "@/lib/constants";
+import { getTitleModes, modeLabel, modeShortLabel } from "@/lib/constants";
 import { getCurrentTitle } from "@/lib/supabase/titles";
-import { resultLabel } from "../../_components/series-form-shared";
+import { resultColor, resultLabel } from "../../_components/series-form-shared";
+import { Table, Th, Td } from "@/components/ui/table";
 
 export async function SeriesDetailContent({ id }: { id: string }) {
   const supabase = await createClient();
@@ -29,6 +31,8 @@ export async function SeriesDetailContent({ id }: { id: string }) {
 
   const games = (series.games ?? []).toSorted((a, b) => a.game_number - b.game_number);
   const record = countResults(games);
+  const opponentName = series.opponents?.name ?? "-";
+  const seriesResult = record.wins > record.losses ? "win" : record.wins < record.losses ? "lose" : "draw";
 
   const allStats = games.flatMap((g) => (g.game_stats ?? []) as GameStat[]);
   const gameIdToMode = new Map(games.map((g) => [g.id, g.mode]));
@@ -59,28 +63,56 @@ export async function SeriesDetailContent({ id }: { id: string }) {
 
   return (
     <>
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold">
-          vs {series.opponents?.name}
+      {/* シリーズのスコアボード。この画面で最初に知りたい「何対何で勝ったか」を最も大きく置く */}
+      <header className="space-y-4 pt-2">
+        <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground">
+          <time dateTime={series.series_date}>{formatDate(series.series_date)}</time>
+          <SeriesTypeBadge type={series.type} />
+        </div>
+        <h1 className="sr-only">
+          vs {opponentName}（{record.wins}勝{record.losses}敗）
         </h1>
-        <p className="text-muted-foreground text-sm">
-          {formatDate(series.series_date)} / {seriesTypeLabel[series.type]} /
-          <WinLossRecord {...record} className="ml-1" />
-        </p>
+        <Scoreline
+          size="lg"
+          teamName={teamName ?? "自チーム"}
+          opponentName={opponentName}
+          teamScore={record.wins}
+          opponentScore={record.losses}
+        />
+        <div className="flex justify-center">
+          <ResultBadge result={seriesResult} />
+        </div>
+        {games.length > 0 && (
+          <nav aria-label="ゲーム一覧" className="flex flex-wrap justify-center gap-2">
+            {games.map((g) => (
+              <a
+                key={g.id}
+                href={`#game-${g.game_number}`}
+                className="inline-flex items-center gap-2 rounded-md border bg-card px-2.5 py-1.5 text-xs transition-colors hover:bg-accent"
+              >
+                <span className="text-muted-foreground">{modeShortLabel[g.mode]}</span>
+                <span className="stat-number text-sm">
+                  {g.score_team}-{g.score_opponent}
+                </span>
+                <span className={cn("stat-number", resultColor[g.result])}>{resultLabel[g.result]}</span>
+              </a>
+            ))}
+          </nav>
+        )}
         {series.youtube_url && isValidYoutubeUrl(series.youtube_url) && (
-          <p className="text-sm mt-1">
-            <a href={series.youtube_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-              YouTube URL
+          <p className="text-center text-sm">
+            <a href={series.youtube_url} target="_blank" rel="noopener noreferrer" className="link">
+              YouTubeで試合を見る
             </a>
           </p>
         )}
-        {series.memo && <p className="text-sm mt-1">{series.memo}</p>}
-      </div>
+        {series.memo && <p className="mx-auto max-w-prose text-sm whitespace-pre-wrap">{series.memo}</p>}
+      </header>
 
       {playerKDData.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold tracking-wider uppercase text-muted-foreground">メンバー別 K/D</CardTitle>
+            <CardTitle className="text-sm font-semibold text-muted-foreground">メンバー別 K/D</CardTitle>
           </CardHeader>
           <CardContent>
             <PlayerKDTabs players={playerKDData} modes={modes} />
@@ -109,62 +141,66 @@ export async function SeriesDetailContent({ id }: { id: string }) {
               <span>KD: <span className="font-medium">{calcKD(totalKills, totalDeaths)}</span></span>
             </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm data-table">
+            <Table>
               <thead>
                 <tr className="border-b text-left">
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">プレイヤー</th>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">K</th>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">D</th>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">KD</th>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Dmg</th>
-                  {game.mode === "hardpoint" && <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Hill</th>}
-                  {game.mode === "snd" && <><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">P</th><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Def</th><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">FB</th><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">FD</th></>}
-                  {game.mode === "overload" && <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">Goals</th>}
-                  {game.mode === "hijack" && <><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">アップロード</th><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">設置</th><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">ダンク</th><th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">リモート設置</th></>}
+                  <Th>プレイヤー</Th>
+                  <Th numeric>K</Th>
+                  <Th numeric>D</Th>
+                  <Th numeric>KD</Th>
+                  <Th numeric>Dmg</Th>
+                  {game.mode === "hardpoint" && <Th numeric>Hill</Th>}
+                  {game.mode === "snd" && <><Th numeric>P</Th><Th numeric>Def</Th><Th numeric>FB</Th><Th numeric>FD</Th></>}
+                  {game.mode === "overload" && <Th numeric>Goals</Th>}
+                  {game.mode === "hijack" && <><Th numeric>アップロード</Th><Th numeric>設置</Th><Th numeric>ダンク</Th><Th numeric>リモート設置</Th></>}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id} className="border-b border-border/50">
-                    <td className="py-2.5 font-medium">{row.name}</td>
-                    <td className="py-2.5 stat-number">{row.kills}</td>
-                    <td className="py-2.5 stat-number">{row.deaths}</td>
-                    <td className="py-2.5 stat-number font-semibold" style={{ color: row.deaths === 0 ? (row.kills > 0 ? "var(--win)" : undefined) : row.kills / row.deaths >= 1.0 ? "var(--win)" : "var(--loss)" }}>{calcKD(row.kills, row.deaths)}</td>
-                    <td className="py-2.5 stat-number">{row.damage}</td>
-                    {game.mode === "hardpoint" && <td className="py-2.5 stat-number">{row.hill_time ?? 0}s</td>}
-                    {game.mode === "snd" && <><td className="py-2.5 stat-number">{row.plants ?? 0}</td><td className="py-2.5 stat-number">{row.defuses ?? 0}</td><td className="py-2.5 stat-number">{row.first_bloods ?? 0}</td><td className="py-2.5 stat-number">{row.first_deaths ?? 0}</td></>}
-                    {game.mode === "overload" && <td className="py-2.5 stat-number">{row.goals ?? 0}</td>}
-                    {game.mode === "hijack" && <><td className="py-2.5 stat-number">{row.uploads ?? 0}</td><td className="py-2.5 stat-number">{row.plants ?? 0}</td><td className="py-2.5 stat-number">{row.dunks ?? 0}</td><td className="py-2.5 stat-number">{row.remote_plants ?? 0}</td></>}
+                    <Td className="font-medium">{row.name}</Td>
+                    <Td numeric>{row.kills}</Td>
+                    <Td numeric>{row.deaths}</Td>
+                    <Td numeric className="font-semibold" style={{ color: row.deaths === 0 ? (row.kills > 0 ? "var(--win)" : undefined) : row.kills / row.deaths >= 1.0 ? "var(--win)" : "var(--loss)" }}>{calcKD(row.kills, row.deaths)}</Td>
+                    <Td numeric>{row.damage}</Td>
+                    {game.mode === "hardpoint" && <Td numeric>{row.hill_time ?? 0}s</Td>}
+                    {game.mode === "snd" && <><Td numeric>{row.plants ?? 0}</Td><Td numeric>{row.defuses ?? 0}</Td><Td numeric>{row.first_bloods ?? 0}</Td><Td numeric>{row.first_deaths ?? 0}</Td></>}
+                    {game.mode === "overload" && <Td numeric>{row.goals ?? 0}</Td>}
+                    {game.mode === "hijack" && <><Td numeric>{row.uploads ?? 0}</Td><Td numeric>{row.plants ?? 0}</Td><Td numeric>{row.dunks ?? 0}</Td><Td numeric>{row.remote_plants ?? 0}</Td></>}
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
           </div>
           </div>
           );
         };
 
         return (
-          <Card key={game.id}>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base sm:text-lg flex flex-wrap items-center gap-2 sm:gap-3">
-                <span>Game {game.game_number}</span>
-                <span className="text-xs sm:text-sm font-normal text-muted-foreground">
-                  {modeLabel[game.mode]}
-                  {game.maps && ` - ${game.maps.name}`}
-                </span>
-                <span className="text-xs sm:text-sm font-medium">
-                  {game.score_team} - {game.score_opponent}
-                </span>
-                <span className={`font-bold text-xs px-1.5 py-0.5 rounded stat-number ${game.result === "win" ? "text-win bg-win/10" : game.result === "lose" ? "text-loss bg-loss/10" : "text-primary bg-primary/10"}`}>
-                  {resultLabel[game.result]}
-                </span>
-              </CardTitle>
+          <Card key={game.id} id={`game-${game.game_number}`} className="scroll-mt-20">
+            <CardHeader className="space-y-4 pb-5">
+              <div className="flex items-center justify-between gap-3">
+                <CardTitle className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+                  <span>Game {game.game_number}</span>
+                  <span className="font-normal text-muted-foreground">
+                    {modeLabel[game.mode]}
+                    {game.maps && ` / ${game.maps.name}`}
+                  </span>
+                </CardTitle>
+                <ResultBadge result={game.result} className="px-1.5 py-0.5 text-xs" />
+              </div>
+              <Scoreline
+                teamName={teamName ?? "自チーム"}
+                opponentName={opponentName}
+                teamScore={game.score_team}
+                opponentScore={game.score_opponent}
+              />
+              <ScoreBar team={game.score_team} opponent={game.score_opponent} />
             </CardHeader>
             <CardContent className="space-y-4">
               {game.mode === "hardpoint" && game.hill_times && (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">地点別 Hill Time</p>
+                  <p className="text-xs font-medium text-muted-foreground">地点別 Hill Time</p>
                   <div className="overflow-x-auto">
                     {(() => {
                       // 旧データ互換の変換は normalizeHillTimes に共通化
@@ -247,14 +283,20 @@ export async function SeriesDetailContent({ id }: { id: string }) {
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2">{teamName}</p>
+                  <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <SideMarker side="team" />
+                    {teamName}
+                  </p>
                   {stats.length === 0
                     ? <p className="text-sm text-muted-foreground">スタッツなし</p>
                     : statsTable(stats.map((s) => ({ ...s, name: s.players?.name ?? "-" })))
                   }
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2">{series.opponents?.name}</p>
+                  <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <SideMarker side="opponent" />
+                    {opponentName}
+                  </p>
                   {opponentStats.length === 0
                     ? <p className="text-sm text-muted-foreground">スタッツなし</p>
                     : statsTable(opponentStats.map((s) => ({ ...s, name: s.opponent_players?.name ?? "-" })))

@@ -80,6 +80,11 @@ export function Nav({ teams, currentTeamId, username, avatar, role, titles, curr
 
   const handleSwitchTitle = (titleId: string) => runSwitch(() => switchTitle(titleId));
 
+  // 詳細ページ（/matches/123 等）でも現在地を示すため、前方一致で最も長く一致したリンクを現在地とする
+  const activeHref = links
+    .filter((l) => (l.href === "/" ? pathname === "/" : pathname === l.href || pathname.startsWith(`${l.href}/`)))
+    .reduce<string | undefined>((best, l) => (best === undefined || l.href.length > best.length ? l.href : best), undefined);
+
   return (
     <nav className="border-b bg-card sticky top-0 z-50">
       <div className="mx-auto flex h-14 max-w-6xl items-stretch px-4">
@@ -122,11 +127,12 @@ export function Nav({ teams, currentTeamId, username, avatar, role, titles, curr
         {/* Nav links */}
         <div className="flex gap-1 overflow-x-auto flex-1">
           {links.filter((link) => !link.adminOnly || role === "admin").map((link) => {
-            const isActive = pathname === link.href;
+            const isActive = link.href === activeHref;
             return (
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "text-xs sm:text-sm whitespace-nowrap flex items-center px-2 sm:px-3 relative transition-colors",
                   "border-b-2",

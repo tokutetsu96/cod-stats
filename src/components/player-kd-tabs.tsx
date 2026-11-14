@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { modeShortLabel } from "@/lib/constants";
 import type { GameMode } from "@/lib/types";
 import type { PlayerKDData } from "@/lib/kd-stats";
+import { Table, Th, Td } from "@/components/ui/table";
 
 type ModeTab = "overall" | GameMode;
 
@@ -41,7 +42,7 @@ export function PlayerKDTabs({
 
   const renderName = (p: PlayerKDData) =>
     playerLinkPrefix ? (
-      <Link href={`${playerLinkPrefix}${p.id}`} className="text-primary hover:underline font-medium">
+      <Link href={`${playerLinkPrefix}${p.id}`} className="link font-medium">
         {p.name}
       </Link>
     ) : (
@@ -53,15 +54,18 @@ export function PlayerKDTabs({
   return (
     <div>
       {/* Tab bar */}
-      <div className="flex gap-1 mb-4 overflow-x-auto">
+      <div role="tablist" aria-label="モード" className="flex gap-1 mb-4 overflow-x-auto p-0.5 -m-0.5">
         {tabs.map((t) => (
           <button
             key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === t.key}
             onClick={() => setActiveTab(t.key)}
             className={cn(
-              "px-3 py-1.5 text-xs font-medium uppercase tracking-wider rounded-md transition-colors whitespace-nowrap",
+              "px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap",
               activeTab === t.key
-                ? "bg-primary/15 text-primary"
+                ? "bg-accent text-foreground"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted"
             )}
           >
@@ -120,34 +124,34 @@ export function PlayerKDTabs({
 
       {/* Desktop table */}
       <div className="overflow-x-auto hidden sm:block">
-        <table className="w-full text-sm data-table">
+        <Table>
           <thead>
             <tr className="border-b text-left">
-              <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">プレイヤー</th>
-              <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">KD</th>
-              <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">Avg K</th>
-              <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">Avg D</th>
-              <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">Avg Dmg</th>
+              <Th>プレイヤー</Th>
+              <Th numeric>KD</Th>
+              <Th numeric>Avg K</Th>
+              <Th numeric>Avg D</Th>
+              <Th numeric>Avg Dmg</Th>
               {activeTab === "hardpoint" && (
-                <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">Avg Hill</th>
+                <Th numeric>Avg Hill</Th>
               )}
               {activeTab === "snd" && (
                 <>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">P</th>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">Def</th>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">FB</th>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">FD</th>
+                  <Th numeric>P</Th>
+                  <Th numeric>Def</Th>
+                  <Th numeric>FB</Th>
+                  <Th numeric>FD</Th>
                 </>
               )}
               {activeTab === "overload" && (
-                <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">Goals</th>
+                <Th numeric>Goals</Th>
               )}
               {activeTab === "hijack" && (
                 <>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">アップロード</th>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">設置</th>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">ダンク</th>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider text-center">リモート設置</th>
+                  <Th numeric>アップロード</Th>
+                  <Th numeric>設置</Th>
+                  <Th numeric>ダンク</Th>
+                  <Th numeric>リモート設置</Th>
                 </>
               )}
             </tr>
@@ -158,42 +162,42 @@ export function PlayerKDTabs({
               const noData = s.count === 0 && activeTab !== "overall";
               return (
                 <tr key={p.id} className="border-b border-border/50">
-                  <td className="py-2.5">{renderName(p)}</td>
-                  <td className="py-2.5 text-center">
+                  <Td>{renderName(p)}</Td>
+                  <Td numeric>
                     <span className="stat-number text-base font-semibold" style={{ color: noData ? undefined : kdColor(s.kd) }}>
                       {noData ? "-" : s.kd}
                     </span>
-                  </td>
-                  <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgKills}</td>
-                  <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgDeaths}</td>
-                  <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgDamage}</td>
+                  </Td>
+                  <Td numeric>{noData ? "-" : s.avgKills}</Td>
+                  <Td numeric>{noData ? "-" : s.avgDeaths}</Td>
+                  <Td numeric>{noData ? "-" : s.avgDamage}</Td>
                   {activeTab === "hardpoint" && (
-                    <td className="py-2.5 text-center stat-number">{noData ? "-" : `${s.avgHillTime ?? 0}s`}</td>
+                    <Td numeric>{noData ? "-" : `${s.avgHillTime ?? 0}s`}</Td>
                   )}
                   {activeTab === "snd" && (
                     <>
-                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgPlants ?? 0}</td>
-                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgDefuses ?? 0}</td>
-                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgFirstBloods ?? 0}</td>
-                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgFirstDeaths ?? 0}</td>
+                      <Td numeric>{noData ? "-" : s.avgPlants ?? 0}</Td>
+                      <Td numeric>{noData ? "-" : s.avgDefuses ?? 0}</Td>
+                      <Td numeric>{noData ? "-" : s.avgFirstBloods ?? 0}</Td>
+                      <Td numeric>{noData ? "-" : s.avgFirstDeaths ?? 0}</Td>
                     </>
                   )}
                   {activeTab === "overload" && (
-                    <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgGoals ?? 0}</td>
+                    <Td numeric>{noData ? "-" : s.avgGoals ?? 0}</Td>
                   )}
                   {activeTab === "hijack" && (
                     <>
-                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgUploads ?? 0}</td>
-                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgPlants ?? 0}</td>
-                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgDunks ?? 0}</td>
-                      <td className="py-2.5 text-center stat-number">{noData ? "-" : s.avgRemotePlants ?? 0}</td>
+                      <Td numeric>{noData ? "-" : s.avgUploads ?? 0}</Td>
+                      <Td numeric>{noData ? "-" : s.avgPlants ?? 0}</Td>
+                      <Td numeric>{noData ? "-" : s.avgDunks ?? 0}</Td>
+                      <Td numeric>{noData ? "-" : s.avgRemotePlants ?? 0}</Td>
                     </>
                   )}
                 </tr>
               );
             })}
           </tbody>
-        </table>
+        </Table>
       </div>
     </div>
   );

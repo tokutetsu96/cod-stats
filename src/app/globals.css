@@ -25,6 +25,8 @@
   --color-win: var(--win);
   --color-loss: var(--loss);
   --color-star: var(--star);
+  --color-team: var(--team);
+  --color-opponent: var(--opponent);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -57,6 +59,9 @@
   --win: oklch(0.55 0.16 145);
   --loss: oklch(0.55 0.2 25);
   --star: oklch(0.75 0.17 75);
+  /* 比較表示の二者。自チーム=アンバー、相手=スレートブルー。勝敗(win/loss)とは別の軸 */
+  --team: oklch(0.64 0.15 65);
+  --opponent: oklch(0.52 0.09 245);
   --popup-shadow: 0 4px 12px -2px rgb(0 0 0 / 0.12);
 }
 
@@ -73,7 +78,7 @@
   --secondary: oklch(0.22 0.01 255);
   --secondary-foreground: oklch(0.93 0 0);
   --muted: oklch(0.22 0.01 255);
-  --muted-foreground: oklch(0.56 0.01 255);
+  --muted-foreground: oklch(0.66 0.01 255);
   --accent: oklch(0.24 0.01 255);
   --accent-foreground: oklch(0.93 0 0);
   --destructive: oklch(0.50 0.19 25);
@@ -84,6 +89,8 @@
   --win: oklch(0.64 0.18 142);
   --loss: oklch(0.58 0.20 25);
   --star: oklch(0.85 0.17 90);
+  --team: oklch(0.76 0.17 78);
+  --opponent: oklch(0.72 0.09 245);
   --popup-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
 }
 
@@ -98,6 +105,22 @@
   h1, h2, h3 {
     letter-spacing: -0.01em;
   }
+  /* キーボード操作時のフォーカス表示。個別に ring を持たない要素（タブ・メニュー・リンク）の既定値 */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* 本文中のリンク。アンバーは操作（主ボタン・現在地）と自チームに限るため、リンクは下線で示す */
+.link {
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--muted-foreground) 60%, transparent);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.1s ease;
+}
+.link:hover {
+  text-decoration-color: currentColor;
 }
 
 /* Stat display typography */
@@ -106,6 +129,8 @@
   font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1;
+  /* 桁を縦に揃える（表の数値列・スコア） */
+  font-variant-numeric: tabular-nums;
 }
 
 /* Table row hover */

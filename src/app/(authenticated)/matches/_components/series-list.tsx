@@ -7,6 +7,7 @@ import type { Tables } from "@/lib/database.types";
 import { cn, countResults, formatDate, isValidYoutubeUrl } from "@/lib/utils";
 import { DeleteSeriesButton } from "./delete-series-button";
 import { OpponentFilter } from "./opponent-filter";
+import { Table, Th, Td } from "@/components/ui/table";
 
 // Server Component。操作が必要な部分（絞り込み・削除ボタン）だけを Client Component として切り出している
 
@@ -140,7 +141,7 @@ function Pagination({
 
 function YoutubeLink({ url, label }: { url: string | null; label: string }) {
   return url && isValidYoutubeUrl(url) ? (
-    <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+    <a href={url} target="_blank" rel="noopener noreferrer" className="link">
       {label}
     </a>
   ) : (
@@ -219,42 +220,42 @@ export function SeriesList({ seriesList, opponents, isAdmin, currentPage, totalP
 
           {/* Desktop table layout */}
           <div className="overflow-x-auto hidden md:block">
-            <table className="w-full text-sm data-table">
+            <Table>
               <thead>
                 <tr className="border-b text-left">
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">日付</th>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">タイプ</th>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">対戦相手</th>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">YouTube</th>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">戦績</th>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">メモ</th>
-                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider w-24">操作</th>
+                  <Th>日付</Th>
+                  <Th>タイプ</Th>
+                  <Th>対戦相手</Th>
+                  <Th>YouTube</Th>
+                  <Th>戦績</Th>
+                  <Th>メモ</Th>
+                  <Th className="w-24">操作</Th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((s) => (
                   <tr key={s.id} className="border-b border-border/50">
-                    <td className="py-2.5 text-muted-foreground text-xs">{formatDate(s.series_date)}</td>
-                    <td className="py-2.5">
+                    <Td className="text-muted-foreground text-xs">{formatDate(s.series_date)}</Td>
+                    <Td>
                       <SeriesTypeBadge type={s.type} />
-                    </td>
-                    <td className="py-2.5 font-medium">{s.opponents?.name ?? "-"}</td>
-                    <td className="py-2.5 text-xs">
+                    </Td>
+                    <Td className="font-medium">{s.opponents?.name ?? "-"}</Td>
+                    <Td className="text-xs">
                       <YoutubeLink url={s.youtube_url} label="YouTube URL" />
-                    </td>
-                    <td className="py-2.5">
+                    </Td>
+                    <Td>
                       <WinLossRecord {...s.record} />
-                    </td>
-                    <td className="py-2.5">
+                    </Td>
+                    <Td>
                       <CommentSummary id={s.id} count={s.commentCount} authors={s.commentAuthors} />
-                    </td>
-                    <td className="py-2.5">
+                    </Td>
+                    <Td>
                       <RowActions id={s.id} isAdmin={isAdmin} />
-                    </td>
+                    </Td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </Table>
           </div>
 
           {/* Pagination */}
