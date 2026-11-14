@@ -31,3 +31,6 @@ export function getTitleModes(title: Pick<Title, "third_mode"> | null | undefine
 export const MODE_SCORE_MAX: Partial<Record<GameMode, number>> = {
   hijack: 300,
 };
+
+/** 対戦メモの最大文字数（series_comments.body の CHECK 制約と揃える） */
+export const COMMENT_MAX_LENGTH = 1000;

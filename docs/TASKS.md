@@ -13,7 +13,7 @@
 - 受容: `create_team` / `join_team_with_invite` / `switch_team` / `create_team_invite` / `remove_team_member` の authenticated EXECUTE は複数チーム所属・招待機能に必須（SECURITY DEFINER だが関数内で `auth.uid()` 検証・所属/管理者チェックを実施し、anon からは REVOKE 済み）
 - 受容: 漏洩パスワード保護（HaveIBeenPwned）は Pro プラン以上の機能のため、Free プランでは無効のまま運用（2026-11-12 判断）。Supabase セキュリティアドバイザの `auth_leaked_password_protection` 警告は対応不要。Pro プランへ移行した場合は有効化する
 - 受容: dnd-kit / Tailwind v4 + shadcn/ui は引き続きデファクトのため現状維持
-- 受容: avatars バケットは public のまま運用（2026-11-14 判断）。公開URL閲覧は RLS を経由しないが、アバターは機密情報ではなく、現状の表示箇所は本人のみ（ヘッダー・設定画面）。signed URL 化すると layout で毎リクエスト Storage 往復が増え、`next/image` の最適化キャッシュも効かなくなるため費用対効果が低い。他メンバーのアバターを表示する機能を追加する際に再検討する
+- 受容: avatars バケットは public のまま運用（2026-11-14 判断）。公開URL閲覧は RLS を経由しないが、アバターは機密情報ではなく、現状の表示箇所は本人のみ（ヘッダー・設定画面）。signed URL 化すると layout で毎リクエスト Storage 往復が増え、`next/image` の最適化キャッシュも効かなくなるため費用対効果が低い。他メンバーのアバターを表示する機能を追加する際に再検討する → 2026-11-15 再検討: 対戦メモ機能でチームメンバーのアバターを相互に表示するようになったが public を維持。URL は推測困難なユーザーUUIDを含み、signed URL 化は一覧・タイムラインで表示人数分の署名発行が必要になり `next/image` の最適化キャッシュも効かなくなるため
 
 ---
 
@@ -86,6 +86,14 @@
 ---
 
 ## Done
+
+### 対戦メモ（コメント）機能（2026-11-15）
+
+- 対戦（シリーズ）単位でメンバーがメモを投稿・返信（1段）できるタイムラインを対戦詳細に追加。投稿者はアバター付きで表示
+- `series_comments` テーブルを追加（マイグレーション `create_series_comments`）。RLS: 閲覧・投稿はチームメンバー、編集は本人のみ（`body` 列のみ UPDATE 可）、削除は本人 + admin。返信の深さ1段はトリガーで強制
+- 対戦一覧にメモ件数と投稿者アバター、ダッシュボードに「最近のメモ」を追加
+- アバター表示を `components/user-avatar.tsx` に共通化（ヘッダー・設定画面の重複を解消）
+- Server Action は `matches/comment-actions.ts`（管理者専用の `actions.ts` とは権限モデルが違うため分離）
 
 ### コードレビュー対応: 不要コード削除・不具合修正・リファクタリング（2026-11-14）
 

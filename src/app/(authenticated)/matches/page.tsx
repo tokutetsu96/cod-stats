@@ -20,10 +20,10 @@ export default async function MatchesPage({
   const opponentId = params.opponent ?? "";
   const offset = (currentPage - 1) * SERIES_PAGE_SIZE;
 
-  // 一覧で表示する列だけを取得する
+  // 一覧で表示する列だけを取得する。メモは件数と投稿者アバターの表示用（1ページ20件なので埋め込みで足りる）
   let seriesQuery = supabase
     .from("series")
-    .select("id, series_date, type, youtube_url, opponents(name), games(result)", { count: "exact" })
+    .select("id, series_date, type, youtube_url, opponents(name), games(result), series_comments(user_id, profiles(username, avatar))", { count: "exact" })
     .eq("team_id", profile.team_id)
     .eq("title_id", currentTitle?.id ?? "")
     .order("series_date", { ascending: false })

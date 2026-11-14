@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
-import { Eye, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, Pencil, ChevronLeft, ChevronRight, MessageSquare } from "lucide-react";
 import { SeriesTypeBadge, WinLossRecord } from "@/components/series-badges";
+import { UserAvatar } from "@/components/user-avatar";
 import type { Tables } from "@/lib/database.types";
 import { cn, countResults, formatDate, isValidYoutubeUrl } from "@/lib/utils";
 import { DeleteSeriesButton } from "./delete-series-button";
@@ -14,7 +15,49 @@ export const SERIES_PAGE_SIZE = 20;
 export type SeriesListRow = Pick<Tables<"series">, "id" | "series_date" | "type" | "youtube_url"> & {
   opponents: Pick<Tables<"opponents">, "name"> | null;
   games: Pick<Tables<"games">, "result">[];
+  series_comments: (Pick<Tables<"series_comments">, "user_id"> & {
+    profiles: Pick<Tables<"profiles">, "username" | "avatar"> | null;
+  })[];
 };
+
+type CommentAuthor = { userId: string; username: string | null; avatar: string | null };
+
+const MAX_COMMENT_AVATARS = 3;
+
+/** メモの投稿者を重複なしで返す（投稿順） */
+function uniqueAuthors(comments: SeriesListRow["series_comments"]): CommentAuthor[] {
+  const seen = new Map<string, CommentAuthor>();
+  for (const c of comments) {
+    if (!seen.has(c.user_id)) {
+      seen.set(c.user_id, { userId: c.user_id, username: c.profiles?.username ?? null, avatar: c.profiles?.avatar ?? null });
+    }
+  }
+  return [...seen.values()];
+}
+
+/** メモの件数と投稿者アバター。対戦詳細のメモ欄へのリンクになる */
+function CommentSummary({ id, count, authors }: { id: string; count: number; authors: CommentAuthor[] }) {
+  if (count === 0) return <span className="text-muted-foreground">-</span>;
+  const rest = authors.length - MAX_COMMENT_AVATARS;
+  return (
+    <Link
+      href={`/matches/${id}#comments`}
+      aria-label={`メモ ${count}件`}
+      className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+    >
+      <span className="inline-flex items-center gap-1 text-xs stat-number">
+        <MessageSquare className="h-3.5 w-3.5" />
+        {count}
+      </span>
+      <span className="flex -space-x-1.5">
+        {authors.slice(0, MAX_COMMENT_AVATARS).map((a) => (
+          <UserAvatar key={a.userId} username={a.username} avatar={a.avatar} size={20} className="ring-2 ring-card" />
+        ))}
+      </span>
+      {rest > 0 ? <span className="text-xs">+{rest}</span> : null}
+    </Link>
+  );
+}
 
 function buildUrl(page: number, opponentId: string) {
   const params = new URLSearchParams();
@@ -136,7 +179,12 @@ type Props = {
 export function SeriesList({ seriesList, opponents, isAdmin, currentPage, totalPages, totalCount, opponentId }: Props) {
   const rangeStart = totalCount === 0 ? 0 : (currentPage - 1) * SERIES_PAGE_SIZE + 1;
   const rangeEnd = Math.min(currentPage * SERIES_PAGE_SIZE, totalCount);
-  const rows = seriesList.map((s) => ({ ...s, record: countResults(s.games) }));
+  const rows = seriesList.map((s) => ({
+    ...s,
+    record: countResults(s.games),
+    commentCount: s.series_comments.length,
+    commentAuthors: uniqueAuthors(s.series_comments),
+  }));
 
   return (
     <div className="space-y-4">
@@ -159,8 +207,9 @@ export function SeriesList({ seriesList, opponents, isAdmin, currentPage, totalP
                   <WinLossRecord {...s.record} className="text-sm" />
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="text-xs">
+                  <div className="flex items-center gap-3 text-xs">
                     <YoutubeLink url={s.youtube_url} label="YouTube" />
+                    {s.commentCount > 0 ? <CommentSummary id={s.id} count={s.commentCount} authors={s.commentAuthors} /> : null}
                   </div>
                   <RowActions id={s.id} isAdmin={isAdmin} />
                 </div>
@@ -178,6 +227,7 @@ export function SeriesList({ seriesList, opponents, isAdmin, currentPage, totalP
                   <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">対戦相手</th>
                   <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">YouTube</th>
                   <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">戦績</th>
+                  <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">メモ</th>
                   <th className="pb-2.5 font-medium text-muted-foreground text-xs uppercase tracking-wider w-24">操作</th>
                 </tr>
               </thead>
@@ -194,6 +244,9 @@ export function SeriesList({ seriesList, opponents, isAdmin, currentPage, totalP
                     </td>
                     <td className="py-2.5">
                       <WinLossRecord {...s.record} />
+                    </td>
+                    <td className="py-2.5">
+                      <CommentSummary id={s.id} count={s.commentCount} authors={s.commentAuthors} />
                     </td>
                     <td className="py-2.5">
                       <RowActions id={s.id} isAdmin={isAdmin} />

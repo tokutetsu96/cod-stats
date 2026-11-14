@@ -1,12 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { SUPABASE_URL } from "@/lib/supabase/env";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { UserAvatar } from "@/components/user-avatar";
 import { Upload, Trash2, Pencil } from "lucide-react";
 import { updateAvatar, updateUsername } from "../actions";
 
@@ -87,13 +87,7 @@ export function AvatarSetting({ profileId, currentAvatar, username }: { profileI
     <div className="space-y-4">
       {/* アバター */}
       <div className="flex items-center gap-4">
-        <div className="relative w-16 h-16 rounded-full bg-primary/15 overflow-hidden flex items-center justify-center shrink-0">
-          {preview ? (
-            <Image src={preview} alt="avatar" fill sizes="64px" className="object-cover" />
-          ) : (
-            <span className="text-xl font-medium">{nameValue[0]?.toUpperCase() ?? "?"}</span>
-          )}
-        </div>
+        <UserAvatar username={nameValue} avatar={preview} size={64} />
         <div className="space-y-2">
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={() => inputRef.current?.click()} disabled={uploading}>
