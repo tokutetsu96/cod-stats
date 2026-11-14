@@ -86,6 +86,14 @@ Call of Duty チームの戦績を記録・分析するダッシュボード。�
 - マップ管理（選択中の作品内でモード別）
 - アバター設定
 
+### 使い方ページ
+- `/guide` に、アカウント・チーム作成 → プレイヤー登録 → マップ登録 → 対戦相手登録 → 対戦登録 → 結果確認 の手順を実画面のスクリーンショット付きで掲載する
+- 未ログインでも閲覧できる（ミドルウェアの未認証リダイレクト対象から `/guide` を除外）。認証情報・Supabase を読まない静的ページ
+- 導線: ログイン画面・`/join-team`・ヘッダーのユーザーメニュー
+- スクリーンショットはデモ用チーム（Demo Wolves、架空のプレイヤー・対戦相手）の画面。`src/app/guide/_images/` に置き、静的 import + `next/image` で表示する
+- 撮り直し: dev サーバーを `npx next dev --turbopack -H 127.0.0.1` で起動し、`npm run guide:capture`（`scripts/capture-guide.mjs`、playwright-core + インストール済み Chrome）。デモアカウントの認証情報は `.env.local` の `GUIDE_DEMO_EMAIL` / `GUIDE_DEMO_PASSWORD`。スクリプトはフォームに入力するだけで送信しないため、デモチームのデータは変わらない
+- 画面の文言・手順を変えたときは、スクリーンショットの撮り直しと `src/app/guide/page.tsx` の説明文の更新をセットで行う
+
 ---
 
 ## 画面構成
@@ -93,6 +101,7 @@ Call of Duty チームの戦績を記録・分析するダッシュボード。�
 ```
 /login                         ログイン・サインアップ
 /join-team                     所属チームが無いユーザー向けのチーム参加・作成
+/guide                         使い方（未ログインでも閲覧可）
 /                              ダッシュボード
 /matches                       試合一覧
 /matches/new                   試合登録

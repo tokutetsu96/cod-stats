@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { Settings, LogOut, ChevronDown } from "lucide-react";
+import { Settings, LogOut, ChevronDown, BookOpen } from "lucide-react";
 import { switchTitle } from "@/app/(authenticated)/_actions/switch-title";
 import { switchTeam } from "@/app/_actions/team";
 import { HeaderSwitcher } from "@/components/header-switcher";
@@ -179,6 +179,14 @@ export function Nav({ teams, currentTeamId, username, avatar, role, titles, curr
               >
                 <Settings className="h-3.5 w-3.5 text-muted-foreground" />
                 設定
+              </Link>
+              <Link
+                href="/guide"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors"
+              >
+                <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                使い方
               </Link>
               <div className="border-y my-1">
                 <ThemeToggle />

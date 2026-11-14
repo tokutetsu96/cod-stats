@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TeamJoinForm } from "@/components/team-join-form";
@@ -36,6 +37,9 @@ export default async function JoinTeamPage() {
             <LogoutButton />
           </div>
         </div>
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          チームの作り方は <Link href="/guide" className="link">使い方</Link> をご覧ください
+        </p>
       </div>
     </div>
   );

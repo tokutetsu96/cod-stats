@@ -37,7 +37,9 @@ export async function updateSession(request: NextRequest) {
   if (
     !data?.claims &&
     !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
+    !request.nextUrl.pathname.startsWith("/auth") &&
+    // 使い方ページは未ログインでも閲覧できる
+    request.nextUrl.pathname !== "/guide"
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
