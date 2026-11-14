@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -11,6 +10,7 @@ import { switchTitle } from "@/app/(authenticated)/_actions/switch-title";
 import { switchTeam } from "@/app/_actions/team";
 import { HeaderSwitcher } from "@/components/header-switcher";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { UserAvatar } from "@/components/user-avatar";
 import type { ActionResult, UserRole, Title, TeamMembership } from "@/lib/types";
 
 const links = [
@@ -79,8 +79,6 @@ export function Nav({ teams, currentTeamId, username, avatar, role, titles, curr
     });
 
   const handleSwitchTitle = (titleId: string) => runSwitch(() => switchTitle(titleId));
-  const isUrl = avatar?.startsWith("http");
-  const fallback = username?.[0]?.toUpperCase() ?? "?";
 
   return (
     <nav className="border-b bg-card sticky top-0 z-50">
@@ -154,13 +152,7 @@ export function Nav({ teams, currentTeamId, username, avatar, role, titles, curr
             )}
             aria-label="メニューを開く"
           >
-            <div className="relative flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-xs font-medium overflow-hidden shrink-0">
-              {isUrl ? (
-                <Image src={avatar!} alt="avatar" fill sizes="24px" className="object-cover" />
-              ) : (
-                <span className="text-primary">{fallback}</span>
-              )}
-            </div>
+            <UserAvatar username={username} avatar={avatar} size={24} />
             {username && (
               <span className="hidden sm:block text-xs max-w-[100px] truncate">{username}</span>
             )}

@@ -7,6 +7,7 @@ import type { GameMode } from "@/lib/types";
 import { DashboardStats } from "./dashboard-stats";
 import { DashboardKDTable } from "./dashboard-kd-table";
 import { DashboardRecentMatches } from "./dashboard-recent-matches";
+import { DashboardRecentComments } from "./dashboard-recent-comments";
 import {
   resolveDashboardFilters,
   type DashboardFilters,
@@ -93,6 +94,11 @@ export async function DashboardContent({
 
       <Suspense fallback={cardSkeleton}>
         <DashboardRecentMatches titleId={titleId} filters={filters} />
+      </Suspense>
+
+      {/* メモのフィードは常に最新を見せるため、絞り込み条件には連動させない */}
+      <Suspense fallback={cardSkeleton}>
+        <DashboardRecentComments titleId={titleId} />
       </Suspense>
     </>
   );

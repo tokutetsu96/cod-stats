@@ -32,6 +32,7 @@ Call of Duty チーム戦績管理ダッシュボード（日本語UI）。試�
 | `games` | 個別ゲーム（mode, map, score） |
 | `game_stats` | 自チームの個人スタッツ |
 | `opponent_game_stats` | 相手チームの個人スタッツ |
+| `series_comments` | 対戦へのメンバーのメモ（`parent_id` で1段の返信。投稿は全メンバー可） |
 
 モード別固有フィールド:
 - **Hardpoint**: `hill_time`
