@@ -96,6 +96,12 @@
 
 ## Done
 
+### 使い方ページ（/guide）の追加（2026-11-15）
+
+- アカウント・チーム作成から最初の対戦登録・結果確認までの手順を、実画面のスクリーンショット10枚付きで1ページにまとめた。未ログインでも閲覧可（`src/lib/supabase/middleware.ts` で `/guide` をリダイレクト対象外に）
+- 導線をログイン画面・`/join-team`・ユーザーメニューに追加
+- スクリーンショット用にデモチーム（Demo Wolves）を本番DBに作成（UI 経由で登録）。撮り直しは `npm run guide:capture`。詳細は `docs/SPEC.md` の「使い方ページ」
+
 ### デザイン見直し: スコアボード化と色の役割分け（2026-11-15）
 
 - 基礎: 日本語ラベルの `uppercase tracking-wider` を除去、読み取り用テーブルを `components/ui/table.tsx` に共通化（数値列は右揃え・等幅数字）、ナビの現在地を前方一致に変更、フォーカスリングを全操作要素に付与（既定の `:focus-visible` + shadcn 部品は ring-2）、タブに `role="tab"` / モード絞り込みに `aria-pressed`

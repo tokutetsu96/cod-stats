@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -215,6 +216,9 @@ export default function LoginPage() {
             </Button>
           </form>
         </div>
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          はじめての方は <Link href="/guide" className="link">使い方</Link> をご覧ください
+        </p>
       </div>
     </div>
   );
