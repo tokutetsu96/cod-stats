@@ -42,11 +42,6 @@
 - 対戦詳細ページから該当シーンに直接リンク
 - `games` テーブルに `youtube_timestamp_sec` カラムを追加
 
-#### 対戦相手の詳細分析
-
-- `opponent_game_stats` を活用した相手プレイヤー別 K/D 表示
-- 対戦相手ページに「過去対戦での相手強プレイヤー」リスト
-
 #### ゲームモードのカスタマイズ（作品ごと）
 
 - 現状 `GameMode` は `"hardpoint" | "snd" | "overload"` の固定unionで、モード別固有フィールド（`hill_time` / `plants`,`defuses`,`first_bloods`,`first_deaths` / `goals`）もハードコード実装。マップは作品（タイトル）ごとに分離済みだが、モード自体は作品間で共通固定のまま
@@ -86,6 +81,13 @@
 ---
 
 ## Done
+
+### 対戦相手の詳細分析（2026-11-15）
+
+- 対戦相手詳細に「相手プレイヤー別スタッツ」カードを追加。相手プレイヤー別・モード別の K/D・平均キル/デス/ダメージ・モード固有スタッツを K/D 降順で表示（`PlayerKDTabs` と `lib/kd-stats.ts` を再利用）
+- 「要注意プレイヤー」: 総合 K/D 1.0 以上の上位3名を、出場ゲーム数・平均キル/ダメージ・出場時の自チーム勝率つきで表示
+- 集計RPC `get_opponent_player_stats(p_opponent_id, p_title_id)` を追加（マイグレーション `add_get_opponent_player_stats`、SECURITY INVOKER + RLS、EXECUTE は authenticated のみ）。本番DBで生データとの合計一致（268行 / 3320キル）と anon 実行不可を確認
+- 未実施: ブラウザでの画面確認（tsc・lint・本番ビルドのみ確認）
 
 ### 対戦メモ（コメント）機能（2026-11-15）
 
