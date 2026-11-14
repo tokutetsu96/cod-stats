@@ -4,7 +4,12 @@ import { revalidatePath } from "next/cache";
 import { getProfile } from "@/lib/supabase/auth";
 import { getCurrentTitle } from "@/lib/supabase/titles";
 import { isValidYoutubeUrl } from "@/lib/utils";
-import { validateScores, type SeriesPayload } from "./_components/series-form-shared";
+import type { ActionResult } from "@/lib/types";
+import {
+  validateScores,
+  YOUTUBE_URL_ERROR,
+  type SeriesPayload,
+} from "./_components/series-form-shared";
 
 export type SaveSeriesResult =
   | { ok: true; seriesId: string }
@@ -40,11 +45,7 @@ export async function saveSeries(
     payload.series.youtube_url &&
     !isValidYoutubeUrl(payload.series.youtube_url)
   ) {
-    return {
-      ok: false,
-      error:
-        "YouTube URLはhttps://youtube.com または https://youtu.be のURLを入力してください",
-    };
+    return { ok: false, error: YOUTUBE_URL_ERROR };
   }
 
   // 新規作成時のみ使用される（編集時はRPC側で既存シリーズの作品を維持する）
@@ -61,4 +62,19 @@ export async function saveSeries(
 
   revalidatePath("/matches");
   return { ok: true, seriesId: data as string };
+}
+
+/** 対戦を削除する（関連するゲーム・スタッツも併せて削除される） */
+export async function deleteSeries(seriesId: string): Promise<ActionResult> {
+  const { supabase, profile } = await getProfile();
+  if (profile.role !== "admin") return { ok: false, error: "管理者権限が必要です" };
+  const { data, error } = await supabase
+    .from("series")
+    .delete()
+    .eq("id", seriesId)
+    .eq("team_id", profile.team_id)
+    .select("id");
+  if (error || !data?.length) return { ok: false, error: "削除に失敗しました" };
+  revalidatePath("/matches");
+  return { ok: true };
 }

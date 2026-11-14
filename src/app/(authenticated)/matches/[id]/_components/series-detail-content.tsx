@@ -4,12 +4,13 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { notFound } from "next/navigation";
 import type { Game, GameStat, OpponentGameStat, Series, Opponent } from "@/lib/types";
-import { formatDate, calcKD, isValidYoutubeUrl, normalizeHillTimes } from "@/lib/utils";
-import { PlayerKDTabs, type PlayerKDData } from "@/components/player-kd-tabs";
-import { addStat, toPlayerKDData, type PlayerAcc } from "@/lib/kd-stats";
-import { getTitleModes, modeLabel } from "@/lib/constants";
+import { countResults, formatDate, calcKD, isValidYoutubeUrl, normalizeHillTimes } from "@/lib/utils";
+import { PlayerKDTabs } from "@/components/player-kd-tabs";
+import { WinLossRecord } from "@/components/series-badges";
+import { addStat, toPlayerKDData, type PlayerAcc, type PlayerKDData } from "@/lib/kd-stats";
+import { getTitleModes, modeLabel, seriesTypeLabel } from "@/lib/constants";
 import { getCurrentTitle } from "@/lib/supabase/titles";
-const typeLabel: Record<string, string> = { scrim: "Scrim", tournament: "大会" };
+import { resultLabel } from "../../_components/series-form-shared";
 
 export async function SeriesDetailContent({ id }: { id: string }) {
   const supabase = await createClient();
@@ -22,15 +23,12 @@ export async function SeriesDetailContent({ id }: { id: string }) {
     .select("*, opponents(*), games(id, game_number, mode, result, score_team, score_opponent, hill_times, maps(name), game_stats(id, game_id, player_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, uploads, dunks, remote_plants, players(name, created_at)), opponent_game_stats(id, game_id, kills, deaths, damage, hill_time, plants, defuses, first_bloods, first_deaths, goals, uploads, dunks, remote_plants, opponent_players(name, created_at)))")
     .eq("id", id)
     .eq("team_id", profile.team_id)
-    .returns<SeriesDetail[]>()
-    .single(), getCurrentTitle()]);
+    .single<SeriesDetail>(), getCurrentTitle()]);
 
   if (!series) notFound();
 
-  const games = (series.games ?? []).sort((a, b) => a.game_number - b.game_number);
-  const wins = games.filter((g) => g.result === "win").length;
-  const draws = games.filter((g) => g.result === "draw").length;
-  const losses = games.length - wins - draws;
+  const games = (series.games ?? []).toSorted((a, b) => a.game_number - b.game_number);
+  const record = countResults(games);
 
   const allStats = games.flatMap((g) => (g.game_stats ?? []) as GameStat[]);
   const gameIdToMode = new Map(games.map((g) => [g.id, g.mode]));
@@ -66,11 +64,8 @@ export async function SeriesDetailContent({ id }: { id: string }) {
           vs {series.opponents?.name}
         </h1>
         <p className="text-muted-foreground text-sm">
-          {formatDate(series.series_date)} / {typeLabel[series.type]} /
-          <span className="text-win font-medium ml-1 stat-number">{wins}W</span>
-          {" - "}
-          <span className="text-loss font-medium stat-number">{losses}L</span>
-          {draws > 0 && <><span> - </span><span className="text-primary font-medium stat-number">{draws}D</span></>}
+          {formatDate(series.series_date)} / {seriesTypeLabel[series.type]} /
+          <WinLossRecord {...record} className="ml-1" />
         </p>
         {series.youtube_url && isValidYoutubeUrl(series.youtube_url) && (
           <p className="text-sm mt-1">
@@ -162,7 +157,7 @@ export async function SeriesDetailContent({ id }: { id: string }) {
                   {game.score_team} - {game.score_opponent}
                 </span>
                 <span className={`font-bold text-xs px-1.5 py-0.5 rounded stat-number ${game.result === "win" ? "text-win bg-win/10" : game.result === "lose" ? "text-loss bg-loss/10" : "text-primary bg-primary/10"}`}>
-                  {game.result === "win" ? "WIN" : game.result === "lose" ? "LOSE" : "DRAW"}
+                  {resultLabel[game.result]}
                 </span>
               </CardTitle>
             </CardHeader>
@@ -229,20 +224,18 @@ export async function SeriesDetailContent({ id }: { id: string }) {
                                     );
                                   })}
                                 </tr>
-                                {ht.winner && (
-                                  <tr>
-                                    <td />
-                                    {Array.from({ length: hillCount }, (_, h) => {
-                                      const w = ht.winner?.[rIdx]?.[h] ?? null;
-                                      if (w === null) return <td key={h} />;
-                                      return (
-                                        <td key={h} className={`text-center text-sm font-bold ${w === "team" ? "text-win" : "text-loss"}`}>
-                                          {w === "team" ? "◯" : "☓"}
-                                        </td>
-                                      );
-                                    })}
-                                  </tr>
-                                )}
+                                <tr>
+                                  <td />
+                                  {Array.from({ length: hillCount }, (_, h) => {
+                                    const w = ht.winner[rIdx]?.[h] ?? null;
+                                    if (w === null) return <td key={h} />;
+                                    return (
+                                      <td key={h} className={`text-center text-sm font-bold ${w === "team" ? "text-win" : "text-loss"}`}>
+                                        {w === "team" ? "◯" : "☓"}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
                               </React.Fragment>
                             ))}
                           </tbody>

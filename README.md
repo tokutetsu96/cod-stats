@@ -33,8 +33,10 @@ npm install
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxx
 ```
+
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` が未設定の場合は、従来の `NEXT_PUBLIC_SUPABASE_ANON_KEY` を使用する。
 
 ### 3. 開発サーバーの起動
 

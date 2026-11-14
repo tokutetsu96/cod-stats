@@ -1,21 +1,19 @@
-import type { GameMode, MatchResult, SeriesType } from "@/lib/types";
+import type {
+  Game,
+  GameMode,
+  GameStat,
+  MatchResult,
+  OpponentGameStat,
+  Series,
+  SeriesType,
+  StatInput,
+} from "@/lib/types";
 import { MODE_SCORE_MAX, modeLabel } from "@/lib/constants";
+import { normalizeHillTimes } from "@/lib/utils";
 
-export interface StatInput {
-  player_id: string;
-  kills: string;
-  deaths: string;
-  damage: string;
-  hill_time: string;
-  plants: string;
-  defuses: string;
-  first_bloods: string;
-  first_deaths: string;
-  goals: string;
-  uploads: string;
-  dunks: string;
-  remote_plants: string;
-}
+export const STATS_ROWS = 4;
+export const YOUTUBE_URL_ERROR =
+  "YouTube URLはhttps://youtube.com または https://youtu.be のURLを入力してください";
 
 export interface GameInput {
   id: string;
@@ -56,6 +54,92 @@ export function emptyStats(): StatInput {
     uploads: "",
     dunks: "",
     remote_plants: "",
+  };
+}
+
+/** スタッツ行を既定の行数（4行）に揃える */
+export function padStats(stats: StatInput[]): StatInput[] {
+  const result = stats.slice(0, STATS_ROWS);
+  while (result.length < STATS_ROWS) result.push(emptyStats());
+  return result;
+}
+
+export function emptyHillTimes(): GameInput["hill_times"] {
+  return { team: [[]], opponent: [[]], winner: [[]] };
+}
+
+/** フォームの初期値（編集時は既存シリーズから生成する） */
+export interface SeriesFormValues {
+  /** 編集対象のシリーズID（新規作成時は undefined） */
+  seriesId?: string;
+  seriesType: SeriesType;
+  seriesDate: string;
+  opponentId: string;
+  memo: string;
+  youtubeUrl: string;
+  games: GameInput[];
+}
+
+type DbStatRow = Partial<
+  Pick<
+    GameStat,
+    | "kills" | "deaths" | "damage" | "hill_time" | "plants" | "defuses"
+    | "first_bloods" | "first_deaths" | "goals" | "uploads" | "dunks" | "remote_plants"
+  >
+> & { player_id?: string; opponent_player_id?: string };
+
+function dbStatToInput(stat: DbStatRow): StatInput {
+  return {
+    player_id: stat.player_id ?? stat.opponent_player_id ?? "",
+    kills: String(stat.kills ?? 0),
+    deaths: String(stat.deaths ?? 0),
+    damage: String(stat.damage ?? 0),
+    hill_time: String(stat.hill_time ?? 0),
+    plants: String(stat.plants ?? 0),
+    defuses: String(stat.defuses ?? 0),
+    first_bloods: String(stat.first_bloods ?? 0),
+    first_deaths: String(stat.first_deaths ?? 0),
+    goals: String(stat.goals ?? 0),
+    uploads: String(stat.uploads ?? 0),
+    dunks: String(stat.dunks ?? 0),
+    remote_plants: String(stat.remote_plants ?? 0),
+  };
+}
+
+type SeriesWithGames = Series & {
+  games: (Game & { game_stats: GameStat[]; opponent_game_stats: OpponentGameStat[] })[];
+};
+
+/** DBのシリーズ（games + スタッツ込み）を編集フォームの初期値に変換する */
+export function seriesToFormValues(series: SeriesWithGames): SeriesFormValues {
+  return {
+    seriesId: series.id,
+    seriesType: series.type,
+    seriesDate: series.series_date,
+    opponentId: series.opponent_id,
+    memo: series.memo ?? "",
+    youtubeUrl: series.youtube_url ?? "",
+    games: (series.games ?? [])
+      .toSorted((a, b) => a.game_number - b.game_number)
+      .map((g) => {
+        // 旧データ形式の変換は normalizeHillTimes に共通化（入力欄用に文字列化）
+        const ht = normalizeHillTimes(g.hill_times);
+        return {
+          id: g.id,
+          mode: g.mode,
+          map_id: g.map_id ?? "",
+          score_team: String(g.score_team),
+          score_opponent: String(g.score_opponent),
+          hill_times: {
+            team: ht.team.map((r) => r.map(String)),
+            opponent: ht.opponent.map((r) => r.map(String)),
+            winner: ht.winner,
+          },
+          stats: padStats((g.game_stats ?? []).map(dbStatToInput)),
+          opponent_stats: padStats((g.opponent_game_stats ?? []).map(dbStatToInput)),
+          expanded: false,
+        };
+      }),
   };
 }
 
@@ -174,8 +258,6 @@ export const resultColor: Record<MatchResult, string> = {
   lose: "text-loss",
   draw: "text-primary",
 };
-
-export { modeLabel } from "@/lib/constants";
 
 /** スコア上限を超えるゲームがあればエラーメッセージを返す（クライアント・サーバー共通） */
 export function validateScores(games: Pick<GamePayload, "mode" | "score_team" | "score_opponent">[]): string | null {

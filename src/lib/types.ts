@@ -12,6 +12,23 @@ export type ActionResult<T = void> =
   | (T extends void ? { ok: true } : { ok: true; data: T })
   | { ok: false; error: string };
 
+/** スタッツ入力フォームの1行（入力中は文字列で保持する） */
+export interface StatInput {
+  player_id: string;
+  kills: string;
+  deaths: string;
+  damage: string;
+  hill_time: string;
+  plants: string;
+  defuses: string;
+  first_bloods: string;
+  first_deaths: string;
+  goals: string;
+  uploads: string;
+  dunks: string;
+  remote_plants: string;
+}
+
 export interface Team {
   id: string;
   name: string;

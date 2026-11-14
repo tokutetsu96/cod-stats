@@ -15,7 +15,7 @@ export const getCurrentTitle = cache(async () => {
     .select("*")
     .eq("team_id", profile.team_id)
     .order("sort_order")
-    .returns<Title[]>();
+    .overrideTypes<Title[], { merge: false }>();
 
   const titles = data ?? [];
   const currentTitle =

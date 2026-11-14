@@ -1,4 +1,4 @@
-import type { GameMode, ThirdMode, Title } from "./types";
+import type { GameMode, SeriesType, ThirdMode, Title } from "./types";
 
 export const modeLabel: Record<GameMode, string> = {
   hardpoint: "Hardpoint",
@@ -12,6 +12,11 @@ export const modeShortLabel: Record<GameMode, string> = {
   snd: "S&D",
   overload: "OL",
   hijack: "HJ",
+};
+
+export const seriesTypeLabel: Record<SeriesType, string> = {
+  scrim: "Scrim",
+  tournament: "大会",
 };
 
 export const ALL_MODES: GameMode[] = ["hardpoint", "snd", "overload", "hijack"];

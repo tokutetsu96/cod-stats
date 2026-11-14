@@ -1,13 +1,32 @@
 import { calcKD } from "@/lib/utils";
 import type { GameMode } from "@/lib/types";
-import type {
-  PlayerKDData,
-  PlayerModeStats,
-} from "@/components/player-kd-tabs";
 
 // メンバー別K/D集計の共有ロジック。
 // ダッシュボード（RPC集計行）と試合詳細（生スタッツ行）の両方から
 // StatContribution に正規化して加算し、PlayerKDData を生成する。
+
+/** 表示用の集計値（1モード分）。モード固有の項目は該当しない場合 null */
+export interface PlayerModeStats {
+  avgKills: number;
+  avgDeaths: number;
+  avgDamage: number;
+  kd: string;
+  count: number;
+  avgHillTime: number | null;
+  avgPlants: number | null;
+  avgDefuses: number | null;
+  avgFirstBloods: number | null;
+  avgFirstDeaths: number | null;
+  avgGoals: number | null;
+  avgUploads: number | null;
+  avgDunks: number | null;
+  avgRemotePlants: number | null;
+}
+
+export type PlayerKDData = { id: string; name: string; overall: PlayerModeStats } & Record<
+  GameMode,
+  PlayerModeStats
+>;
 
 export type ModeAcc = {
   kills: number;
@@ -25,7 +44,7 @@ export type ModeAcc = {
   remotePlants: number;
 };
 
-export const emptyModeAcc = (): ModeAcc => ({
+const emptyModeAcc = (): ModeAcc => ({
   kills: 0,
   deaths: 0,
   damage: 0,

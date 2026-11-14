@@ -3,15 +3,13 @@ import { getProfile } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentTitle } from "@/lib/supabase/titles";
 import { getTitleModes } from "@/lib/constants";
-import type { Opponent } from "@/lib/types";
 import { DashboardFilter } from "./_components/dashboard-filter";
 import { DashboardContent } from "./_components/dashboard-content";
 import { DashboardSkeleton } from "./_components/dashboard-skeleton";
 import type { DashboardSearchParams } from "./_components/dashboard-filters";
 
 async function DashboardFilterServer() {
-  const supabase = await createClient();
-  const { profile } = await getProfile();
+  const [supabase, { profile }] = await Promise.all([createClient(), getProfile()]);
   const [{ data: opponents }, { currentTitle }] = await Promise.all([
     supabase
       .from("opponents")
@@ -22,7 +20,7 @@ async function DashboardFilterServer() {
   ]);
   return (
     <DashboardFilter
-      opponents={(opponents ?? []) as Opponent[]}
+      opponents={opponents ?? []}
       modes={getTitleModes(currentTitle)}
     />
   );

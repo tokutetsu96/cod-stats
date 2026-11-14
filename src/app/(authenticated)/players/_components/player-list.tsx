@@ -1,87 +1,49 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pencil, Trash2, Plus, Star, Eye, EyeOff } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import type { Player } from "@/lib/types";
+import { useAction } from "@/lib/use-action";
+import { addPlayer, deletePlayer, updatePlayer } from "../actions";
 
-export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; teamId: string; isAdmin: boolean }) {
+const MAX_DEFAULT_PLAYERS = 4;
+
+export function PlayerList({ players, isAdmin }: { players: Player[]; isAdmin: boolean }) {
   const [name, setName] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [togglingId, setTogglingId] = useState<string | null>(null);
-  const [togglingActiveId, setTogglingActiveId] = useState<string | null>(null);
-  const router = useRouter();
+  // 更新は Server Action 経由（権限チェック・team_id スコープ・再取得はサーバー側で行う）
+  const { pendingKey, error: mutationError, run } = useAction();
 
   const defaultPlayers = players.filter((p) => p.is_default);
   const otherPlayers = players.filter((p) => !p.is_default);
+  const defaultsFull = defaultPlayers.length >= MAX_DEFAULT_PLAYERS;
 
-  const [mutationError, setMutationError] = useState("");
-
-  const handleAdd = async (e: React.FormEvent) => {
+  const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAdmin || !name.trim()) return;
-    setLoading(true);
-    setMutationError("");
-    const supabase = createClient();
-    const { error } = await supabase.from("players").insert({ name: name.trim(), team_id: teamId });
-    if (error) { setMutationError("追加に失敗しました"); setLoading(false); return; }
-    setName("");
-    setLoading(false);
-    router.refresh();
+    if (!name.trim()) return;
+    run("add", () => addPlayer(name), () => setName(""));
   };
 
-  const handleToggleDefault = async (id: string, current: boolean) => {
-    if (!isAdmin) return;
-    if (!current && defaultPlayers.length >= 4) return;
-    setTogglingId(id);
-    const supabase = createClient();
-    const { error } = await supabase.from("players").update({ is_default: !current }).eq("id", id);
-    if (error) setMutationError("更新に失敗しました");
-    router.refresh();
-    setTogglingId(null);
+  const handleToggleDefault = (id: string, current: boolean) => {
+    if (!current && defaultsFull) return;
+    run(`default:${id}`, () => updatePlayer(id, { is_default: !current }));
   };
 
-  const handleToggleActive = async (id: string, current: boolean) => {
-    if (!isAdmin) return;
-    setTogglingActiveId(id);
-    const supabase = createClient();
-    const { error } = await supabase.from("players").update({ is_active: !current }).eq("id", id);
-    if (error) setMutationError("更新に失敗しました");
-    router.refresh();
-    setTogglingActiveId(null);
-  };
+  const handleToggleActive = (id: string, current: boolean) =>
+    run(`active:${id}`, () => updatePlayer(id, { is_active: !current }));
 
-  const handleDelete = async (id: string) => {
-    if (!isAdmin) return;
+  const handleDelete = (id: string) => {
     if (!confirm("このプレイヤーを削除しますか？関連する戦績データも確認してください。")) return;
-    setDeletingId(id);
-    setMutationError("");
-    const supabase = createClient();
-    const { error } = await supabase.from("players").delete().eq("id", id);
-    if (error) { setMutationError("削除に失敗しました"); setDeletingId(null); return; }
-    router.refresh();
-    setDeletingId(null);
+    run(`delete:${id}`, () => deletePlayer(id));
   };
 
-  const handleEdit = async (id: string) => {
-    if (!isAdmin) return;
-    setLoading(true);
-    setMutationError("");
-    const supabase = createClient();
-    const { error } = await supabase.from("players").update({ name: editName.trim() }).eq("id", id);
-    if (error) { setMutationError("更新に失敗しました"); setLoading(false); return; }
-    setEditId(null);
-    setLoading(false);
-    router.refresh();
-  };
+  const handleEdit = (id: string) =>
+    run(`edit:${id}`, () => updatePlayer(id, { name: editName }), () => setEditId(null));
 
   const renderRow = (p: Player) => (
     <tr key={p.id} className="border-b last:border-0">
@@ -93,7 +55,7 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
           <td className="py-2" />
           <td className="py-2" />
           <td className="py-2 space-x-1">
-            <Button size="sm" variant="outline" onClick={() => handleEdit(p.id)} disabled={loading}>保存</Button>
+            <Button size="sm" variant="outline" onClick={() => handleEdit(p.id)} disabled={pendingKey === `edit:${p.id}`}>保存</Button>
             <Button size="sm" variant="ghost" onClick={() => setEditId(null)}>取消</Button>
           </td>
         </>
@@ -107,7 +69,7 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
               <button
                 onClick={() => handleToggleDefault(p.id, p.is_default)}
                 aria-label={p.is_default ? "デフォルトから外す" : "デフォルトに設定"}
-                disabled={togglingId === p.id || (!p.is_default && defaultPlayers.length >= 4)}
+                disabled={pendingKey === `default:${p.id}` || (!p.is_default && defaultsFull)}
                 className="disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <Star className={`h-4 w-4 ${p.is_default ? "fill-star text-star" : "text-muted-foreground"}`} />
@@ -121,7 +83,7 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
               <button
                 onClick={() => handleToggleActive(p.id, p.is_active)}
                 aria-label={p.is_active ? "ダッシュボードから非表示にする" : "ダッシュボードに表示する"}
-                disabled={togglingActiveId === p.id}
+                disabled={pendingKey === `active:${p.id}`}
                 className="disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 {p.is_active ? (
@@ -141,8 +103,8 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
               <Button size="icon" variant="ghost" onClick={() => { setEditId(p.id); setEditName(p.name); }}>
                 <Pencil className="h-4 w-4" />
               </Button>
-              <Button size="icon" variant="ghost" onClick={() => handleDelete(p.id)} disabled={deletingId === p.id}>
-                {deletingId === p.id ? <Spinner /> : <Trash2 className="h-4 w-4" />}
+              <Button size="icon" variant="ghost" onClick={() => handleDelete(p.id)} disabled={pendingKey === `delete:${p.id}`}>
+                {pendingKey === `delete:${p.id}` ? <Spinner /> : <Trash2 className="h-4 w-4" />}
               </Button>
             </td>
           )}
@@ -159,8 +121,8 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
           <div className="flex-1">
             <Input placeholder="プレイヤー名" value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
-          <Button type="submit" size="sm" disabled={loading}>
-            {loading ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
+          <Button type="submit" size="sm" disabled={pendingKey === "add"}>
+            {pendingKey === "add" ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
           </Button>
         </form>
       )}
@@ -174,8 +136,8 @@ export function PlayerList({ players, teamId, isAdmin }: { players: Player[]; te
             <div className="flex items-center gap-2 mb-2">
               <Star className="h-4 w-4 fill-star text-star" />
               <span className="text-sm font-medium">デフォルト</span>
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${defaultPlayers.length >= 4 ? "bg-star/20 text-primary" : "bg-muted text-muted-foreground"}`}>
-                {defaultPlayers.length} / 4
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${defaultsFull ? "bg-star/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                {defaultPlayers.length} / {MAX_DEFAULT_PLAYERS}
               </span>
             </div>
             {defaultPlayers.length === 0 ? (

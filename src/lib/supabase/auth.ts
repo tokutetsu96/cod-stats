@@ -25,7 +25,7 @@ export const getProfile = cache(async () => {
       .select("team_id, role, teams(name)")
       .eq("user_id", userId)
       .order("created_at")
-      .returns<{ team_id: string; role: string; teams: { name: string } | null }[]>(),
+      .overrideTypes<{ team_id: string; role: string; teams: { name: string } | null }[], { merge: false }>(),
   ]);
 
   if (!profileData) redirect("/login");

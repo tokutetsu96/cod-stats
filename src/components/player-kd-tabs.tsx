@@ -5,33 +5,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { modeShortLabel } from "@/lib/constants";
 import type { GameMode } from "@/lib/types";
-
-export interface PlayerModeStats {
-  avgKills: number;
-  avgDeaths: number;
-  avgDamage: number;
-  kd: string;
-  count: number;
-  avgHillTime: number | null;
-  avgPlants: number | null;
-  avgDefuses: number | null;
-  avgFirstBloods: number | null;
-  avgFirstDeaths: number | null;
-  avgGoals: number | null;
-  avgUploads: number | null;
-  avgDunks: number | null;
-  avgRemotePlants: number | null;
-}
-
-export interface PlayerKDData {
-  id: string;
-  name: string;
-  overall: PlayerModeStats;
-  hardpoint: PlayerModeStats;
-  snd: PlayerModeStats;
-  overload: PlayerModeStats;
-  hijack: PlayerModeStats;
-}
+import type { PlayerKDData } from "@/lib/kd-stats";
 
 type ModeTab = "overall" | GameMode;
 

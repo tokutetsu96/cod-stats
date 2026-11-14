@@ -2,20 +2,19 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { SUPABASE_URL } from "@/lib/supabase/env";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload, Trash2, Pencil } from "lucide-react";
+import { updateAvatar, updateUsername } from "../actions";
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 // avatars バケットの allowed_mime_types と揃える
 const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 const ALLOWED_AVATAR_ACCEPT = ALLOWED_AVATAR_TYPES.join(",");
 
 export function AvatarSetting({ profileId, currentAvatar, username }: { profileId: string; currentAvatar: string | null; username: string }) {
-  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(currentAvatar);
   const [uploading, setUploading] = useState(false);
@@ -42,6 +41,7 @@ export function AvatarSetting({ profileId, currentAvatar, username }: { profileI
     setAvatarError("");
     setUploading(true);
 
+    // 画像本体は Server Action の本文サイズ上限を避けるため、ブラウザから Storage へ直接アップロードする
     const supabase = createClient();
     const ext = file.name.split(".").pop();
     const path = `${profileId}/avatar.${ext}`;
@@ -57,21 +57,19 @@ export function AvatarSetting({ profileId, currentAvatar, username }: { profileI
     }
 
     const avatarUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}?t=${Date.now()}`;
-    await supabase.from("profiles").update({ avatar: avatarUrl }).eq("id", profileId);
-    setPreview(avatarUrl);
+    const result = await updateAvatar(avatarUrl);
+    if (result.ok) setPreview(avatarUrl);
+    else setAvatarError(result.error);
     setUploading(false);
-    router.refresh();
   };
 
   const handleRemoveAvatar = async () => {
     setUploading(true);
     setAvatarError("");
-    const supabase = createClient();
-    const { error } = await supabase.from("profiles").update({ avatar: null }).eq("id", profileId);
-    if (error) { setAvatarError("削除に失敗しました"); setUploading(false); return; }
-    setPreview(null);
+    const result = await updateAvatar(null);
+    if (result.ok) setPreview(null);
+    else setAvatarError(result.error);
     setUploading(false);
-    router.refresh();
   };
 
   const handleSaveName = async () => {
@@ -79,12 +77,10 @@ export function AvatarSetting({ profileId, currentAvatar, username }: { profileI
     if (!name) return;
     setSavingName(true);
     setNameError("");
-    const supabase = createClient();
-    const { error } = await supabase.from("profiles").update({ username: name }).eq("id", profileId);
-    if (error) setNameError("名前の変更に失敗しました");
-    else setEditingName(false);
+    const result = await updateUsername(name);
+    if (result.ok) setEditingName(false);
+    else setNameError(result.error);
     setSavingName(false);
-    router.refresh();
   };
 
   return (

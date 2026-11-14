@@ -8,10 +8,15 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Trash2, ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { StatsTable } from "@/components/stats-table";
-import type { GameMode, Opponent, Player, MapEntry } from "@/lib/types";
-import type { GameInput, StatInput } from "./series-form-shared";
-import { calcResult, resultLabel, resultColor, modeLabel } from "./series-form-shared";
-import { MODE_SCORE_MAX } from "@/lib/constants";
+import type { GameMode, Opponent, Player, MapEntry, StatInput } from "@/lib/types";
+import {
+  calcResult,
+  emptyHillTimes,
+  resultLabel,
+  resultColor,
+  type GameInput,
+} from "./series-form-shared";
+import { MODE_SCORE_MAX, modeLabel } from "@/lib/constants";
 import { ScoreboardImport } from "./scoreboard-import";
 
 interface GameCardProps {
@@ -117,7 +122,7 @@ export function GameCard({
                   onUpdateGame(gIdx, {
                     mode: e.target.value as GameMode,
                     map_id: "",
-                    hill_times: { team: [[]], opponent: [[]], winner: [[]] },
+                    hill_times: emptyHillTimes(),
                   })
                 }
               >
@@ -136,7 +141,7 @@ export function GameCard({
                 onChange={(e) =>
                   onUpdateGame(gIdx, {
                     map_id: e.target.value,
-                    hill_times: { team: [[]], opponent: [[]], winner: [[]] },
+                    hill_times: emptyHillTimes(),
                   })
                 }
               >

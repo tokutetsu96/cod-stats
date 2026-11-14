@@ -9,23 +9,7 @@ import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { GripVertical } from "lucide-react";
-import type { GameMode } from "@/lib/types";
-
-interface StatInput {
-  player_id: string;
-  kills: string;
-  deaths: string;
-  damage: string;
-  hill_time: string;
-  plants: string;
-  defuses: string;
-  first_bloods: string;
-  first_deaths: string;
-  goals: string;
-  uploads: string;
-  dunks: string;
-  remote_plants: string;
-}
+import type { GameMode, StatInput } from "@/lib/types";
 
 interface PlayerOption {
   id: string;

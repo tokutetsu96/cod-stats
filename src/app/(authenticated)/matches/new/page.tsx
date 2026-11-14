@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { Spinner } from "@/components/ui/spinner";
 
 const SeriesForm = dynamic(
-  () => import("./_components/series-form").then((m) => m.SeriesForm),
+  () => import("../_components/series-form").then((m) => m.SeriesForm),
   { loading: () => <div className="flex justify-center p-8"><Spinner className="h-6 w-6" /></div> },
 );
 
@@ -22,16 +22,14 @@ export default async function NewSeriesPage() {
   ]);
 
   return (
-    <>
-      <main className="mx-auto max-w-6xl p-4 space-y-6">
-        <h1 className="text-xl sm:text-2xl font-bold">対戦登録</h1>
-        <SeriesForm
-          opponents={opponents ?? []}
-          players={players ?? []}
-          maps={maps ?? []}
-          modes={getTitleModes(currentTitle)}
-        />
-      </main>
-    </>
+    <main className="mx-auto max-w-6xl p-4 space-y-6">
+      <h1 className="text-xl sm:text-2xl font-bold">対戦登録</h1>
+      <SeriesForm
+        opponents={opponents ?? []}
+        players={players ?? []}
+        maps={maps ?? []}
+        modes={getTitleModes(currentTitle)}
+      />
+    </main>
   );
 }

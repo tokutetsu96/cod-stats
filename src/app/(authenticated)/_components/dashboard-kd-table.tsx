@@ -2,12 +2,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import type { GameMode, Player } from "@/lib/types";
-import { PlayerKDTabs, type PlayerKDData } from "@/components/player-kd-tabs";
+import { PlayerKDTabs } from "@/components/player-kd-tabs";
 import {
   addStat,
   emptyPlayerAcc,
   toPlayerKDData,
   type PlayerAcc,
+  type PlayerKDData,
 } from "@/lib/kd-stats";
 
 // get_dashboard_kd_stats RPC が返す行（(player_id, mode) ごとの集計済み合計）
@@ -34,7 +35,7 @@ export async function DashboardKDTable({
   mode,
   modes,
 }: {
-  seriesIds: string[] | null;
+  seriesIds: string[];
   mode?: GameMode;
   modes: GameMode[];
 }) {

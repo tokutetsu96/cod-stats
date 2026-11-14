@@ -1,15 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Pencil, Trash2, Plus, Users, ChevronDown, ChevronUp, Star } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import type { GameMode, OpponentPlayer } from "@/lib/types";
 import { modeShortLabel as modeLabel } from "@/lib/constants";
+import { useAction } from "@/lib/use-action";
+import {
+  addOpponent,
+  addOpponentPlayer,
+  deleteOpponent,
+  deleteOpponentPlayer,
+  renameOpponent,
+  setOpponentPlayerDefault,
+} from "../actions";
+
+const MAX_DEFAULT_PLAYERS = 4;
 
 interface ModeStat {
   mode: GameMode;
@@ -28,90 +37,41 @@ interface OpponentWithStats {
 }
 
 
-export function OpponentList({ opponents, teamId, isAdmin }: { opponents: OpponentWithStats[]; teamId: string; isAdmin: boolean }) {
+export function OpponentList({ opponents, isAdmin }: { opponents: OpponentWithStats[]; isAdmin: boolean }) {
   const [name, setName] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [addingPlayerId, setAddingPlayerId] = useState<string | null>(null);
-  const [deletingPlayerId, setDeletingPlayerId] = useState<string | null>(null);
-  const [togglingPlayerId, setTogglingPlayerId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [newPlayerName, setNewPlayerName] = useState("");
-  const [mutationError, setMutationError] = useState("");
-  const router = useRouter();
+  // 更新は Server Action 経由（権限チェック・team_id スコープ・再取得はサーバー側で行う）
+  const { pendingKey, error: mutationError, run } = useAction();
 
-  const handleAdd = async (e: React.FormEvent) => {
+  const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAdmin || !name.trim()) return;
-    setLoading(true);
-    setMutationError("");
-    const supabase = createClient();
-    const { error } = await supabase.from("opponents").insert({ name: name.trim(), team_id: teamId });
-    if (error) { setMutationError("追加に失敗しました"); setLoading(false); return; }
-    setName("");
-    setLoading(false);
-    router.refresh();
+    if (!name.trim()) return;
+    run("add", () => addOpponent(name), () => setName(""));
   };
 
-  const handleDelete = async (id: string) => {
-    if (!isAdmin) return;
+  const handleDelete = (id: string) => {
     if (!confirm("削除しますか？")) return;
-    setDeletingId(id);
-    setMutationError("");
-    const supabase = createClient();
-    const { error } = await supabase.from("opponents").delete().eq("id", id);
-    if (error) { setMutationError("削除に失敗しました"); setDeletingId(null); return; }
-    router.refresh();
-    setDeletingId(null);
+    run(`delete:${id}`, () => deleteOpponent(id));
   };
 
-  const handleEdit = async (id: string) => {
-    if (!isAdmin) return;
-    setLoading(true);
-    setMutationError("");
-    const supabase = createClient();
-    const { error } = await supabase.from("opponents").update({ name: editName.trim() }).eq("id", id);
-    if (error) { setMutationError("更新に失敗しました"); setLoading(false); return; }
-    setEditId(null);
-    setLoading(false);
-    router.refresh();
-  };
+  const handleEdit = (id: string) =>
+    run(`edit:${id}`, () => renameOpponent(id, editName), () => setEditId(null));
 
-  const handleAddPlayer = async (e: React.FormEvent, opponentId: string) => {
+  const handleAddPlayer = (e: React.FormEvent, opponentId: string) => {
     e.preventDefault();
-    if (!isAdmin || !newPlayerName.trim()) return;
-    setAddingPlayerId(opponentId);
-    setMutationError("");
-    const supabase = createClient();
-    const { error } = await supabase.from("opponent_players").insert({ name: newPlayerName.trim(), opponent_id: opponentId, team_id: teamId });
-    if (error) { setMutationError("選手の追加に失敗しました"); setAddingPlayerId(null); return; }
-    setNewPlayerName("");
-    setAddingPlayerId(null);
-    router.refresh();
+    if (!newPlayerName.trim()) return;
+    run(`add-player:${opponentId}`, () => addOpponentPlayer(opponentId, newPlayerName), () => setNewPlayerName(""));
   };
 
-  const handleDeletePlayer = async (playerId: string) => {
-    if (!isAdmin) return;
-    setDeletingPlayerId(playerId);
-    setMutationError("");
-    const supabase = createClient();
-    const { error } = await supabase.from("opponent_players").delete().eq("id", playerId);
-    if (error) { setMutationError("削除に失敗しました"); setDeletingPlayerId(null); return; }
-    router.refresh();
-    setDeletingPlayerId(null);
-  };
+  const handleDeletePlayer = (playerId: string) =>
+    run(`delete-player:${playerId}`, () => deleteOpponentPlayer(playerId));
 
-  const handleTogglePlayerDefault = async (playerId: string, current: boolean, players: OpponentPlayer[]) => {
-    if (!isAdmin) return;
-    if (!current && players.filter((p) => p.is_default).length >= 4) return;
-    setTogglingPlayerId(playerId);
-    const supabase = createClient();
-    const { error } = await supabase.from("opponent_players").update({ is_default: !current }).eq("id", playerId);
-    if (error) setMutationError("更新に失敗しました");
-    router.refresh();
-    setTogglingPlayerId(null);
+  const handleTogglePlayerDefault = (playerId: string, current: boolean, players: OpponentPlayer[]) => {
+    if (!current && players.filter((p) => p.is_default).length >= MAX_DEFAULT_PLAYERS) return;
+    run(`toggle-player:${playerId}`, () => setOpponentPlayerDefault(playerId, !current));
   };
 
   return (
@@ -122,8 +82,8 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
           <div className="flex-1 space-y-1">
             <Input placeholder="チーム名" value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
-          <Button type="submit" size="sm" disabled={loading}>
-            {loading ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
+          <Button type="submit" size="sm" disabled={pendingKey === "add"}>
+            {pendingKey === "add" ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
           </Button>
         </form>
       )}
@@ -139,7 +99,7 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
                 {editId === opp.id ? (
                   <div className="flex items-center gap-2">
                     <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-8 flex-1" />
-                    <Button size="sm" variant="outline" onClick={() => handleEdit(opp.id)} disabled={loading}>保存</Button>
+                    <Button size="sm" variant="outline" onClick={() => handleEdit(opp.id)} disabled={pendingKey === `edit:${opp.id}`}>保存</Button>
                     <Button size="sm" variant="ghost" onClick={() => setEditId(null)}>取消</Button>
                   </div>
                 ) : (
@@ -171,8 +131,8 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
                           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditId(opp.id); setEditName(opp.name); }}>
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(opp.id)} disabled={deletingId === opp.id}>
-                            {deletingId === opp.id ? <Spinner className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(opp.id)} disabled={pendingKey === `delete:${opp.id}`}>
+                            {pendingKey === `delete:${opp.id}` ? <Spinner className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
                           </Button>
                         </>
                       )}
@@ -206,7 +166,7 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
                         <button
                           onClick={() => handleTogglePlayerDefault(p.id, p.is_default, opp.opponent_players)}
                           aria-label={p.is_default ? "デフォルトから外す" : "デフォルトに設定"}
-                          disabled={togglingPlayerId === p.id || (!p.is_default && defaultP.length >= 4)}
+                          disabled={pendingKey === `toggle-player:${p.id}` || (!p.is_default && defaultP.length >= MAX_DEFAULT_PLAYERS)}
                           className="disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           <Star className={`h-4 w-4 ${p.is_default ? "fill-star text-star" : "text-muted-foreground"}`} />
@@ -217,8 +177,8 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
                     </td>
                     {isAdmin && (
                       <td className="py-1.5">
-                        <button onClick={() => handleDeletePlayer(p.id)} className="text-muted-foreground hover:text-destructive" disabled={deletingPlayerId === p.id}>
-                          {deletingPlayerId === p.id ? <Spinner className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
+                        <button onClick={() => handleDeletePlayer(p.id)} className="text-muted-foreground hover:text-destructive" disabled={pendingKey === `delete-player:${p.id}`}>
+                          {pendingKey === `delete-player:${p.id}` ? <Spinner className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
                         </button>
                       </td>
                     )}
@@ -229,8 +189,8 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
                     {isAdmin && (
                       <form onSubmit={(e) => handleAddPlayer(e, opp.id)} className="flex gap-2">
                         <Input placeholder="選手名" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} className="h-8 max-w-48" />
-                        <Button type="submit" size="sm" variant="outline" disabled={addingPlayerId === opp.id}>
-                          {addingPlayerId === opp.id ? <Spinner className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}追加
+                        <Button type="submit" size="sm" variant="outline" disabled={pendingKey === `add-player:${opp.id}`}>
+                          {pendingKey === `add-player:${opp.id}` ? <Spinner className="h-3.5 w-3.5 mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}追加
                         </Button>
                       </form>
                     )}
@@ -244,8 +204,8 @@ export function OpponentList({ opponents, teamId, isAdmin }: { opponents: Oppone
                           <div className="flex items-center gap-2 mb-1.5">
                             <Star className="h-3.5 w-3.5 fill-star text-star" />
                             <span className="text-xs font-medium">デフォルト</span>
-                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${defaultP.length >= 4 ? "bg-star/20 text-primary" : "bg-muted text-muted-foreground"}`}>
-                              {defaultP.length} / 4
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${defaultP.length >= MAX_DEFAULT_PLAYERS ? "bg-star/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                              {defaultP.length} / {MAX_DEFAULT_PLAYERS}
                             </span>
                           </div>
                           {defaultP.length === 0 ? (

@@ -1,32 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import type { Title } from "@/lib/types";
 import { modeLabel } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { useAction } from "@/lib/use-action";
+import { setDefaultTitle } from "../actions";
 
 /** 作品は運営側の固定プリセットのため、ここでは一覧表示と既定作品の切り替えのみ行う */
 export function TitleManager({ titles, isAdmin }: { titles: Title[]; isAdmin: boolean }) {
-  const [defaultingId, setDefaultingId] = useState<string | null>(null);
-  const [mutationError, setMutationError] = useState("");
-  const router = useRouter();
+  const { pendingKey, error: mutationError, run } = useAction();
 
-  const handleSetDefault = async (id: string) => {
-    if (!isAdmin) return;
-    setDefaultingId(id);
-    setMutationError("");
-    const supabase = createClient();
-    // set_default_title RPC が「既存デフォルトの解除→対象をON」を1トランザクションで原子的に処理する
-    const { error } = await supabase.rpc("set_default_title", { p_title_id: id });
-    if (error) { setMutationError("既定の設定に失敗しました"); setDefaultingId(null); return; }
-    router.refresh();
-    setDefaultingId(null);
-  };
+  const handleSetDefault = (id: string) => run(id, () => setDefaultTitle(id));
 
   return (
     <div className="space-y-3">
@@ -41,10 +28,10 @@ export function TitleManager({ titles, isAdmin }: { titles: Title[]; isAdmin: bo
                 variant="ghost"
                 className="h-7 w-7 shrink-0"
                 onClick={() => handleSetDefault(t.id)}
-                disabled={defaultingId === t.id || t.is_default}
+                disabled={pendingKey === t.id || t.is_default}
                 aria-label={t.is_default ? "既定の作品" : "既定に設定"}
               >
-                {defaultingId === t.id ? (
+                {pendingKey === t.id ? (
                   <Spinner />
                 ) : (
                   <Star className={cn("h-4 w-4", t.is_default ? "fill-star text-star" : "text-muted-foreground")} />

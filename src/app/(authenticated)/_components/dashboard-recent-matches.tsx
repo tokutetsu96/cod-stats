@@ -3,55 +3,51 @@ import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { Eye } from "lucide-react";
-import { formatDate, isValidYoutubeUrl } from "@/lib/utils";
+import { countResults, formatDate, isValidYoutubeUrl } from "@/lib/utils";
+import { SeriesResultSummary, SeriesTypeBadge } from "@/components/series-badges";
 import type { Tables } from "@/lib/database.types";
+import type { DashboardFilters } from "./dashboard-filters";
 
 // 生成型（Tables<>）から読み取りモデルを導出し、スキーマ変更に追従させる
 type RecentSeriesRow = Pick<
   Tables<"series">,
-  "id" | "series_date" | "type" | "youtube_url" | "memo" | "opponent_id"
+  "id" | "series_date" | "type" | "youtube_url"
 > & {
   opponents: Pick<Tables<"opponents">, "name"> | null;
-  games: Pick<Tables<"games">, "id" | "result" | "mode">[];
+  games: Pick<Tables<"games">, "result">[];
 };
 
 export async function DashboardRecentMatches({
-  seriesIds,
-  mode,
+  titleId,
+  filters,
 }: {
-  seriesIds: string[] | null;
-  mode?: string;
+  titleId: string;
+  filters: DashboardFilters;
 }) {
   const supabase = await createClient();
   const { profile } = await getProfile();
+  const { opponentId, dateFrom, dateTo, mode } = filters;
 
+  // フィルタ条件はクエリへ直接渡す（series id を .in() で列挙すると GET の URL 長上限を超えうるため）。
   // モードフィルタ選択時は !inner + games.mode で「該当モードのゲームを含む series」に絞り、
   // 埋め込み games も該当モードのみ返す（戦績カウントがモード内のW/Lになる）
   let q = supabase
     .from("series")
     .select(
       mode
-        ? "id, series_date, type, youtube_url, memo, opponent_id, opponents(name), games!inner(id, result, mode)"
-        : "id, series_date, type, youtube_url, memo, opponent_id, opponents(name), games(id, result, mode)",
+        ? "id, series_date, type, youtube_url, opponents(name), games!inner(result)"
+        : "id, series_date, type, youtube_url, opponents(name), games(result)",
     )
     .eq("team_id", profile.team_id)
+    .eq("title_id", titleId)
     .order("series_date", { ascending: false })
     .limit(5);
   if (mode) q = q.eq("games.mode", mode);
-  if (seriesIds !== null) q = q.in("id", seriesIds);
-  const { data } = await q.returns<RecentSeriesRow[]>();
-  const recentSeries = data ?? [];
-
-  const seriesGameSummary = new Map<string, { wins: number; draws: number; losses: number }>();
-  for (const s of recentSeries) {
-    const entry = { wins: 0, draws: 0, losses: 0 };
-    for (const g of s.games ?? []) {
-      if (g.result === "win") entry.wins++;
-      else if (g.result === "draw") entry.draws++;
-      else entry.losses++;
-    }
-    seriesGameSummary.set(s.id, entry);
-  }
+  if (opponentId) q = q.eq("opponent_id", opponentId);
+  if (dateFrom) q = q.gte("series_date", dateFrom);
+  if (dateTo) q = q.lte("series_date", dateTo);
+  const { data } = await q.overrideTypes<RecentSeriesRow[], { merge: false }>();
+  const recentSeries = (data ?? []).map((s) => ({ ...s, record: countResults(s.games) }));
 
   return (
     <Card>
@@ -68,10 +64,6 @@ export async function DashboardRecentMatches({
             {/* Mobile card layout */}
             <div className="space-y-2 sm:hidden">
               {recentSeries.map((s) => {
-                const { wins: w, draws: d, losses: l } =
-                  seriesGameSummary.get(s.id) ?? { wins: 0, draws: 0, losses: 0 };
-                const isWin = w > l;
-                const isLoss = l > w;
                 return (
                   <Link
                     key={s.id}
@@ -85,38 +77,13 @@ export async function DashboardRecentMatches({
                           {s.opponents?.name ?? "-"}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className="inline-flex items-center justify-center w-5 h-5 rounded text-xs font-bold stat-number"
-                          style={{
-                            backgroundColor: isWin
-                              ? "color-mix(in oklch, var(--win) 20%, transparent)"
-                              : isLoss
-                                ? "color-mix(in oklch, var(--loss) 20%, transparent)"
-                                : "var(--muted)",
-                            color: isWin
-                              ? "var(--win)"
-                              : isLoss
-                                ? "var(--loss)"
-                                : "var(--muted-foreground)",
-                          }}
-                        >
-                          {isWin ? "W" : isLoss ? "L" : "D"}
-                        </span>
-                        <span className="text-xs text-muted-foreground stat-number">
-                          {w}W {l}L{d > 0 ? ` ${d}D` : ""}
-                        </span>
-                      </div>
+                      <SeriesResultSummary {...s.record} />
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-xs text-muted-foreground">
                         {formatDate(s.series_date)}
                       </span>
-                      <span
-                        className={`text-xs px-1.5 py-0.5 rounded font-medium ${s.type === "tournament" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}
-                      >
-                        {s.type === "tournament" ? "大会" : "Scrim"}
-                      </span>
+                      <SeriesTypeBadge type={s.type} />
                     </div>
                   </Link>
                 );
@@ -148,25 +115,13 @@ export async function DashboardRecentMatches({
                 </thead>
                 <tbody>
                   {recentSeries.map((s) => {
-                    const { wins: w, draws: d, losses: l } =
-                      seriesGameSummary.get(s.id) ?? {
-                        wins: 0,
-                        draws: 0,
-                        losses: 0,
-                      };
-                    const isWin = w > l;
-                    const isLoss = l > w;
                     return (
                       <tr key={s.id} className="border-b border-border/50">
                         <td className="py-2.5 text-muted-foreground text-xs">
                           {formatDate(s.series_date)}
                         </td>
                         <td className="py-2.5">
-                          <span
-                            className={`text-xs px-1.5 py-0.5 rounded font-medium ${s.type === "tournament" ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}
-                          >
-                            {s.type === "tournament" ? "大会" : "Scrim"}
-                          </span>
+                          <SeriesTypeBadge type={s.type} />
                         </td>
                         <td className="py-2.5">
                           <Link
@@ -191,28 +146,7 @@ export async function DashboardRecentMatches({
                           )}
                         </td>
                         <td className="py-2.5">
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              className="inline-flex items-center justify-center w-5 h-5 rounded text-xs font-bold stat-number"
-                              style={{
-                                backgroundColor: isWin
-                                  ? "color-mix(in oklch, var(--win) 20%, transparent)"
-                                  : isLoss
-                                    ? "color-mix(in oklch, var(--loss) 20%, transparent)"
-                                    : "var(--muted)",
-                                color: isWin
-                                  ? "var(--win)"
-                                  : isLoss
-                                    ? "var(--loss)"
-                                    : "var(--muted-foreground)",
-                              }}
-                            >
-                              {isWin ? "W" : isLoss ? "L" : "D"}
-                            </span>
-                            <span className="text-xs text-muted-foreground stat-number">
-                              {w}W {l}L{d > 0 ? ` ${d}D` : ""}
-                            </span>
-                          </div>
+                          <SeriesResultSummary {...s.record} />
                         </td>
                         <td className="py-2.5 text-right">
                           <Link

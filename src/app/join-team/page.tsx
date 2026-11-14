@@ -21,10 +21,7 @@ export default async function JoinTeamPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div
-            className="inline-flex items-baseline gap-2 mb-2"
-            style={{ fontFamily: "var(--font-barlow-condensed), sans-serif" }}
-          >
+          <div className="inline-flex items-baseline gap-2 mb-2 font-display">
             <span className="text-3xl font-bold tracking-widest text-primary">COD</span>
             <span className="text-lg font-medium text-muted-foreground tracking-wider">STATS</span>
           </div>

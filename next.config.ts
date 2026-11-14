@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // React Compiler による自動メモ化（手書きの useMemo / useCallback / memo を不要にする）
+  reactCompiler: true,
   images: {
     remotePatterns: [
       {
