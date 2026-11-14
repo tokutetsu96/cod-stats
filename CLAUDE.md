@@ -4,50 +4,7 @@
 
 Call of Duty チーム戦績管理ダッシュボード（日本語UI）。試合結果と個人スタッツをゲームモード別（Hardpoint, S&D, Overload）に記録・管理する。チーム単位のマルチテナンシー構成。
 
-## Commands
-
-```bash
-npm run dev          # 開発サーバー起動（Turbopack）
-npm run build        # 本番ビルド
-npm run lint         # ESLint
-```
-
-## Tech Stack
-
-- **Next.js 16** (App Router, Server Components) + **React 19** + **TypeScript 6**
-- **Supabase** — PostgreSQL + RLS + Auth（email/password）
-- **Tailwind CSS v4** + **shadcn/ui** — ライト/ダークテーマ対応（`.dark` クラス切替・既定ダーク）、フォント: Barlow Condensed / Noto Sans JP
-- **dnd-kit** — ドラッグ&ドロップによるプレイヤー並び替え
-- **Vercel** にデプロイ
-
 ## Architecture
-
-### Directory Structure
-
-```
-src/
-├── app/
-│   ├── (authenticated)/       # 認証必須ルート（layoutでgetProfile()実行）
-│   │   ├── _components/       # ダッシュボード共通コンポーネント
-│   │   ├── matches/           # 試合一覧・作成・編集・詳細
-│   │   ├── opponents/         # 対戦チーム管理
-│   │   ├── players/           # プレイヤー管理
-│   │   └── settings/          # チーム設定
-│   ├── auth/callback/         # OAuth コールバック
-│   └── login/                 # ログイン・サインアップ
-├── components/
-│   ├── nav.tsx                # ナビゲーションバー（client component）
-│   ├── stats-table.tsx        # スタッツテーブル（dnd-kit統合）
-│   └── ui/                    # shadcn/ui コンポーネント群
-└── lib/
-    ├── supabase/
-    │   ├── server.ts          # サーバー用Supabaseクライアント
-    │   ├── client.ts          # ブラウザ用Supabaseクライアント
-    │   ├── middleware.ts      # セッション更新ミドルウェア
-    │   └── auth.ts            # getProfile() — React cache()でキャッシュ
-    ├── types.ts               # 全TypeScript型定義
-    └── utils.ts               # cn(), formatDate()
-```
 
 ### Data Flow
 
@@ -81,10 +38,6 @@ src/
 - **S&D**: `plants`, `defuses`, `first_bloods`, `first_deaths`
 - **Overload**: `goals`
 
-### Types
-
-`src/lib/types.ts` に全型定義。GameModeは `"hardpoint"` | `"snd"` | `"overload"`。
-
 ### Auth & Middleware
 
 - `src/proxy.ts` がミドルウェアとして全リクエストで `updateSession()` を実行
@@ -103,14 +56,11 @@ src/
 
 > **[MANDATORY]** ソースコード修正・実装を行う前に、必ず以下のスキルを参照すること。スキルの参照を省略してはならない。
 > - `/vercel-react-best-practices` — React/Next.js パフォーマンスとベストプラクティス
-> - `/vercel-plugin:nextjs` — Next.js App Router の実装ガイド
-> - `/vercel-plugin:react-best-practices` — TSX ファイルのベストプラクティスレビュー
+> - `/vercel:nextjs` — Next.js App Router の実装ガイド
 
 - UIテキストは全て**日本語**で記述する
-- ソースコード修正時は `/vercel-react-best-practices` スキルを参照し、パフォーマンスやベストプラクティスに沿ったコードを書くこと
 - Server Component をデフォルトとし、インタラクティブな機能のみ `"use client"` を使う
 - Supabaseクエリには必ず `team_id` フィルタを含める（マルチテナンシー）
 - shadcn/ui コンポーネント（`src/components/ui/`）は既存のものを再利用する
-- パスエイリアス: `@/*` → `./src/*`
 - 色は `globals.css` のテーマトークン（`bg-card`, `text-muted-foreground`, `text-win` 等）を使い、`yellow-400` などの固定色を直書きしない（ライト/ダーク両対応のため）
 - `cn()` ユーティリティ（clsx + tailwind-merge）でクラス名を結合する
