@@ -88,8 +88,7 @@ export function Nav({ teams, currentTeamId, username, avatar, role, titles, curr
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center gap-1.5 shrink-0 mr-6"
-          style={{ fontFamily: "var(--font-barlow-condensed), sans-serif" }}
+          className="flex items-center gap-1.5 shrink-0 mr-6 font-display"
         >
           <span className="text-xl font-bold tracking-widest text-primary">COD</span>
           <span className="text-sm font-medium text-muted-foreground tracking-wider">STATS</span>

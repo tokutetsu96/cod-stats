@@ -87,6 +87,19 @@
 
 ## Done
 
+### コードレビュー対応: 不要コード削除・不具合修正・リファクタリング（2026-11-14）
+
+- 不具合: プレイヤー詳細の集計が100件単位のページ内でしか行われず、100試合超で総ゲーム数・勝率・KDが不正確だった → `get_player_stats` RPC（マイグレーション `add_get_player_stats`）でDB側集計に変更し、ページネーションを廃止
+- 不具合: ダッシュボード「直近の対戦」が series id を `.in()` で列挙しており、シリーズ数が増えると URL 長上限で失敗しうる → フィルタ条件を直接クエリに渡す形に変更（集計とは独立に並列ストリーミング）
+- 対戦の新規作成フォームと編集フォームの重複を解消（`matches/_components/series-form.tsx` + `use-games-state.ts` に統合。state 更新は全て関数形式）
+- データ更新を Server Action に統一（対戦相手・プレイヤー・マップ・既定作品・プロフィール・対戦削除）。権限チェックと `team_id` スコープをサーバー側で実施
+- `.gitignore` の `*.json`（新規 JSON が無言で追跡外になる）を削除
+- `components/ui/*` の `forwardRef` を撤去（React 19 の ref prop）、対戦一覧を Server Component 化（絞り込みのみ Client）
+- 型の依存方向を整理（`PlayerKDData` を `lib/kd-stats.ts`、`StatInput` を `lib/types.ts` に集約）、勝敗・種別バッジを `components/series-badges.tsx` に共通化
+- React Compiler を有効化（`reactCompiler: true`）。Supabase キーは `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` を優先し、未設定時は anon key にフォールバック
+- その他: 未使用コード・未使用依存（`@types/react-datepicker`）の削除、非推奨 `.returns()` の置き換え、編集ページのクエリ直列待ちの解消
+- 残: Vercel / `.env.local` の環境変数を publishable key に切り替える（コード側は対応済み）。`confirm()` による確認ダイアログは現状維持
+
 ### 招待コード発行で "Minified React error #441" が出る不具合を修正（2026-11-14）
 
 招待コード制（2026-11-13）のDB変更が本番Supabaseに未適用で、発行・参加・除外がすべて失敗していた。本番ではServer Actionのthrowがメッセージを伏せた #441 になり、原因が画面に出なかった。

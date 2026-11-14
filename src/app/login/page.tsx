@@ -77,10 +77,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo area */}
         <div className="text-center mb-8">
-          <div
-            className="inline-flex items-baseline gap-2 mb-2"
-            style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
-          >
+          <div className="inline-flex items-baseline gap-2 mb-2 font-display">
             <span className="text-3xl font-bold tracking-widest text-primary">COD</span>
             <span className="text-lg font-medium text-muted-foreground tracking-wider">STATS</span>
           </div>

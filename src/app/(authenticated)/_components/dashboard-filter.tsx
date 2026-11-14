@@ -4,7 +4,7 @@ import { Select } from "@/components/ui/select";
 import { DatePicker, todayStr } from "@/components/ui/date-picker";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useTransition } from "react";
-import type { GameMode, Opponent } from "@/lib/types";
+import type { GameMode } from "@/lib/types";
 import { modeLabel } from "@/lib/constants";
 
 const STORAGE_KEY = "dashboard-opponent-filter";
@@ -28,7 +28,7 @@ function oneMonthAgoStr(): string {
   return `${yy}-${mm}-${dd}`;
 }
 
-export function DashboardFilter({ opponents, modes }: { opponents: Opponent[]; modes: GameMode[] }) {
+export function DashboardFilter({ opponents, modes }: { opponents: { id: string; name: string }[]; modes: GameMode[] }) {
   const modeTabs: { key: "" | GameMode; label: string }[] = [
     { key: "", label: "すべて" },
     ...modes.map((m) => ({ key: m, label: modeLabel[m] })),

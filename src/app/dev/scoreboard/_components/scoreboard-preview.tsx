@@ -5,11 +5,12 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { GameCard } from "@/app/(authenticated)/matches/_components/game-card";
 import {
   buildSeriesPayload,
+  emptyHillTimes,
   emptyStats,
+  padStats,
   type GameInput,
-  type StatInput,
 } from "@/app/(authenticated)/matches/_components/series-form-shared";
-import type { MapEntry, Opponent, Player } from "@/lib/types";
+import type { MapEntry, Opponent, Player, StatInput } from "@/lib/types";
 
 const meta = { team_id: "dev", created_at: "2026-01-01T00:00:00Z" };
 
@@ -40,20 +41,15 @@ const MAPS: MapEntry[] = [
 ];
 
 function initialGame(): GameInput {
-  const pad = (stats: StatInput[]) => {
-    const r = [...stats];
-    while (r.length < 4) r.push(emptyStats());
-    return r.slice(0, 4);
-  };
   return {
     id: "dev-game",
     mode: "hardpoint",
     map_id: "m-sentry",
     score_team: "",
     score_opponent: "",
-    hill_times: { team: [[]], opponent: [[]], winner: [[]] },
-    stats: pad(PLAYERS.filter((p) => p.is_default).map((p) => ({ ...emptyStats(), player_id: p.id }))),
-    opponent_stats: pad(
+    hill_times: emptyHillTimes(),
+    stats: padStats(PLAYERS.filter((p) => p.is_default).map((p) => ({ ...emptyStats(), player_id: p.id }))),
+    opponent_stats: padStats(
       (OPPONENT.opponent_players ?? []).map((p) => ({ ...emptyStats(), player_id: p.id })),
     ),
     expanded: true,

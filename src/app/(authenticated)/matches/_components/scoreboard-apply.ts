@@ -1,6 +1,7 @@
 import type { HardpointScoreboard, ScoreboardRow } from "@/lib/scoreboard/recognize";
 import { matchNames, teamAffinity, type NameCandidate } from "@/lib/scoreboard/match";
-import { emptyStats, type GameInput, type StatInput } from "./series-form-shared";
+import type { StatInput } from "@/lib/types";
+import { emptyStats, type GameInput } from "./series-form-shared";
 
 export type TeamSide = 0 | 1;
 

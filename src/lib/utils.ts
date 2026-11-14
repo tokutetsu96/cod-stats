@@ -10,6 +10,17 @@ export function calcKD(kills: number, deaths: number) {
   return (kills / deaths).toFixed(2);
 }
 
+/** ゲーム結果の配列から勝・分・敗の数を1パスで数える（win / draw 以外は敗戦扱い） */
+export function countResults(games: { result: string }[] | null | undefined) {
+  let wins = 0, draws = 0, losses = 0;
+  for (const g of games ?? []) {
+    if (g.result === "win") wins++;
+    else if (g.result === "draw") draws++;
+    else losses++;
+  }
+  return { wins, draws, losses };
+}
+
 const WEEKDAYS = ["\u65E5", "\u6708", "\u706B", "\u6C34", "\u6728", "\u91D1", "\u571F"];
 
 export function isValidYoutubeUrl(url: string): boolean {

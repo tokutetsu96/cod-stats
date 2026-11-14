@@ -53,8 +53,8 @@ src/
 
 1. ページ（Server Component）が `getProfile()` で認証・プロフィール取得（`team_id`付き）
 2. Supabaseクエリは全て `team_id` でフィルタ（RLSベースのマルチテナンシー）
-3. Client Component はprops経由でデータ受取、mutation後は `router.refresh()` で再取得
-4. API Routeは使わない — コンポーネントがSupabaseに直接クエリ
+3. Client Component はprops経由でデータ受取。データ更新は Server Action（各ルートの `actions.ts`）経由で行い、`ActionResult`（`{ ok, error }`）を返す。Action 内で権限チェック・`team_id` スコープ・`revalidatePath` を行う（共通ヘルパー: `src/lib/supabase/admin.ts`、クライアント側: `src/lib/use-action.ts`）
+4. API Routeは使わない。ブラウザ用Supabaseクライアントを使うのは認証（ログイン・ログアウト）とアバター画像のStorageアップロードのみ
 
 ### Data Model
 

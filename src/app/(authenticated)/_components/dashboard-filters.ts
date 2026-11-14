@@ -2,8 +2,7 @@ import type { GameMode } from "@/lib/types";
 import { ALL_MODES } from "@/lib/constants";
 
 // ダッシュボードのフィルタ（searchParams）の解釈を一箇所に集約する。
-// period: プリセット期間。custom のときのみ from / to を使う
-export type PeriodPreset = "1w" | "1m" | "3m" | "custom";
+// period: プリセット期間（1w / 1m / 3m / custom）。custom のときのみ from / to を使う
 
 export interface DashboardSearchParams {
   opponent?: string;

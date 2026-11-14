@@ -1,27 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Trash2, Plus, Pencil, Check, X } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import type { GameMode, MapEntry } from "@/lib/types";
 import { modeLabel } from "@/lib/constants";
+import { useAction } from "@/lib/use-action";
+import { addMap, deleteMap, updateMap } from "../actions";
 
-export function MapManager({ maps, modes, teamId, titleId, isAdmin }: { maps: MapEntry[]; modes: GameMode[]; teamId: string; titleId: string; isAdmin: boolean }) {
+export function MapManager({ maps, modes, titleId, isAdmin }: { maps: MapEntry[]; modes: GameMode[]; titleId: string; isAdmin: boolean }) {
   const [activeMode, setActiveMode] = useState<GameMode>("hardpoint");
   const [name, setName] = useState("");
   const [hillCount, setHillCount] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editHillCount, setEditHillCount] = useState("");
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [mutationError, setMutationError] = useState("");
-  const router = useRouter();
+  // 更新は Server Action 経由（権限チェック・team_id スコープ・再取得はサーバー側で行う）
+  const { pendingKey, error: mutationError, run } = useAction();
 
   const startEdit = (m: MapEntry) => {
     setEditingId(m.id);
@@ -31,46 +28,25 @@ export function MapManager({ maps, modes, teamId, titleId, isAdmin }: { maps: Ma
 
   const cancelEdit = () => setEditingId(null);
 
-  const handleSave = async (m: MapEntry) => {
-    if (!isAdmin || !editName.trim()) return;
-    setSavingId(m.id);
-    setMutationError("");
-    const supabase = createClient();
-    const hill_count = m.mode === "hardpoint" && editHillCount.trim() ? parseInt(editHillCount) || null : null;
-    const { error } = await supabase.from("maps").update({ name: editName.trim(), hill_count }).eq("id", m.id);
-    if (error) { setMutationError("更新に失敗しました"); setSavingId(null); return; }
-    setSavingId(null);
-    setEditingId(null);
-    router.refresh();
+  const handleSave = (m: MapEntry) => {
+    if (!editName.trim()) return;
+    run(`save:${m.id}`, () => updateMap(m.id, m.mode, editName, editHillCount), () => setEditingId(null));
   };
 
   const filtered = maps.filter((m) => m.mode === activeMode);
 
-  const handleAdd = async (e: React.FormEvent) => {
+  const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAdmin || !name.trim()) return;
-    setLoading(true);
-    setMutationError("");
-    const supabase = createClient();
-    const hill_count = activeMode === "hardpoint" && hillCount.trim() ? parseInt(hillCount) || null : null;
-    const { error } = await supabase.from("maps").insert({ name: name.trim(), mode: activeMode, team_id: teamId, title_id: titleId, hill_count });
-    if (error) { setMutationError("追加に失敗しました"); setLoading(false); return; }
-    setName("");
-    setHillCount("");
-    setLoading(false);
-    router.refresh();
+    if (!name.trim()) return;
+    run("add", () => addMap(titleId, activeMode, name, hillCount), () => {
+      setName("");
+      setHillCount("");
+    });
   };
 
-  const handleDelete = async (id: string) => {
-    if (!isAdmin) return;
+  const handleDelete = (id: string) => {
     if (!confirm("このマップを削除しますか？")) return;
-    setDeletingId(id);
-    setMutationError("");
-    const supabase = createClient();
-    const { error } = await supabase.from("maps").delete().eq("id", id);
-    if (error) { setMutationError("削除に失敗しました"); setDeletingId(null); return; }
-    router.refresh();
-    setDeletingId(null);
+    run(`delete:${id}`, () => deleteMap(id));
   };
 
   return (
@@ -112,8 +88,8 @@ export function MapManager({ maps, modes, teamId, titleId, isAdmin }: { maps: Ma
               />
             </div>
           )}
-          <Button type="submit" size="sm" disabled={loading}>
-            {loading ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
+          <Button type="submit" size="sm" disabled={pendingKey === "add"}>
+            {pendingKey === "add" ? <Spinner className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />} 追加
           </Button>
         </form>
       )}
@@ -143,8 +119,8 @@ export function MapManager({ maps, modes, teamId, titleId, isAdmin }: { maps: Ma
                       onChange={(e) => setEditHillCount(e.target.value)}
                     />
                   )}
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleSave(m)} disabled={savingId === m.id}>
-                    {savingId === m.id ? <Spinner /> : <Check className="h-4 w-4 text-win" />}
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleSave(m)} disabled={pendingKey === `save:${m.id}`}>
+                    {pendingKey === `save:${m.id}` ? <Spinner /> : <Check className="h-4 w-4 text-win" />}
                   </Button>
                   <Button size="icon" variant="ghost" className="h-7 w-7" onClick={cancelEdit}>
                     <X className="h-4 w-4" />
@@ -163,8 +139,8 @@ export function MapManager({ maps, modes, teamId, titleId, isAdmin }: { maps: Ma
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEdit(m)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(m.id)} disabled={deletingId === m.id}>
-                        {deletingId === m.id ? <Spinner /> : <Trash2 className="h-4 w-4" />}
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDelete(m.id)} disabled={pendingKey === `delete:${m.id}`}>
+                        {pendingKey === `delete:${m.id}` ? <Spinner /> : <Trash2 className="h-4 w-4" />}
                       </Button>
                     </>
                   )}

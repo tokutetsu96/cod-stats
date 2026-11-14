@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/lib/supabase/auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { modeLabel } from "@/lib/constants";
 import type { GameMode } from "@/lib/types";
@@ -25,13 +24,12 @@ export async function DashboardStats({
   mode,
   modes,
 }: {
-  seriesIds: string[] | null;
+  seriesIds: string[];
   mode?: GameMode;
   /** 作品のモード一覧（内訳カードの表示対象） */
   modes: GameMode[];
 }) {
   const supabase = await createClient();
-  await getProfile();
 
   // 集計は get_team_game_stats RPC でDB側に実施する。
   // mode ごとの total/wins/losses のみを返すため、games 全行を転送していた

@@ -4,8 +4,8 @@ import { getCurrentTitle } from "@/lib/supabase/titles";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import type { GameMode, MatchResult } from "@/lib/types";
-import { getTitleModes, modeLabel } from "@/lib/constants";
+import type { GameMode, MatchResult, SeriesType } from "@/lib/types";
+import { getTitleModes, modeLabel, seriesTypeLabel } from "@/lib/constants";
 const resultLabel: Record<string, string> = { win: "勝", lose: "負", draw: "分" };
 const resultClass: Record<string, string> = {
   win: "text-win font-bold stat-number",
@@ -18,19 +18,19 @@ export async function OpponentDetailContent({ id }: { id: string }) {
   const { profile } = await getProfile();
   const { currentTitle } = await getCurrentTitle();
 
-  type GameRow = { id: string; mode: GameMode; result: MatchResult; score_team: number; score_opponent: number; maps: { name: string } | { name: string }[] | null };
-  type SeriesRow = { id: string; series_date: string; type: string; games: GameRow[] };
+  type GameRow = { id: string; mode: GameMode; result: MatchResult; score_team: number; score_opponent: number };
+  type SeriesRow = { id: string; series_date: string; type: SeriesType; games: GameRow[] };
 
   const [{ data: opponent }, { data: seriesData }] = await Promise.all([
-    supabase.from("opponents").select("*").eq("id", id).eq("team_id", profile.team_id).single(),
+    supabase.from("opponents").select("name").eq("id", id).eq("team_id", profile.team_id).single(),
     supabase
       .from("series")
-      .select("id, series_date, type, games(id, mode, result, score_team, score_opponent, maps(name))")
+      .select("id, series_date, type, games(id, mode, result, score_team, score_opponent)")
       .eq("opponent_id", id)
       .eq("team_id", profile.team_id)
       .eq("title_id", currentTitle?.id ?? "")
       .order("series_date", { ascending: false })
-      .returns<SeriesRow[]>(),
+      .overrideTypes<SeriesRow[], { merge: false }>(),
   ]);
 
   if (!opponent) notFound();
@@ -63,10 +63,10 @@ export async function OpponentDetailContent({ id }: { id: string }) {
       if (g.result === "win") sw++;
       else if (g.result === "lose") sl++;
     }
-    const r = sw > sl ? "win" : sl > sw ? "lose" : "draw";
-    if (r === "win") seriesWins++;
-    else if (r === "lose") seriesLosses++;
-    return r;
+    const result: MatchResult = sw > sl ? "win" : sl > sw ? "lose" : "draw";
+    if (result === "win") seriesWins++;
+    else if (result === "lose") seriesLosses++;
+    return { wins: sw, losses: sl, result };
   });
 
   const modeData = modes.map((mode) => {
@@ -156,16 +156,14 @@ export async function OpponentDetailContent({ id }: { id: string }) {
           ) : (
             <div className="space-y-2">
               {series.map((s, si) => {
-                let sw = 0, sl = 0;
-                for (const g of s.games) { if (g.result === "win") sw++; else if (g.result === "lose") sl++; }
-                const sr = seriesResults[si];
+                const { wins: sw, losses: sl, result: sr } = seriesResults[si];
                 return (
                   <Link key={s.id} href={`/matches/${s.id}`} className="block border rounded-md px-3 py-2 hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-3">
                       <span className={`text-base w-6 text-center ${resultClass[sr]}`}>{resultLabel[sr]}</span>
                       <span className="text-sm font-medium">{sw} - {sl}</span>
                       <span className="text-xs text-muted-foreground">{s.series_date}</span>
-                      <span className="text-xs text-muted-foreground">{s.type === "scrim" ? "Scrim" : "大会"}</span>
+                      <span className="text-xs text-muted-foreground">{seriesTypeLabel[s.type]}</span>
                       <div className="flex gap-1 ml-auto flex-wrap justify-end">
                         {s.games.map((g) => (
                           <span key={g.id} className={`text-xs px-1.5 py-0.5 rounded ${resultClass[g.result]}`}>

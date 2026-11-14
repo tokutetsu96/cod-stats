@@ -35,7 +35,7 @@ export default async function SettingsPage() {
       .select("user_id, role, profiles(username)")
       .eq("team_id", profile.team_id)
       .order("created_at")
-      .returns<{ user_id: string; role: string; profiles: { username: string } | null }[]>(),
+      .overrideTypes<{ user_id: string; role: string; profiles: { username: string } | null }[], { merge: false }>(),
     isAdmin
       ? supabase
           .from("team_invites")
@@ -43,7 +43,7 @@ export default async function SettingsPage() {
           .eq("team_id", profile.team_id)
           .gt("expires_at", new Date().toISOString())
           .order("created_at", { ascending: false })
-          .returns<TeamInvite[]>()
+          .overrideTypes<TeamInvite[], { merge: false }>()
       : empty,
     isAdmin
       ? supabase
@@ -51,7 +51,7 @@ export default async function SettingsPage() {
           .select("user_id, username, created_at")
           .eq("team_id", profile.team_id)
           .order("created_at", { ascending: false })
-          .returns<TeamBan[]>()
+          .overrideTypes<TeamBan[], { merge: false }>()
       : empty,
   ]);
 
@@ -130,7 +130,7 @@ export default async function SettingsPage() {
             <CardTitle>マップ管理（{currentTitle.name}）</CardTitle>
           </CardHeader>
           <CardContent>
-            <MapManager maps={maps ?? []} modes={getTitleModes(currentTitle)} teamId={profile.team_id} titleId={currentTitle.id} isAdmin={isAdmin} />
+            <MapManager maps={maps ?? []} modes={getTitleModes(currentTitle)} titleId={currentTitle.id} isAdmin={isAdmin} />
           </CardContent>
         </Card>
       )}
