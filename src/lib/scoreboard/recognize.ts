@@ -1,4 +1,4 @@
-// ブラウザ専用: スコアボード画像を OCR してハードポイントのスタッツを返す。
+// ブラウザ専用: スコアボード画像を OCR してスタッツを返す（ハードポイント / S&D / ハイジャック）。
 // tesseract.js は重いため、このモジュール自体を動的 import して使うこと。
 
 import type { Worker } from "tesseract.js";
@@ -6,25 +6,31 @@ import {
   cellScale,
   cleanName,
   detectTeamLines,
-  hardpointCells,
+  OBJECTIVE_COLUMNS,
   parseClockSeconds,
   parseInteger,
   parseKillsDeaths,
   preprocessCell,
+  scoreboardCells,
+  type ObjectiveField,
   type RawImage,
   type Rect,
+  type ScoreboardMode,
 } from "./layout";
+
+export type { ObjectiveField, ScoreboardMode };
 
 export interface ScoreboardRow {
   name: string;
   kills: number | null;
   deaths: number | null;
   damage: number | null;
-  /** 秒 */
-  hillTime: number | null;
+  /** モード固有の値（hill_time は秒） */
+  objectives: Partial<Record<ObjectiveField, number | null>>;
 }
 
-export interface HardpointScoreboard {
+export interface Scoreboard {
+  mode: ScoreboardMode;
   /** [A チーム（上段）, B チーム（下段）] */
   teams: [ScoreboardRow[], ScoreboardRow[]];
   /** [A, B] */
@@ -34,7 +40,10 @@ export interface HardpointScoreboard {
 export class ScoreboardReadError extends Error {}
 
 interface Workers {
+  /** K/D・ダメージ・時間・スコア（1 行として読む） */
   digits: Worker;
+  /** 1 桁が多い回数系の列。SINGLE_LINE だと単独の数字を読み落とすため単語として読む */
+  counts: Worker;
   names: Worker;
 }
 
@@ -45,7 +54,8 @@ function getWorkers(): Promise<Workers> {
   if (!workersPromise) {
     workersPromise = (async () => {
       const { createWorker, PSM } = await import("tesseract.js");
-      const [digits, names] = await Promise.all([
+      const [digits, counts, names] = await Promise.all([
+        createWorker("eng"),
         createWorker("eng"),
         createWorker(["jpn", "eng"]),
       ]);
@@ -54,9 +64,13 @@ function getWorkers(): Promise<Workers> {
           tessedit_pageseg_mode: PSM.SINGLE_LINE,
           tessedit_char_whitelist: "0123456789/:",
         }),
+        counts.setParameters({
+          tessedit_pageseg_mode: PSM.SINGLE_WORD,
+          tessedit_char_whitelist: "0123456789",
+        }),
         names.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_LINE }),
       ]);
-      return { digits, names };
+      return { digits, counts, names };
     })();
     workersPromise.catch(() => {
       workersPromise = null;
@@ -91,7 +105,7 @@ function toCanvas(img: RawImage): HTMLCanvasElement {
   return canvas;
 }
 
-export async function readHardpointScoreboard(blob: Blob): Promise<HardpointScoreboard> {
+export async function readScoreboard(blob: Blob, mode: ScoreboardMode): Promise<Scoreboard> {
   const [img, workers] = await Promise.all([loadImage(blob), getWorkers()]);
 
   const lines = detectTeamLines(img);
@@ -100,7 +114,8 @@ export async function readHardpointScoreboard(blob: Blob): Promise<HardpointScor
       "スコアボードを検出できませんでした。試合終了後のスコアボード全体が写った画像を使用してください",
     );
   }
-  const cells = hardpointCells(img, lines);
+  const cells = scoreboardCells(img, lines, mode);
+  const columns = OBJECTIVE_COLUMNS[mode];
   const scale = cellScale(cells.unit);
 
   const read = async (worker: Worker, rect: Rect) => {
@@ -112,17 +127,26 @@ export async function readHardpointScoreboard(blob: Blob): Promise<HardpointScor
   const readTeam = (rows: (typeof cells.teams)[number]) =>
     Promise.all(
       rows.map(async (row): Promise<ScoreboardRow> => {
-        const [name, kd, damage, hillTime] = await Promise.all([
+        const [name, kd, damage, ...objectiveTexts] = await Promise.all([
           read(workers.names, row.name),
           read(workers.digits, row.kd),
           read(workers.digits, row.damage),
-          read(workers.digits, row.hillTime),
+          ...row.objectives.map((rect, i) =>
+            read(columns[i].format === "clock" ? workers.digits : workers.counts, rect),
+          ),
         ]);
+        const objectives: ScoreboardRow["objectives"] = {};
+        columns.forEach((col, i) => {
+          objectives[col.field] =
+            col.format === "clock"
+              ? parseClockSeconds(objectiveTexts[i])
+              : parseInteger(objectiveTexts[i]);
+        });
         return {
           name: cleanName(name),
           ...parseKillsDeaths(kd),
           damage: parseInteger(damage),
-          hillTime: parseClockSeconds(hillTime),
+          objectives,
         };
       }),
     );
@@ -135,6 +159,7 @@ export async function readHardpointScoreboard(blob: Blob): Promise<HardpointScor
   ]);
 
   return {
+    mode,
     teams: [teamA, teamB],
     scores: [parseInteger(scoreA), parseInteger(scoreB)],
   };

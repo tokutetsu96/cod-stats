@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import type { NameCandidate } from "@/lib/scoreboard/match";
-import type { HardpointScoreboard } from "@/lib/scoreboard/recognize";
+import type { Scoreboard, ScoreboardMode } from "@/lib/scoreboard/recognize";
 import { applyScoreboard, guessOwnSide, type TeamSide } from "./scoreboard-apply";
 import type { GameInput } from "./series-form-shared";
 
@@ -20,6 +20,7 @@ type Status =
 
 interface ScoreboardImportProps {
   game: GameInput;
+  mode: ScoreboardMode;
   players: NameCandidate[];
   opponentPlayers: NameCandidate[];
   onApply: (updates: Partial<GameInput>) => void;
@@ -36,6 +37,7 @@ function imageFromClipboard(e: React.ClipboardEvent): File | null {
 
 export function ScoreboardImport({
   game,
+  mode,
   players,
   opponentPlayers,
   onApply,
@@ -44,9 +46,9 @@ export function ScoreboardImport({
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [dragging, setDragging] = useState(false);
   // チーム入れ替え用に、取り込み直前のフォーム値と読み取り結果を保持する
-  const lastImportRef = useRef<{ board: HardpointScoreboard; base: BaseState } | null>(null);
+  const lastImportRef = useRef<{ board: Scoreboard; base: BaseState } | null>(null);
 
-  const apply = (board: HardpointScoreboard, base: BaseState, ownSide: TeamSide) => {
+  const apply = (board: Scoreboard, base: BaseState, ownSide: TeamSide) => {
     const { updates, unmatched } = applyScoreboard({
       game: base,
       board,
@@ -73,11 +75,11 @@ export function ScoreboardImport({
     };
     try {
       // tesseract.js を含むため、使うときだけ読み込む
-      const { readHardpointScoreboard, ScoreboardReadError } = await import(
+      const { readScoreboard, ScoreboardReadError } = await import(
         "@/lib/scoreboard/recognize"
       );
       try {
-        const board = await readHardpointScoreboard(file);
+        const board = await readScoreboard(file, mode);
         lastImportRef.current = { board, base };
         apply(board, base, guessOwnSide(board, players));
       } catch (e) {

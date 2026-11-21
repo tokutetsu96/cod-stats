@@ -1,4 +1,4 @@
-import type { HardpointScoreboard, ScoreboardRow } from "@/lib/scoreboard/recognize";
+import type { ObjectiveField, Scoreboard, ScoreboardRow } from "@/lib/scoreboard/recognize";
 import { matchNames, teamAffinity, type NameCandidate } from "@/lib/scoreboard/match";
 import type { StatInput } from "@/lib/types";
 import { emptyStats, type GameInput } from "./series-form-shared";
@@ -6,7 +6,7 @@ import { emptyStats, type GameInput } from "./series-form-shared";
 export type TeamSide = 0 | 1;
 
 /** 自チームのプレイヤー名との一致度が高い方を自チームとみなす（同点なら上段） */
-export function guessOwnSide(board: HardpointScoreboard, players: NameCandidate[]): TeamSide {
+export function guessOwnSide(board: Scoreboard, players: NameCandidate[]): TeamSide {
   const names = (side: TeamSide) => board.teams[side].map((r) => r.name);
   return teamAffinity(names(1), players) > teamAffinity(names(0), players) ? 1 : 0;
 }
@@ -36,14 +36,20 @@ function fillStats(
 
   const write = (idx: number, row: ScoreboardRow, playerId: string | null) => {
     const s = stats[idx];
-    stats[idx] = {
+    const next: StatInput = {
       ...s,
       player_id: playerId ?? s.player_id,
       kills: str(row.kills, s.kills),
       deaths: str(row.deaths, s.deaths),
       damage: str(row.damage, s.damage),
-      hill_time: str(row.hillTime, s.hill_time),
     };
+    for (const [field, value] of Object.entries(row.objectives) as [
+      ObjectiveField,
+      number | null,
+    ][]) {
+      next[field] = str(value, s[field]);
+    }
+    stats[idx] = next;
     used.add(idx);
   };
 
@@ -68,7 +74,7 @@ function fillStats(
 
 export function applyScoreboard(args: {
   game: Pick<GameInput, "stats" | "opponent_stats" | "score_team" | "score_opponent">;
-  board: HardpointScoreboard;
+  board: Scoreboard;
   ownSide: TeamSide;
   players: NameCandidate[];
   opponentPlayers: NameCandidate[];

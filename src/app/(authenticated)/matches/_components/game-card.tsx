@@ -17,6 +17,7 @@ import {
   type GameInput,
 } from "./series-form-shared";
 import { MODE_SCORE_MAX, modeLabel } from "@/lib/constants";
+import { isScoreboardMode } from "@/lib/scoreboard/layout";
 import { ScoreboardImport } from "./scoreboard-import";
 
 interface GameCardProps {
@@ -331,9 +332,10 @@ export function GameCard({
             </div>
           )}
 
-          {game.mode === "hardpoint" ? (
+          {isScoreboardMode(game.mode) ? (
             <ScoreboardImport
               game={game}
+              mode={game.mode}
               players={players}
               opponentPlayers={selectedOpponent?.opponent_players ?? []}
               onApply={(updates) => onUpdateGame(gIdx, updates)}
