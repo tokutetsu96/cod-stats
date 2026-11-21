@@ -3,6 +3,11 @@ import path from "node:path";
 
 // 開発専用: docs/samples の画像をプレビューページに配信する
 const SAMPLES_DIR = path.join(process.cwd(), "docs", "samples");
+const CONTENT_TYPES: Record<string, string> = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+};
 
 export async function GET(request: Request) {
   if (process.env.NODE_ENV !== "development") {
@@ -10,12 +15,13 @@ export async function GET(request: Request) {
   }
   const name = new URL(request.url).searchParams.get("name") ?? "";
   // ディレクトリトラバーサル防止: ファイル名のみ許可
-  if (!name || path.basename(name) !== name || !name.endsWith(".png")) {
+  const contentType = CONTENT_TYPES[path.extname(name).toLowerCase()];
+  if (!name || path.basename(name) !== name || !contentType) {
     return new Response("Bad Request", { status: 400 });
   }
   try {
     const file = await readFile(path.join(SAMPLES_DIR, name));
-    return new Response(file, { headers: { "Content-Type": "image/png" } });
+    return new Response(file, { headers: { "Content-Type": contentType } });
   } catch {
     return new Response("Not Found", { status: 404 });
   }

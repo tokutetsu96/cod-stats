@@ -25,15 +25,73 @@ export interface TeamLine {
   x1: number;
 }
 
-export type HardpointCellKind = "name" | "kd" | "damage" | "hillTime";
+/** 全モード共通の列 */
+export type BaseCellKind = "name" | "kd" | "damage";
+
+/** モード固有の列に対応するスタッツ項目（StatInput のキーと揃える） */
+export type ObjectiveField =
+  | "hill_time"
+  | "plants"
+  | "defuses"
+  | "first_bloods"
+  | "first_deaths"
+  | "uploads"
+  | "dunks"
+  | "remote_plants";
+
+/** 画像を読み取れるモード（Overload はサンプル画像が無いため未対応） */
+export type ScoreboardMode = "hardpoint" | "snd" | "hijack";
+
+export function isScoreboardMode(mode: string): mode is ScoreboardMode {
+  return mode === "hardpoint" || mode === "snd" || mode === "hijack";
+}
 
 interface Span {
   from: number;
   to: number;
 }
 
-/** CDL ハードポイントのスコアボードレイアウト（単位: 区切り線長 L） */
-const HARDPOINT_LAYOUT = {
+export interface ObjectiveColumn {
+  field: ObjectiveField;
+  /** 値の書式。clock は "2:27" 形式（秒に変換する） */
+  format: "int" | "clock";
+}
+
+/**
+ * 右側（区切りの縦線より右）のモード固有列の位置。
+ * 各モードとも列の位置・幅は共通で、並び順だけが異なる。
+ */
+const OBJECTIVE_FIRST_CENTER = 0.6625;
+const OBJECTIVE_PITCH = 0.0614;
+const OBJECTIVE_HALF_WIDTH = 0.0235;
+
+function objectiveSpan(index: number): Span {
+  const center = OBJECTIVE_FIRST_CENTER + OBJECTIVE_PITCH * index;
+  return { from: center - OBJECTIVE_HALF_WIDTH, to: center + OBJECTIVE_HALF_WIDTH };
+}
+
+/** モードごとの右側列（左から順。読み取らない列は含めない） */
+export const OBJECTIVE_COLUMNS: Record<ScoreboardMode, ObjectiveColumn[]> = {
+  // ハードポイント占拠時間 / 平均… / 目標キル / 競合中… / キル/ヒル / ダメージ/ヒル
+  hardpoint: [{ field: "hill_time", format: "clock" }],
+  // 爆弾設置 / 爆弾解除 / 1ST ブラッド / 初回デス数 / キル数/ラウンド / ダメージ/ラウンド
+  snd: [
+    { field: "plants", format: "int" },
+    { field: "defuses", format: "int" },
+    { field: "first_bloods", format: "int" },
+    { field: "first_deaths", format: "int" },
+  ],
+  // データのアップロード完了 / 設置 / ダンク / リモート設置 / パス / インターセプト
+  hijack: [
+    { field: "uploads", format: "int" },
+    { field: "plants", format: "int" },
+    { field: "dunks", format: "int" },
+    { field: "remote_plants", format: "int" },
+  ],
+};
+
+/** CDL スコアボードのレイアウト（単位: 区切り線長 L）。左側の列・行・スコア位置は全モード共通 */
+const SCOREBOARD_LAYOUT = {
   /** 区切り線から 1 行目中心までの距離 */
   rowFirstOffset: 0.0205,
   /** 行の間隔 */
@@ -45,8 +103,7 @@ const HARDPOINT_LAYOUT = {
     name: { from: 0.075, to: 0.29 },
     kd: { from: 0.297, to: 0.35 },
     damage: { from: 0.559, to: 0.608 },
-    hillTime: { from: 0.639, to: 0.686 },
-  } satisfies Record<HardpointCellKind, Span>,
+  } satisfies Record<BaseCellKind, Span>,
   /** 上部スコア（A 区切り線からの相対位置） */
   score: {
     /**
@@ -131,9 +188,14 @@ function spanRect(
   };
 }
 
-export interface HardpointCells {
-  /** teams[teamIdx][rowIdx][kind] */
-  teams: [Record<HardpointCellKind, Rect>[], Record<HardpointCellKind, Rect>[]];
+export interface RowCells extends Record<BaseCellKind, Rect> {
+  /** OBJECTIVE_COLUMNS[mode] と同じ順 */
+  objectives: Rect[];
+}
+
+export interface ScoreboardCells {
+  /** teams[teamIdx][rowIdx] */
+  teams: [RowCells[], RowCells[]];
   scores: [Rect, Rect];
   /** 区切り線長（前処理の拡大率計算に使う） */
   unit: number;
@@ -151,7 +213,7 @@ function locateScoreBand(
   line: TeamLine,
   unit: number,
 ): { top: number; bottom: number } | null {
-  const S = HARDPOINT_LAYOUT.score;
+  const S = SCOREBOARD_LAYOUT.score;
   const yFrom = Math.max(0, Math.round(line.y + S.searchY.from * unit));
   const yTo = Math.min(img.height - 1, Math.round(line.y + S.searchY.to * unit));
   const xRanges = [S.teamA, S.teamB].map((span) => [
@@ -195,19 +257,24 @@ function locateScoreBand(
   return found;
 }
 
-export function hardpointCells(img: RawImage, lines: [TeamLine, TeamLine]): HardpointCells {
-  const L = HARDPOINT_LAYOUT;
+export function scoreboardCells(
+  img: RawImage,
+  lines: [TeamLine, TeamLine],
+  mode: ScoreboardMode,
+): ScoreboardCells {
+  const L = SCOREBOARD_LAYOUT;
+  const objectiveSpans = OBJECTIVE_COLUMNS[mode].map((_, i) => objectiveSpan(i));
   const unit = lines[0].x1 - lines[0].x0;
   const halfH = L.rowHalfHeight * unit;
 
   const teamRows = (line: TeamLine) =>
-    Array.from({ length: L.rowsPerTeam }, (_, r) => {
+    Array.from({ length: L.rowsPerTeam }, (_, r): RowCells => {
       const cy = line.y + (L.rowFirstOffset + L.rowPitch * r) * unit;
       return {
         name: spanRect(line, unit, L.columns.name, cy, halfH),
         kd: spanRect(line, unit, L.columns.kd, cy, halfH),
         damage: spanRect(line, unit, L.columns.damage, cy, halfH),
-        hillTime: spanRect(line, unit, L.columns.hillTime, cy, halfH),
+        objectives: objectiveSpans.map((span) => spanRect(line, unit, span, cy, halfH)),
       };
     });
 
@@ -256,7 +323,7 @@ function otsuThreshold(hist: number[], total: number): number {
 }
 
 /**
- * セルを切り出し → グレースケール → 拡大 → 二値化（白背景・黒文字）→ 余白追加。
+ * セルを切り出し → グレースケール → 拡大 → 二値化（白背景・黒文字）→ 文字部分に切り詰めて余白追加。
  * ゲーム UI は暗い背景に明るい文字なので反転して Tesseract が得意な形にする。
  */
 export function preprocessCell(
@@ -264,6 +331,7 @@ export function preprocessCell(
   rect: Rect,
   scale: number,
   padding = 12,
+  trimPaddingRatio = 0.5,
 ): RawImage {
   const sx = Math.max(0, rect.x);
   const sy = Math.max(0, rect.y);
@@ -303,13 +371,40 @@ export function preprocessCell(
   }
 
   const threshold = otsuThreshold(hist, dw * dh);
-  const ow = dw + padding * 2;
-  const oh = dh + padding * 2;
-  const out = new Uint8ClampedArray(ow * oh * 4).fill(255);
+
+  // 文字の外接矩形に切り詰める。セル幅に対して文字が小さい（S&D の 1 桁の値など）と
+  // Tesseract が空白と判定して読み落とすため
+  let bx0 = dw;
+  let by0 = dh;
+  let bx1 = -1;
+  let by1 = -1;
   for (let y = 0; y < dh; y++) {
     for (let x = 0; x < dw; x++) {
-      const v = scaled[y * dw + x] > threshold ? 0 : 255;
-      const o = ((y + padding) * ow + (x + padding)) * 4;
+      if (scaled[y * dw + x] > threshold) {
+        if (x < bx0) bx0 = x;
+        if (x > bx1) bx1 = x;
+        if (y < by0) by0 = y;
+        if (y > by1) by1 = y;
+      }
+    }
+  }
+  if (bx1 < 0) {
+    bx0 = 0;
+    by0 = 0;
+    bx1 = dw - 1;
+    by1 = dh - 1;
+  }
+  const cw = bx1 - bx0 + 1;
+  const ch = by1 - by0 + 1;
+  const pad = Math.max(padding, Math.round(ch * trimPaddingRatio));
+
+  const ow = cw + pad * 2;
+  const oh = ch + pad * 2;
+  const out = new Uint8ClampedArray(ow * oh * 4).fill(255);
+  for (let y = 0; y < ch; y++) {
+    for (let x = 0; x < cw; x++) {
+      const v = scaled[(y + by0) * dw + (x + bx0)] > threshold ? 0 : 255;
+      const o = ((y + pad) * ow + (x + pad)) * 4;
       out[o] = v;
       out[o + 1] = v;
       out[o + 2] = v;

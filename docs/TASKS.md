@@ -19,10 +19,10 @@
 
 ### 優先度: 中
 
-#### スコアボード画像からのスタッツ自動入力（S&D / Overload 対応）
+#### スコアボード画像からのスタッツ自動入力（Overload 対応）
 
-- Hardpoint は実装済み（Done 参照）。同じ仕組み（`src/lib/scoreboard/layout.ts`）にモード別のレイアウト定義を追加する
-- 前提: S&D / Overload のサンプルスクショを `docs/samples/` に用意
+- Hardpoint / S&D / Hijack は実装済み（Done 参照）。`src/lib/scoreboard/layout.ts` の `OBJECTIVE_COLUMNS` に Overload の列定義を追加する
+- 前提: Overload のサンプルスクショを `docs/samples/` に用意
 - 必要に応じて `title_id` 別のレイアウト定義を持てるようにする
 
 #### マップ別成績分析
@@ -95,6 +95,15 @@
 ---
 
 ## Done
+
+### スコアボード画像からのスタッツ自動入力: S&D / Hijack（2026-11-21）
+
+- 左側（名前・K/D・威力）と行・スコア位置は Hardpoint と共通。右側のモード固有列を `OBJECTIVE_COLUMNS` でモード別に定義（列位置は共通、並びのみ異なる）
+  - S&D: 爆弾設置 → `plants` / 爆弾解除 → `defuses` / 1ST ブラッド → `first_bloods` / 初回デス数 → `first_deaths`
+  - Hijack: データのアップロード完了 → `uploads` / 設置 → `plants` / ダンク → `dunks` / リモート設置 → `remote_plants`
+- 1 桁の値が SINGLE_LINE では空と判定されやすかったため、回数系の列は SINGLE_WORD のワーカーで読み、前処理で文字の外接矩形に切り詰めるよう変更
+- `docs/samples/` の 3 枚（Hardpoint 16:10 PNG / S&D 16:9 JPG / Hijack 16:10 PNG）で全 8 行の数値・スコアを正しく読み取れることを Node 上の OCR で確認
+- `/dev/scoreboard` のサンプル配信を JPG にも対応
 
 ### 使い方ページ（/guide）の追加（2026-11-15）
 

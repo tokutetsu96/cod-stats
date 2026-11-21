@@ -8,7 +8,7 @@ export default async function ScoreboardPreviewPage() {
   if (process.env.NODE_ENV !== "development") notFound();
 
   const samples = (await readdir(path.join(process.cwd(), "docs", "samples")).catch(() => []))
-    .filter((f) => f.endsWith(".png"));
+    .filter((f) => /\.(png|jpe?g)$/i.test(f));
 
   return (
     <main className="mx-auto max-w-6xl p-4 space-y-6">

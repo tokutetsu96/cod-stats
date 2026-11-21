@@ -151,7 +151,7 @@ export default function GuidePage() {
             <li>2ゲーム目以降も <Ui>ゲームを追加</Ui> から同じように入力します。選手の並びは前のゲームから引き継がれます。</li>
           </GuideActions>
           <GuideNote>
-            Hardpoint では、試合後のスコアボードのスクリーンショットを点線の枠にドロップ（または貼り付け）すると、スタッツを自動で入力できます。読み取り結果は登録前に確認してください。
+            Hardpoint・S&D・Hijack では、試合後のスコアボードのスクリーンショットを点線の枠にドロップ（または貼り付け）すると、スタッツを自動で入力できます。読み取り結果は登録前に確認してください。
           </GuideNote>
 
           <GuideShot src={matchSubmitShot} alt="対戦登録画面の下部。ゲームを追加ボタンと登録ボタン" />
